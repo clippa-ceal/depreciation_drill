@@ -53,6 +53,8 @@ svg.timeline{display:block;min-width:340px}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+.calc-btn-pull{background:#0F6E56;color:#fff;font-size:13px}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px}
 .type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500}
 .type-b{background:#EAF3DE;color:#3B6D11}
 .type-c{background:#FAEEDA;color:#854F0B}
@@ -82,6 +84,8 @@ svg.timeline{display:block;min-width:340px}
     <div class="label" style="margin-bottom:6px">電卓</div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
+      <button class="calc-btn calc-btn-pull calc-btn-wide" onclick="calcFromQ()">↓ 問題から引用</button>
+      <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
@@ -319,6 +323,16 @@ function calcIn(v){
     if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
   }
   document.getElementById('calc-disp').textContent=fmtDisp(s.disp);
+}
+function calcFromQ(){
+  const q=state.q;if(!q)return;
+  const val=q.type===1?q.cost:q.bokStart;
+  cs.disp=String(val);cs.fresh=true;cs.prev=null;cs.op=null;
+  document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
+}
+function calcToAns(){
+  const n=parseFloat(cs.disp);
+  if(!isNaN(n))document.getElementById('ans-input').value=String(Math.round(n));
 }
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}
