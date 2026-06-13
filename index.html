@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>減価償却ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:480px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:1rem;text-align:center;color:var(--color-text)}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+input[type=text]{width:100%;margin-bottom:8px;font-size:16px;padding:12px;border:1px solid var(--color-border2);border-radius:var(--radius-md);background:var(--color-card)}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.q-row{display:flex;gap:8px;margin-bottom:8px;align-items:baseline}
+.q-key{font-size:13px;color:var(--color-text2);min-width:100px}
+.q-val{font-size:15px;font-weight:500;color:var(--color-text)}
+.q-ask{font-size:15px;font-weight:500;color:var(--color-info)}
+.tl-wrap{overflow-x:auto;margin:4px 0 8px}
+svg.timeline{display:block;min-width:340px}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.step{font-weight:500;color:var(--color-text);font-size:13px;margin-top:6px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:1rem}
+.stat{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 12px}
+.stat .n{font-size:22px;font-weight:500;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2);margin-top:2px}
+.type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500}
+.type-b{background:#EAF3DE;color:#3B6D11}
+.type-c{background:#FAEEDA;color:#854F0B}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>減価償却ドリル</h1>
+  <div class="stat-grid">
+    <div class="stat"><div class="n" id="s-total">0</div><div class="l">出題数</div></div>
+    <div class="stat"><div class="n" id="s-correct">0</div><div class="l">正解数</div></div>
+  </div>
+  <div class="card">
+    <div id="type-badge-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" style="margin-top:8px"></div>
+    <div class="tl-wrap"><svg class="timeline" id="tl" height="72"></svg></div>
+  </div>
+  <div id="answer-area">
+    <div class="label" id="ans-label">答え（円）</div>
+    <input type="text" id="ans-input" placeholder="例: 150000" inputmode="numeric">
+    <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
+  </div>
+  <div id="result-area"></div>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+</div>
+
+<script>
+let state={total:0,correct:0,q:null};
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+function genBase(){
+  for(let i=0;i<300;i++){
+    const life=rand(4,10);
+    const acqMonth=rand(1,12);
+    const acqYear=rand(10,20);
+    const acqFY=acqMonth>=4?acqYear:acqYear-1;
+    let monthsInAcqFY;
+    if(acqMonth>=4) monthsInAcqFY=12-(acqMonth-4);
+    else monthsInAcqFY=3-(acqMonth-1);
+
+    const divisor=life*12;
+    const base=rand(2,20);
+    const cost=base*divisor*10000;
+    const annualDep=cost/life;
+
+    const acqFYDep=annualDep*monthsInAcqFY/12;
+    if(!Number.isInteger(acqFYDep)) continue;
+
+    const maxElapsed=life-1;
+    const curFY=acqFY+rand(1,maxElapsed);
+    const dep=annualDep;
+
+    const elapsed=curFY-acqFY;
+    const accumDep=acqFYDep+annualDep*(elapsed-1);
+    const bokStart=cost-accumDep;
+    const bokEnd=bokStart-annualDep;
+
+    if(bokStart<=0||bokEnd<0) continue;
+
+    return{acqYear,acqMonth,life,cost,curYear:curFY,annualDep,dep,acqFY,curFY,monthsInAcqFY,acqFYDep,accumDep,bokStart,bokEnd};
+  }
+  return null;
+}
+
+function genQ(){
+  const b=genBase();
+  if(!b) return null;
+  const type=rand(1,2);
+  return{...b,type};
+}
+
+function drawTimeline(q){
+  const svg=document.getElementById('tl');
+  const W=380,H=72,padL=20,padR=20,y0=36;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width','100%');
+  svg.innerHTML='';
+  const fyStart=q.acqFY,fyEnd=q.curFY+1,span=fyEnd-fyStart;
+  const usableW=W-padL-padR;
+  function xOf(fy){return padL+(fy-fyStart)/span*usableW;}
+  const ac='#D8D5CC',tc='#6B6B64';
+  const blue='#185FA5',green='#0F6E56';
+  const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+  ln.setAttribute('x1',padL);ln.setAttribute('x2',W-padR);
+  ln.setAttribute('y1',y0);ln.setAttribute('y2',y0);
+  ln.setAttribute('stroke',ac);ln.setAttribute('stroke-width','1');
+  svg.appendChild(ln);
+  for(let fy=fyStart;fy<=fyEnd;fy++){
+    const x=xOf(fy);
+    const tk=document.createElementNS('http://www.w3.org/2000/svg','line');
+    tk.setAttribute('x1',x);tk.setAttribute('x2',x);
+    tk.setAttribute('y1',y0-6);tk.setAttribute('y2',y0+6);
+    tk.setAttribute('stroke',ac);tk.setAttribute('stroke-width','1');
+    svg.appendChild(tk);
+    const lb=document.createElementNS('http://www.w3.org/2000/svg','text');
+    lb.setAttribute('x',x);lb.setAttribute('y',y0+18);
+    lb.setAttribute('text-anchor','middle');lb.setAttribute('font-size','10');
+    lb.setAttribute('fill',tc);lb.textContent=`X${fy}`;
+    svg.appendChild(lb);
+  }
+  const offset=q.acqMonth>=4?(q.acqMonth-4)/12:(12+q.acqMonth-4)/12;
+  const acqX=padL+(q.acqFY-fyStart+offset)/span*usableW;
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',acqX);c.setAttribute('cy',y0);c.setAttribute('r','5');c.setAttribute('fill',blue);
+  svg.appendChild(c);
+  const al=document.createElementNS('http://www.w3.org/2000/svg','text');
+  al.setAttribute('x',acqX);al.setAttribute('y',y0-14);
+  al.setAttribute('text-anchor','middle');al.setAttribute('font-size','9');
+  al.setAttribute('fill',blue);al.setAttribute('font-weight','500');
+  al.textContent='取得';svg.appendChild(al);
+  const rx1=xOf(q.curFY),rx2=xOf(q.curFY+1);
+  const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  r.setAttribute('x',rx1);r.setAttribute('y',y0-8);
+  r.setAttribute('width',rx2-rx1);r.setAttribute('height',16);
+  r.setAttribute('fill',green);r.setAttribute('opacity','0.18');r.setAttribute('rx','3');
+  svg.appendChild(r);
+  const cl=document.createElementNS('http://www.w3.org/2000/svg','text');
+  cl.setAttribute('x',(rx1+rx2)/2);cl.setAttribute('y',y0+30);
+  cl.setAttribute('text-anchor','middle');cl.setAttribute('font-size','9');
+  cl.setAttribute('fill',green);cl.setAttribute('font-weight','500');
+  cl.textContent='当期';svg.appendChild(cl);
+}
+
+const typeInfo={
+  1:{label:'期首帳簿価額を求める',cls:'type-b'},
+  2:{label:'取得原価を求める',cls:'type-c'},
+};
+
+function newQ(){
+  const q=genQ();
+  if(!q) return;
+  state.q=q;
+  document.getElementById('ans-input').value='';
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('ans-input').disabled=false;
+
+  const ti=typeInfo[q.type];
+  document.getElementById('type-badge-wrap').innerHTML=`<span class="type-badge ${ti.cls}">${ti.label}</span>`;
+
+  let rows='';
+  rows+=`<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${q.curYear}年4月 〜 X${q.curYear+1}年3月</span></div>`;
+  rows+=`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">X${q.acqYear}年${q.acqMonth}月</span></div>`;
+  rows+=`<div class="q-row"><span class="q-key">耐用年数</span><span class="q-val">${q.life}年</span></div>`;
+  rows+=`<div class="q-row"><span class="q-key">償却方法</span><span class="q-val">定額法・直接法・残存価額ゼロ</span></div>`;
+
+  if(q.type===1){
+    rows+=`<div class="q-row"><span class="q-key">取得原価</span><span class="q-val">${q.cost.toLocaleString()}円</span></div>`;
+    rows+=`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">当期首の帳簿価額</span></div>`;
+    document.getElementById('ans-label').textContent='当期首の帳簿価額（円）';
+  } else {
+    rows+=`<div class="q-row"><span class="q-key">当期首帳簿価額</span><span class="q-val">${q.bokStart.toLocaleString()}円</span></div>`;
+    rows+=`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">取得原価</span></div>`;
+    document.getElementById('ans-label').textContent='取得原価（円）';
+  }
+
+  document.getElementById('q-body').innerHTML=rows;
+  drawTimeline(q);
+}
+
+function checkAnswer(){
+  const q=state.q;
+  const raw=document.getElementById('ans-input').value.replace(/[,，\s]/g,'');
+  const userAns=parseInt(raw,10);
+  if(isNaN(userAns)){
+    document.getElementById('result-area').innerHTML='<div class="result-ng">数字を入力してください</div>';
+    return;
+  }
+  state.total++;
+
+  let correct,exp='';
+  const elapsed=q.curFY-q.acqFY;
+
+  if(q.type===1){
+    correct=q.bokStart;
+    exp+=`<div class="step">① 年間償却費</div>`;
+    exp+=`${q.cost.toLocaleString()} ÷ ${q.life}年 ＝ ${q.annualDep.toLocaleString()}円<br>`;
+    exp+=`<div class="step">② 取得年度（X${q.acqFY}年度）の償却費</div>`;
+    exp+=`${q.annualDep.toLocaleString()} × ${q.monthsInAcqFY}/12 ＝ ${q.acqFYDep.toLocaleString()}円<br>`;
+    exp+=`<div class="step">③ 当期首までの累計償却費</div>`;
+    exp+=`${q.acqFYDep.toLocaleString()} ＋ ${q.annualDep.toLocaleString()} × ${elapsed-1}年 ＝ ${q.accumDep.toLocaleString()}円<br>`;
+    exp+=`<div class="step">④ 期首帳簿価額</div>`;
+    exp+=`${q.cost.toLocaleString()} － ${q.accumDep.toLocaleString()} ＝ <strong>${q.bokStart.toLocaleString()}円</strong>`;
+  } else {
+    correct=q.cost;
+    exp+=`<div class="step">① 年間償却費を x とおく</div>`;
+    exp+=`取得原価 ＝ x × ${q.life}年<br>`;
+    exp+=`<div class="step">② 取得年度（X${q.acqFY}年度）の償却費</div>`;
+    exp+=`x × ${q.monthsInAcqFY}/12<br>`;
+    exp+=`<div class="step">③ 当期首までの累計償却費</div>`;
+    exp+=`x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}年<br>`;
+    exp+=`<div class="step">④ 期首帳簿価額の式</div>`;
+    exp+=`x × ${q.life} － (x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}) ＝ ${q.bokStart.toLocaleString()}<br>`;
+    const coeff=q.life-(q.monthsInAcqFY/12)-(elapsed-1);
+    exp+=`x × ${coeff} ＝ ${q.bokStart.toLocaleString()}<br>`;
+    exp+=`x ＝ ${q.annualDep.toLocaleString()}円（年間償却費）<br>`;
+    exp+=`取得原価 ＝ ${q.annualDep.toLocaleString()} × ${q.life} ＝ <strong>${q.cost.toLocaleString()}円</strong>`;
+  }
+
+  const ok=userAns===correct;
+  if(ok) state.correct++;
+  document.getElementById('s-total').textContent=state.total;
+  document.getElementById('s-correct').textContent=state.correct;
+
+  document.getElementById('result-area').innerHTML=`
+    <div class="${ok?'result-ok':'result-ng'}">${ok?'✓ 正解！':'✗ 不正解　正解：'+correct.toLocaleString()+'円'}</div>
+    <div class="explain">${exp}</div>
+  `;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){
+  document.getElementById('btn-check').style.display='block';
+  newQ();
+}
+
+newQ();
+document.getElementById('ans-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+
+// PWA: service worker 登録
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
