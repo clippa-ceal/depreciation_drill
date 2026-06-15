@@ -113,7 +113,7 @@ svg.timeline{display:block;min-width:340px}
 let state={total:0,correct:0,q:null};
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 
-function genBase(){
+function genBase(residual){
   for(let i=0;i<300;i++){
     const life=rand(4,10);
     const acqMonth=rand(1,12);
@@ -123,10 +123,10 @@ function genBase(){
     if(acqMonth>=4) monthsInAcqFY=12-(acqMonth-4);
     else monthsInAcqFY=3-(acqMonth-1);
 
-    const divisor=life*12;
+    const divisor=residual===0?life*12:life*10;
     const base=rand(2,20);
     const cost=base*divisor*10000;
-    const annualDep=cost/life;
+    const annualDep=cost*(1-residual)/life;
 
     const acqFYDep=annualDep*monthsInAcqFY/12;
     if(!Number.isInteger(acqFYDep)) continue;
@@ -139,16 +139,18 @@ function genBase(){
     const accumDep=acqFYDep+annualDep*(elapsed-1);
     const bokStart=cost-accumDep;
     const bokEnd=bokStart-annualDep;
+    const residualVal=cost*residual;
 
-    if(bokStart<=0||bokEnd<0) continue;
+    if(bokStart<=residualVal||bokEnd<residualVal) continue;
 
-    return{acqYear,acqMonth,life,cost,curYear:curFY,annualDep,dep,acqFY,curFY,monthsInAcqFY,acqFYDep,accumDep,bokStart,bokEnd};
+    return{acqYear,acqMonth,life,cost,curYear:curFY,annualDep,dep,acqFY,curFY,monthsInAcqFY,acqFYDep,accumDep,bokStart,bokEnd,residual};
   }
   return null;
 }
 
 function genQ(){
-  const b=genBase();
+  const residual=Math.random()<0.3?0.1:0;
+  const b=genBase(residual);
   if(!b) return null;
   const type=rand(1,2);
   return{...b,type};
@@ -228,7 +230,8 @@ function newQ(){
   rows+=`<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${q.curYear}年4月 〜 X${q.curYear+1}年3月</span></div>`;
   rows+=`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">X${q.acqYear}年${q.acqMonth}月</span></div>`;
   rows+=`<div class="q-row"><span class="q-key">耐用年数</span><span class="q-val">${q.life}年</span></div>`;
-  rows+=`<div class="q-row"><span class="q-key">償却方法</span><span class="q-val">定額法・直接法・残存価額ゼロ</span></div>`;
+  const methodLabel=q.residual===0?'定額法・直接法・残存価額ゼロ':'旧定額法・直接法・残存価額10%';
+  rows+=`<div class="q-row"><span class="q-key">償却方法</span><span class="q-val">${methodLabel}</span></div>`;
 
   if(q.type===1){
     rows+=`<div class="q-row"><span class="q-key">取得原価</span><span class="q-val">${q.cost.toLocaleString()}円</span></div>`;
@@ -260,7 +263,11 @@ function checkAnswer(){
   if(q.type===1){
     correct=q.bokStart;
     exp+=`<div class="step">① 年間償却費</div>`;
-    exp+=`${q.cost.toLocaleString()} ÷ ${q.life}年 ＝ ${q.annualDep.toLocaleString()}円<br>`;
+    if(q.residual===0){
+      exp+=`${q.cost.toLocaleString()} ÷ ${q.life}年 ＝ ${q.annualDep.toLocaleString()}円<br>`;
+    }else{
+      exp+=`${q.cost.toLocaleString()} × 0.9 ÷ ${q.life}年 ＝ ${q.annualDep.toLocaleString()}円<br>`;
+    }
     exp+=`<div class="step">② 取得年度（X${q.acqFY}年度）の償却費</div>`;
     exp+=`${q.annualDep.toLocaleString()} × ${q.monthsInAcqFY}/12 ＝ ${q.acqFYDep.toLocaleString()}円<br>`;
     exp+=`<div class="step">③ 当期首までの累計償却費</div>`;
@@ -270,17 +277,27 @@ function checkAnswer(){
   } else {
     correct=q.cost;
     exp+=`<div class="step">① 年間償却費を x とおく</div>`;
-    exp+=`取得原価 ＝ x × ${q.life}年<br>`;
+    if(q.residual===0){
+      exp+=`取得原価 ＝ x × ${q.life}年<br>`;
+    }else{
+      exp+=`取得原価 ＝ x × ${q.life}年 ÷ 0.9<br>`;
+    }
     exp+=`<div class="step">② 取得年度（X${q.acqFY}年度）の償却費</div>`;
     exp+=`x × ${q.monthsInAcqFY}/12<br>`;
     exp+=`<div class="step">③ 当期首までの累計償却費</div>`;
     exp+=`x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}年<br>`;
     exp+=`<div class="step">④ 期首帳簿価額の式</div>`;
-    exp+=`x × ${q.life} － (x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}) ＝ ${q.bokStart.toLocaleString()}<br>`;
-    const coeff=q.life-(q.monthsInAcqFY/12)-(elapsed-1);
-    exp+=`x × ${coeff} ＝ ${q.bokStart.toLocaleString()}<br>`;
-    exp+=`x ＝ ${q.annualDep.toLocaleString()}円（年間償却費）<br>`;
-    exp+=`取得原価 ＝ ${q.annualDep.toLocaleString()} × ${q.life} ＝ <strong>${q.cost.toLocaleString()}円</strong>`;
+    if(q.residual===0){
+      exp+=`x × ${q.life} － (x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}) ＝ ${q.bokStart.toLocaleString()}<br>`;
+      const coeff=q.life-(q.monthsInAcqFY/12)-(elapsed-1);
+      exp+=`x × ${coeff} ＝ ${q.bokStart.toLocaleString()}<br>`;
+      exp+=`x ＝ ${q.annualDep.toLocaleString()}円（年間償却費）<br>`;
+      exp+=`取得原価 ＝ ${q.annualDep.toLocaleString()} × ${q.life} ＝ <strong>${q.cost.toLocaleString()}円</strong>`;
+    }else{
+      exp+=`x × ${q.life} ÷ 0.9 － (x × ${q.monthsInAcqFY}/12 ＋ x × ${elapsed-1}) ＝ ${q.bokStart.toLocaleString()}<br>`;
+      exp+=`x ＝ ${q.annualDep.toLocaleString()}円（年間償却費）<br>`;
+      exp+=`取得原価 ＝ ${q.annualDep.toLocaleString()} × ${q.life} ÷ 0.9 ＝ <strong>${q.cost.toLocaleString()}円</strong>`;
+    }
   }
 
   const ok=userAns===correct;
