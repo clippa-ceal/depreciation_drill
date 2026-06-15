@@ -57,6 +57,7 @@ td.rowlabel{background:var(--color-bg-secondary);font-size:11px;font-weight:600;
 .ws-triple input:last-of-type{margin-bottom:0}
 input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ws-sumbtn{width:58px;margin:4px 0 0;font-size:10px;padding:3px 4px;border-radius:6px;background:var(--color-bg-secondary);color:var(--color-info);border:0.5px solid var(--color-border2);font-weight:600;display:block}
 .ws-ans{font-size:11px;color:#A32D2D;display:none;margin-top:2px;font-weight:600}
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
 .result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
@@ -213,13 +214,26 @@ function renderTable(e){
       }else if(tp==='triple'){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><input type="text" id="${base}_2" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else{
-        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
+        const btn=r==='yoso'?`<button class="ws-sumbtn" onclick="fillYoso('${c}')">↓縦計</button>`:'';
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span>${btn}</td>`;
       }
     }
     h+='</tr>';
   }
   h+='</tbody></table>';
   document.getElementById('ws-area').innerHTML=h;
+}
+
+function readCell(r,c){
+  const tp=cellType(r,c),base=`c_${r}_${c}`;
+  if(tp==='prefill')return STATE.exp[r+c];
+  if(tp==='zero')return 0;
+  if(tp==='triple')return [0,1,2].reduce((s,i)=>s+parseNum(document.getElementById(`${base}_${i}`).value),0);
+  return parseNum(document.getElementById(base).value);
+}
+function fillYoso(c){
+  const sum=readCell('kishu',c)+readCell('hiyo',c)+readCell('kyo',c);
+  document.getElementById(`c_yoso_${c}`).value=String(sum);
 }
 
 function newQ(){
