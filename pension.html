@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>退職給付ワークシートドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:170px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-sub{padding-left:14px}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.unit-note{font-size:12px;color:var(--color-text2);text-align:right;margin-bottom:6px}
+.ws-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -0.5rem}
+table.ws{border-collapse:collapse;width:100%;min-width:460px}
+table.ws th,table.ws td{border:0.5px solid var(--color-border2);text-align:center;vertical-align:middle}
+table.ws th{background:var(--color-bg-secondary);font-size:11px;font-weight:600;color:var(--color-text2);padding:6px 2px}
+table.ws td{padding:4px 3px}
+td.rowlabel{background:var(--color-bg-secondary);font-size:11px;font-weight:600;color:var(--color-text);white-space:nowrap;padding:4px 5px;text-align:left}
+.ws-static{font-size:14px;font-weight:600}
+.ws-given{background:#F4F3EF}
+.ws-zero{color:#BBB8AE;font-size:14px}
+.ws-cell input{width:58px;font-size:15px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;margin:0;background:var(--color-card)}
+.ws-triple input{margin-bottom:3px;display:block}
+.ws-triple input:last-of-type{margin-bottom:0}
+input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ws-ans{font-size:11px;color:#A32D2D;display:none;margin-top:2px;font-weight:600}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>退職給付ワークシートドリル</h1>
+  <div class="nav"><a href="index.html">減価償却</a><a href="pension.html" class="nav-on">退職給付</a></div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div class="label">与件（単位：千円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">ワークシートを埋めて「答え合わせ」</div>
+    <div class="unit-note">単位：千円　／　減少は「−」を付けて入力</div>
+    <div class="ws-wrap"><div id="ws-area"></div></div>
+    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 − 差異<br>退職給付費用・拠出/給付の欄は3行に分けて入力可（順不同・合計で判定）</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROWS=[['kishu','期首残高'],['hiyo','退職給付費用'],['kyo','拠出・給付'],['yoso','予想末残高'],['jissai','実際末残高']];
+const COLS=[['A','年金資産'],['B','退職給付債務'],['C','合計'],['D','差異'],['E','引当金']];
+let STATE={total:0,perfect:0,g:null,exp:null,graded:false};
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).replace(/[,，\s]/g,'').replace(/[－−]/g,'-').replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);
+  return isNaN(n)?0:n;
+}
+
+function genPension(){
+  for(let t=0;t<300;t++){
+    const openA=rand(20,60)*50;
+    const openB=openA+rand(6,30)*50;
+    const serviceCost=rand(4,16)*25;
+    const interestCost=rand(2,12)*10;
+    const expReturn=rand(2,12)*10;
+    const contribution=rand(4,16)*25;
+    const benefitFromPlan=rand(2,8)*25;
+    const lumpSum=Math.random()<0.5?0:rand(2,8)*25;
+    if(benefitFromPlan>=openA)continue;
+    const yosoA=openA+expReturn+contribution-benefitFromPlan;
+    const yosoB=openB+serviceCost+interestCost-benefitFromPlan-lumpSum;
+    if(yosoA<=0||yosoB<=0)continue;
+    const diffA=rand(-6,6)*10;
+    const diffB=rand(-6,6)*10;
+    if(diffA===0&&diffB===0)continue;
+    const actualA=yosoA+diffA;
+    const actualB=yosoB+diffB;
+    if(actualA<=0||actualB<=0)continue;
+    return{openA,openB,serviceCost,interestCost,expReturn,contribution,benefitFromPlan,lumpSum,actualA,actualB};
+  }
+  return null;
+}
+
+function computeExpected(g){
+  const e={};
+  e.kishuA=g.openA;e.kishuB=g.openB;e.kishuC=g.openB-g.openA;e.kishuD=0;e.kishuE=e.kishuC;
+  e.hiyoA=g.expReturn;e.hiyoB=g.serviceCost+g.interestCost;e.hiyoC=e.hiyoB-e.hiyoA;e.hiyoD=0;e.hiyoE=e.hiyoC;
+  e.kyoA=g.contribution-g.benefitFromPlan;e.kyoB=-(g.benefitFromPlan+g.lumpSum);e.kyoC=e.kyoB-e.kyoA;e.kyoD=0;e.kyoE=e.kyoC;
+  e.yosoA=g.openA+e.hiyoA+e.kyoA;e.yosoB=g.openB+e.hiyoB+e.kyoB;e.yosoC=e.yosoB-e.yosoA;e.yosoD=0;e.yosoE=e.kishuE+e.hiyoE+e.kyoE;
+  e.jissaiA=g.actualA;e.jissaiB=g.actualB;e.jissaiC=g.actualB-g.actualA;e.jissaiD=e.jissaiC-e.yosoC;e.jissaiE=e.jissaiC-e.jissaiD;
+  return e;
+}
+
+function cellType(r,c){
+  if(c==='D')return r==='jissai'?'input':'zero';
+  if((r==='kishu'||r==='jissai')&&(c==='A'||c==='B'))return 'prefill';
+  if((r==='hiyo'||r==='kyo')&&(c==='A'||c==='B'))return 'triple';
+  return 'input';
+}
+
+function renderGiven(g){
+  let h='';
+  h+=`<div class="g-row"><span class="g-key">期首 年金資産</span><span class="g-val">${fmt(g.openA)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">期首 退職給付債務</span><span class="g-val">${fmt(g.openB)}</span></div>`;
+  h+=`<div class="g-head">当期の退職給付費用</div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">勤務費用</span><span class="g-val">${fmt(g.serviceCost)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">利息費用</span><span class="g-val">${fmt(g.interestCost)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">期待運用収益</span><span class="g-val">${fmt(g.expReturn)}</span></div>`;
+  h+=`<div class="g-head">当期の拠出・給付</div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">掛金拠出（年金へ）</span><span class="g-val">${fmt(g.contribution)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">給付（年金から支払）</span><span class="g-val">${fmt(g.benefitFromPlan)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">一時金（会社が直接支払）</span><span class="g-val">${fmt(g.lumpSum)}</span></div>`;
+  h+=`<div class="g-head">実際の期末残高</div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">実際末 年金資産</span><span class="g-val">${fmt(g.actualA)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">実際末 退職給付債務</span><span class="g-val">${fmt(g.actualB)}</span></div>`;
+  document.getElementById('given-area').innerHTML=h;
+}
+
+function renderTable(e){
+  let h='<table class="ws"><thead><tr><th></th>';
+  for(const[c,cl]of COLS)h+=`<th>${cl}</th>`;
+  h+='</tr></thead><tbody>';
+  for(const[r,rl]of ROWS){
+    h+=`<tr><td class="rowlabel">${rl}</td>`;
+    for(const[c,cl]of COLS){
+      const tp=cellType(r,c),base=`c_${r}_${c}`;
+      if(tp==='prefill'){
+        h+=`<td class="ws-given"><span class="ws-static">${fmt(e[r+c])}</span></td>`;
+      }else if(tp==='zero'){
+        h+=`<td><span class="ws-zero">0</span></td>`;
+      }else if(tp==='triple'){
+        h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><input type="text" id="${base}_2" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }else{
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }
+    }
+    h+='</tr>';
+  }
+  h+='</tbody></table>';
+  document.getElementById('ws-area').innerHTML=h;
+}
+
+function newQ(){
+  const g=genPension();
+  if(!g)return;
+  STATE.g=g;
+  STATE.exp=computeExpected(g);
+  STATE.graded=false;
+  renderGiven(g);
+  renderTable(STATE.exp);
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function markInput(id,ok){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.remove('cell-ok','cell-ng');
+  el.classList.add(ok?'cell-ok':'cell-ng');
+}
+
+function grade(){
+  if(!STATE.g||STATE.graded)return;
+  const e=STATE.exp;
+  let total=0,ok=0;
+  for(const[r,rl]of ROWS){
+    for(const[c,cl]of COLS){
+      const tp=cellType(r,c);
+      if(tp==='prefill'||tp==='zero')continue;
+      total++;
+      const base=`c_${r}_${c}`,exp=e[r+c];
+      let val,ids;
+      if(tp==='triple'){
+        ids=[`${base}_0`,`${base}_1`,`${base}_2`];
+        val=ids.reduce((s,id)=>s+parseNum(document.getElementById(id).value),0);
+      }else{
+        ids=[base];
+        val=parseNum(document.getElementById(base).value);
+      }
+      const correct=val===exp;
+      if(correct)ok++;
+      ids.forEach(id=>markInput(id,correct));
+      const ans=document.getElementById('ans_'+base);
+      if(!correct){ans.textContent='正:'+fmt(exp);ans.style.display='block';}
+      else{ans.style.display='none';}
+    }
+  }
+  STATE.graded=true;
+  STATE.total++;
+  const allOk=ok===total;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全セル正解！':'正解 '+ok+' / '+total+' セル　（赤セルに正答を表示）'}</div>`;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='%'){
+    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
