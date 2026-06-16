@@ -1,4 +1,4 @@
-const CACHE = 'shokyaku-drill-v8';
+const CACHE = 'shokyaku-drill-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -25,7 +25,22 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
-  );
+  const req = e.request;
+  const isHtml = req.mode === 'navigate' ||
+    (req.method === 'GET' && (req.destination === 'document' || (req.headers.get('accept') || '').includes('text/html')));
+  if (isHtml) {
+    // network-first for HTML so deploys reflect immediately
+    e.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
+    );
+  } else {
+    // cache-first for other assets
+    e.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req))
+    );
+  }
 });
