@@ -125,9 +125,10 @@ input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 </div>
 
 <script>
-const ROWS=[['kishu','期首残高'],['hiyo','退職給付費用'],['kyo','拠出・給付'],['yoso','予想末残高'],['jissai','実際末残高']];
-const COLS=[['A','年金資産'],['B','退職給付債務'],['C','合計'],['D','差異'],['E','引当金']];
-let STATE={total:0,perfect:0,g:null,exp:null,graded:false};
+const ROWS=[['kishu','期首残高'],['hiyo','退職給付費用'],['kyo','拠出・給付'],['yoso','予想末残高'],['shin','当期発生差異'],['jissai','実際末残高']];
+const COLS=[['A','年金資産(▽)'],['B','退職給付債務'],['C','合計'],['D','差異'],['E','引当金']];
+let STATE={total:0,perfect:0,g:null,exp:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
@@ -158,10 +159,10 @@ function genPension(){
     if(openB-openA<=openDiff)continue;        // 期首引当金>0
     const priorAmort=rand(2,8)*10;            // 前期以前発生分の当期償却額
     if(priorAmort>=openDiff)continue;
-    const newDiff=rand(3,12)*10;              // 当期発生額（損）
+    const amortYears=rand(5,10);              // 当期発生分の償却年数（定額法）
+    const newDiff=amortYears*rand(3,12);      // 当期発生額（償却年数で割り切れる損）
     const amortStart=Math.random()<0.5?'current':'next';
-    const currentAmort=amortStart==='current'?rand(1,4)*10:0; // 当期発生分の当期償却
-    if(currentAmort>newDiff)continue;
+    const currentAmort=amortStart==='current'?newDiff/amortYears:0; // 当期発生分の当期償却（newDiff÷年数）
     const totalAmort=priorAmort+currentAmort; // 当期償却額（費用行・差異列）
     if(totalAmort>=openDiff)continue;         // 予想末 差異>0
     const diffA=rand(-3,3)*10;
@@ -172,7 +173,7 @@ function genPension(){
     const yosoE=(yosoB-yosoA)-(openDiff-totalAmort);
     if(yosoE<=0)continue;
     return{openA,openB,serviceCost,interestCost,expReturn,contribution,benefitFromPlan,lumpSum,
-           openDiff,priorAmort,currentAmort,totalAmort,newDiff,amortStart,actualA,actualB};
+           openDiff,priorAmort,currentAmort,totalAmort,newDiff,amortStart,amortYears,actualA,actualB};
   }
   return null;
 }
@@ -183,11 +184,18 @@ function computeExpected(g){
   e.hiyoA=g.expReturn;e.hiyoB=g.serviceCost+g.interestCost;e.hiyoC=e.hiyoB-e.hiyoA;e.hiyoD=-g.totalAmort;e.hiyoE=e.hiyoC-e.hiyoD;
   e.kyoA=g.contribution-g.benefitFromPlan;e.kyoB=-(g.benefitFromPlan+g.lumpSum);e.kyoC=e.kyoB-e.kyoA;e.kyoD=0;e.kyoE=e.kyoC;
   e.yosoA=g.openA+e.hiyoA+e.kyoA;e.yosoB=g.openB+e.hiyoB+e.kyoB;e.yosoC=e.yosoB-e.yosoA;e.yosoD=g.openDiff-g.totalAmort;e.yosoE=e.yosoC-e.yosoD;
+  e.shinA=g.actualA-e.yosoA;e.shinB=g.actualB-e.yosoB;e.shinC=e.shinB-e.shinA;e.shinD=g.newDiff;e.shinE=0;
   e.jissaiA=g.actualA;e.jissaiB=g.actualB;e.jissaiC=g.actualB-g.actualA;e.jissaiD=g.openDiff-g.totalAmort+g.newDiff;e.jissaiE=e.jissaiC-e.jissaiD;
   return e;
 }
 
 function cellType(r,c){
+  if(r==='shin'){
+    if(c==='C')return 'input';
+    if(c==='E')return 'zero';
+    return 'prefill';
+  }
+  if(r==='jissai'&&c==='E')return 'prefill';
   if(c==='D'){
     if(r==='kishu')return 'prefill';
     if(r==='kyo')return 'zero';
@@ -208,16 +216,17 @@ function renderGiven(g){
   h+=`<div class="g-row g-sub"><span class="g-key">利息費用</span><span class="g-val">${fmt(g.interestCost)}</span></div>`;
   h+=`<div class="g-row g-sub"><span class="g-key">期待運用収益</span><span class="g-val">${fmt(g.expReturn)}</span></div>`;
   h+=`<div class="g-head">当期の拠出・給付</div>`;
-  h+=`<div class="g-row g-sub"><span class="g-key">掛金拠出（年金へ）</span><span class="g-val">${fmt(g.contribution)}</span></div>`;
-  h+=`<div class="g-row g-sub"><span class="g-key">給付（年金から支払）</span><span class="g-val">${fmt(g.benefitFromPlan)}</span></div>`;
-  h+=`<div class="g-row g-sub"><span class="g-key">一時金（会社が直接支払）</span><span class="g-val">${fmt(g.lumpSum)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">掛金拠出</span><span class="g-val">${fmt(g.contribution)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">年金給付</span><span class="g-val">${fmt(g.benefitFromPlan)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">一時金</span><span class="g-val">${fmt(g.lumpSum)}</span></div>`;
   h+=`<div class="g-head">数理計算上の差異（いずれも損）</div>`;
   h+=`<div class="g-row g-sub"><span class="g-key">前期以前発生・未認識残高</span><span class="g-val">${fmt(g.openDiff)}</span></div>`;
-  h+=`<div class="g-row g-sub"><span class="g-key">当期の償却額</span><span class="g-val">${fmt(g.totalAmort)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">前期以前分の当期償却額</span><span class="g-val">${fmt(g.priorAmort)}</span></div>`;
+  h+=`<div class="g-row g-sub"><span class="g-key">当期発生額</span><span class="g-val">${fmt(g.newDiff)}</span></div>`;
   if(g.amortStart==='current'){
-    h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　内訳：前期以前分 ${fmt(g.priorAmort)} ＋ 当期発生分 ${fmt(g.currentAmort)}（当期から償却）</span></div>`;
+    h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　当期発生分は今期から定額償却（償却年数 ${g.amortYears} 年）</span></div>`;
   }else{
-    h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　前期以前分のみ（当期発生分は翌期から償却）</span></div>`;
+    h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　当期発生分は翌期から償却（償却年数 ${g.amortYears} 年）</span></div>`;
   }
   h+=`<div class="g-head">実際の期末残高</div>`;
   h+=`<div class="g-row g-sub"><span class="g-key">実際末 年金資産</span><span class="g-val">${fmt(g.actualA)}</span></div>`;
@@ -271,6 +280,7 @@ function newQ(){
   STATE.g=g;
   STATE.exp=computeExpected(g);
   STATE.graded=false;
+  STATE.startTime=Date.now();
   renderGiven(g);
   renderTable(STATE.exp);
   document.getElementById('result-area').innerHTML='';
@@ -318,7 +328,11 @@ function grade(){
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-perfect').textContent=STATE.perfect;
   const g=STATE.g;
-  const recon=`<div class="hint" style="margin-top:6px">期末 未認識数理差異 ＝ 期首 ${fmt(g.openDiff)} − 当期償却 ${fmt(g.totalAmort)} ＋ 当期発生 ${fmt(g.newDiff)} ＝ ${fmt(e.jissaiD)}<br>当期償却 ${fmt(g.totalAmort)} は費用行・差異列に「−${fmt(g.totalAmort)}」として記入（退職給付費用が増える）</div>`;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+  const amortBreak=g.amortStart==='current'
+    ?`前期以前分 ${fmt(g.priorAmort)} ＋ 当期発生分 ${fmt(g.newDiff)}÷${g.amortYears}年 = ${fmt(g.currentAmort)}`
+    :`前期以前分 ${fmt(g.priorAmort)} のみ（当期発生分は翌期から）`;
+  const recon=`<div class="hint" style="margin-top:6px">所要時間：${elapsed}<br>当期償却額 ＝ ${amortBreak} ＝ ${fmt(g.totalAmort)}（費用行・差異列に「−${fmt(g.totalAmort)}」）<br>期末 未認識数理差異 ＝ 期首 ${fmt(g.openDiff)} − 当期償却 ${fmt(g.totalAmort)} ＋ 当期発生 ${fmt(g.newDiff)} ＝ ${fmt(e.jissaiD)}</div>`;
   document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全セル正解！':'正解 '+ok+' / '+total+' セル　（赤セルに正答を表示）'}</div>`+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
