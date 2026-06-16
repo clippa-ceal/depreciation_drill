@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>仕入ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:170px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-sub{padding-left:14px}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.ans-grid{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;align-items:center}
+.ans-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
+.ans-grid .ans-cell{display:flex;align-items:center;gap:8px}
+.ans-grid input{width:140px;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.ans-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.ans-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>仕入ドリル</h1>
+  <div class="nav"><a href="index.html">減価償却</a><a href="pension.html">退職給付</a><a href="purchases.html" class="nav-on">仕入</a></div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div class="label">与件（単位：千円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">決算整理後の各勘定残高</div>
+    <div class="ans-grid">
+      <span class="ans-label">繰越商品</span>
+      <div class="ans-cell"><input type="text" id="a-inv" autocomplete="off"><span class="ans-ng-msg" id="ng-inv"></span></div>
+      <span class="ans-label">仕入</span>
+      <div class="ans-cell"><input type="text" id="a-cogs" autocomplete="off"><span class="ans-ng-msg" id="ng-cogs"></span></div>
+      <span class="ans-label">棚卸減耗損</span>
+      <div class="ans-cell"><input type="text" id="a-wear" autocomplete="off"><span class="ans-ng-msg" id="ng-wear"></span></div>
+      <span class="ans-label">見本品費</span>
+      <div class="ans-cell"><input type="text" id="a-sample" autocomplete="off"><span class="ans-ng-msg" id="ng-sample"></span></div>
+    </div>
+    <div class="hint">三分法。棚卸減耗損は別科目、商品評価損は仕入に含める。<br>未処理項目はまず仕入・帳簿棚卸高に反映してから計算。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,g:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).replace(/[,，\s]/g,'').replace(/[－−]/g,'-').replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);
+  return isNaN(n)?0:n;
+}
+
+function genQ(){
+  for(let t=0;t<300;t++){
+    const openingInv=rand(20,80)*10;          // 期首商品残高
+    const purchases=rand(80,300)*10;          // 当期仕入（記帳ベース、返品未処理を含む）
+    const physical=rand(30,100)*10;           // 期末実地棚卸高
+    const wear=rand(2,10)*5;                  // 棚卸減耗損（実額）
+    const returnAmt=Math.random()<0.5?0:rand(1,5)*10;     // 期末近くの仕入返品（未処理）
+    const valuationLoss=Math.random()<0.5?0:rand(1,3)*10; // 商品評価損
+    const sampleAmt=Math.random()<0.5?0:rand(1,5)*10;     // 見本品費（未処理）
+    if(valuationLoss>=physical)continue;
+    const modifiedBook=physical+wear;         // 修正後の帳簿棚卸高
+    const book=modifiedBook+returnAmt;        // 与件としての帳簿棚卸高（返品未処理を含む）
+    const inv=physical-valuationLoss;         // 繰越商品（決算整理後）
+    const cogs=openingInv+purchases-sampleAmt-book+valuationLoss; // 仕入勘定（売上原価相当）
+    if(cogs<=0)continue;
+    return{openingInv,purchases,book,physical,returnAmt,valuationLoss,sampleAmt,inv,wear,cogs};
+  }
+  return null;
+}
+
+function renderGiven(g){
+  let h='';
+  h+=`<div class="g-row"><span class="g-key">期首商品残高</span><span class="g-val">${fmt(g.openingInv)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">当期仕入</span><span class="g-val">${fmt(g.purchases)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">期末帳簿棚卸高</span><span class="g-val">${fmt(g.book)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">期末実地棚卸高</span><span class="g-val">${fmt(g.physical)}</span></div>`;
+  const adj=[];
+  if(g.returnAmt>0)adj.push(`期末近くに ${fmt(g.returnAmt)} を仕入先へ返品したが未処理`);
+  if(g.valuationLoss>0)adj.push(`商品の一部に評価損 ${fmt(g.valuationLoss)} あり`);
+  if(g.sampleAmt>0)adj.push(`見本品 ${fmt(g.sampleAmt)} を支出したが未処理`);
+  h+=`<div class="g-head">決算整理事項</div>`;
+  if(adj.length===0){
+    h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　追加事項なし</span></div>`;
+  }else{
+    for(const a of adj)h+=`<div class="g-row g-sub"><span class="g-key" style="min-width:auto">　・${a}</span></div>`;
+  }
+  document.getElementById('given-area').innerHTML=h;
+}
+
+function mark(id,ok){
+  const el=document.getElementById(id);
+  el.classList.remove('cell-ok','cell-ng');
+  el.classList.add(ok?'cell-ok':'cell-ng');
+}
+
+function newQ(){
+  const g=genQ();
+  if(!g)return;
+  STATE.g=g;
+  STATE.graded=false;
+  STATE.startTime=Date.now();
+  renderGiven(g);
+  for(const id of ['a-inv','a-cogs','a-wear','a-sample']){
+    const el=document.getElementById(id);
+    el.value='';el.classList.remove('cell-ok','cell-ng');
+  }
+  for(const id of ['ng-inv','ng-cogs','ng-wear','ng-sample']){
+    const el=document.getElementById(id);el.style.display='none';el.textContent='';
+  }
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function grade(){
+  if(!STATE.g||STATE.graded)return;
+  const g=STATE.g;
+  const fields=[
+    ['a-inv','ng-inv',g.inv],
+    ['a-cogs','ng-cogs',g.cogs],
+    ['a-wear','ng-wear',g.wear],
+    ['a-sample','ng-sample',g.sampleAmt],
+  ];
+  let ok=0;
+  for(const[id,ngId,exp]of fields){
+    const val=parseNum(document.getElementById(id).value);
+    const correct=val===exp;
+    if(correct)ok++;
+    mark(id,correct);
+    const ng=document.getElementById(ngId);
+    if(!correct){ng.textContent='正:'+fmt(exp);ng.style.display='inline';}
+    else{ng.style.display='none';}
+  }
+  STATE.graded=true;
+  STATE.total++;
+  const allOk=ok===fields.length;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+  const modBook=g.book-g.returnAmt;
+  const lines=[`所要時間：${elapsed}`];
+  let i=1;
+  if(g.returnAmt>0){lines.push(`${i++}. 仕入返品: (借)買掛金 ${fmt(g.returnAmt)} / (貸)仕入 ${fmt(g.returnAmt)} → 帳簿棚卸高 ${fmt(g.book)}−${fmt(g.returnAmt)}=${fmt(modBook)}`);}
+  if(g.sampleAmt>0){lines.push(`${i++}. 見本品: (借)見本品費 ${fmt(g.sampleAmt)} / (貸)仕入 ${fmt(g.sampleAmt)}`);}
+  lines.push(`${i++}. 期首振替: (借)仕入 ${fmt(g.openingInv)} / (貸)繰越商品 ${fmt(g.openingInv)}`);
+  lines.push(`${i++}. 期末振替: (借)繰越商品 ${fmt(g.physical)} / (貸)仕入 ${fmt(g.physical)}`);
+  lines.push(`${i++}. 棚卸減耗損: (借)棚卸減耗損 ${fmt(g.wear)} / (貸)繰越商品 ${fmt(g.wear)}　※修正後帳簿${fmt(modBook)}−実地${fmt(g.physical)}`);
+  if(g.valuationLoss>0){lines.push(`${i++}. 商品評価損: (借)仕入 ${fmt(g.valuationLoss)} / (貸)繰越商品 ${fmt(g.valuationLoss)}　※評価損は仕入に含めるため、(借)を仕入で計上`);}
+  lines.push(`<b>繰越商品</b> ＝ 実地${fmt(g.physical)} − 評価損${fmt(g.valuationLoss)} ＝ ${fmt(g.inv)}`);
+  lines.push(`<b>仕入</b> ＝ 期首${fmt(g.openingInv)} ＋ 当期仕入${fmt(g.purchases)} − 見本品${fmt(g.sampleAmt)} − 帳簿${fmt(g.book)} ＋ 評価損${fmt(g.valuationLoss)} ＝ ${fmt(g.cogs)}`);
+  lines.push(`<b>棚卸減耗損</b> ＝ ${fmt(g.wear)}　／　<b>見本品費</b> ＝ ${fmt(g.sampleAmt)}`);
+  const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='%'){
+    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
