@@ -90,7 +90,7 @@ input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
     <div class="label">ワークシートを埋めて「答え合わせ」</div>
     <div class="unit-note">単位：千円　／　減少は「−」を付けて入力</div>
     <div class="ws-wrap"><div id="ws-area"></div></div>
-    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 − 差異<br>差異列＝未認識の数理計算上の差異（損は＋）。償却は費用行に「−」で記入<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）</div>
+    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 ＋ 差異<br>差異列＝未認識の数理計算上の差異（損はマイナスで記入）。償却は費用行にプラスで記入<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）</div>
   </div>
 
   <div id="result-area"></div>
@@ -180,18 +180,18 @@ function genPension(){
 
 function computeExpected(g){
   const e={};
-  e.kishuA=g.openA;e.kishuB=g.openB;e.kishuC=g.openB-g.openA;e.kishuD=g.openDiff;e.kishuE=e.kishuC-g.openDiff;
-  e.hiyoA=g.expReturn;e.hiyoB=g.serviceCost+g.interestCost;e.hiyoC=e.hiyoB-e.hiyoA;e.hiyoD=-g.totalAmort;e.hiyoE=e.hiyoC-e.hiyoD;
+  e.kishuA=g.openA;e.kishuB=g.openB;e.kishuC=g.openB-g.openA;e.kishuD=-g.openDiff;e.kishuE=e.kishuC+e.kishuD;
+  e.hiyoA=g.expReturn;e.hiyoB=g.serviceCost+g.interestCost;e.hiyoC=e.hiyoB-e.hiyoA;e.hiyoD=g.totalAmort;e.hiyoE=e.hiyoC+e.hiyoD;
   e.kyoA=g.contribution-g.benefitFromPlan;e.kyoB=-(g.benefitFromPlan+g.lumpSum);e.kyoC=e.kyoB-e.kyoA;e.kyoD=0;e.kyoE=e.kyoC;
-  e.yosoA=g.openA+e.hiyoA+e.kyoA;e.yosoB=g.openB+e.hiyoB+e.kyoB;e.yosoC=e.yosoB-e.yosoA;e.yosoD=g.openDiff-g.totalAmort;e.yosoE=e.yosoC-e.yosoD;
-  e.shinA=g.actualA-e.yosoA;e.shinB=g.actualB-e.yosoB;e.shinC=e.shinB-e.shinA;e.shinD=g.newDiff;e.shinE=0;
-  e.jissaiA=g.actualA;e.jissaiB=g.actualB;e.jissaiC=g.actualB-g.actualA;e.jissaiD=g.openDiff-g.totalAmort+g.newDiff;e.jissaiE=e.jissaiC-e.jissaiD;
+  e.yosoA=g.openA+e.hiyoA+e.kyoA;e.yosoB=g.openB+e.hiyoB+e.kyoB;e.yosoC=e.yosoB-e.yosoA;e.yosoD=-(g.openDiff-g.totalAmort);e.yosoE=e.yosoC+e.yosoD;
+  e.shinA=g.actualA-e.yosoA;e.shinB=g.actualB-e.yosoB;e.shinC=e.shinB-e.shinA;e.shinD=-g.newDiff;e.shinE=0;
+  e.jissaiA=g.actualA;e.jissaiB=g.actualB;e.jissaiC=g.actualB-g.actualA;e.jissaiD=-(g.openDiff-g.totalAmort+g.newDiff);e.jissaiE=e.jissaiC+e.jissaiD;
   return e;
 }
 
 function cellType(r,c){
   if(r==='shin'){
-    if(c==='C')return 'input';
+    if(c==='D')return 'input';
     if(c==='E')return 'zero';
     return 'none';
   }
@@ -330,7 +330,7 @@ function grade(){
   const amortBreak=g.amortStart==='current'
     ?`前期以前分 ${fmt(g.priorAmort)} ＋ 当期発生分 ${fmt(g.newDiff)}÷${g.amortYears}年 = ${fmt(g.currentAmort)}`
     :`前期以前分 ${fmt(g.priorAmort)} のみ（当期発生分は翌期から）`;
-  const recon=`<div class="hint" style="margin-top:6px">所要時間：${elapsed}<br>当期償却額 ＝ ${amortBreak} ＝ ${fmt(g.totalAmort)}（費用行・差異列に「−${fmt(g.totalAmort)}」）<br>期末 未認識数理差異 ＝ 期首 ${fmt(g.openDiff)} − 当期償却 ${fmt(g.totalAmort)} ＋ 当期発生 ${fmt(g.newDiff)} ＝ ${fmt(e.jissaiD)}</div>`;
+  const recon=`<div class="hint" style="margin-top:6px">所要時間：${elapsed}<br>当期償却額 ＝ ${amortBreak} ＝ ${fmt(g.totalAmort)}（費用行・差異列に「＋${fmt(g.totalAmort)}」）<br>期末 未認識数理差異残高（損） ＝ 期首 ${fmt(g.openDiff)} − 当期償却 ${fmt(g.totalAmort)} ＋ 当期発生 ${fmt(g.newDiff)} ＝ ${fmt(g.openDiff-g.totalAmort+g.newDiff)}（差異列には「${fmt(e.jissaiD)}」で記入）</div>`;
   document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全セル正解！':'正解 '+ok+' / '+total+' セル　（赤セルに正答を表示）'}</div>`+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
