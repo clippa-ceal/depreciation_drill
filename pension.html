@@ -192,13 +192,11 @@ function computeExpected(g){
 function cellType(r,c){
   if(r==='shin'){
     if(c==='C')return 'input';
-    if(c==='D')return 'prefill';
     if(c==='E')return 'zero';
     return 'none';
   }
   if(r==='jissai'&&c==='E')return 'none';
   if(c==='D'){
-    if(r==='kishu')return 'prefill';
     if(r==='kyo')return 'zero';
     return 'input';
   }
