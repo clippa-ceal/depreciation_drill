@@ -142,9 +142,9 @@ function genQ(){
     const purchases=rand(80,300)*10;          // 当期仕入（記帳ベース、返品未処理を含む）
     const physical=rand(30,100)*10;           // 期末実地棚卸高
     const wear=rand(2,10)*5;                  // 棚卸減耗損（実額）
-    const returnAmt=Math.random()<0.5?0:rand(1,5)*10;     // 期末近くの仕入返品（未処理）
-    const valuationLoss=Math.random()<0.5?0:rand(1,3)*10; // 商品評価損
-    const sampleAmt=Math.random()<0.5?0:rand(1,5)*10;     // 見本品費（未処理）
+    const returnAmt=Math.random()<0.6?rand(1,5)*10:0;     // 期末近くの仕入返品（未処理）：60%
+    const valuationLoss=rand(1,3)*10;                     // 商品評価損：100%
+    const sampleAmt=Math.random()<0.8?rand(1,5)*10:0;     // 見本品費（未処理）：80%
     if(valuationLoss>=physical)continue;
     const modifiedBook=physical+wear;         // 修正後の帳簿棚卸高
     const book=modifiedBook+returnAmt;        // 与件としての帳簿棚卸高（返品未処理を含む）
