@@ -147,12 +147,16 @@ function genQ(){
     const returnAmt=Math.random()<0.5?rand(1,5)*10:0;           // 仕入返品（未処理）：50%
     const salesReturnCost=Math.random()<0.4?rand(1,5)*10:0;     // 売上返品・原価（未処理）：40%
     if(valuationLoss>=physical)continue;
-    const modifiedBook=physical+wear;
-    const book=modifiedBook+returnAmt;
+    const modifiedBook=physical+wear;                           // 前提A：見本品・返品控除後の帳簿
+    const book=modifiedBook+sampleAmt+returnAmt;                // 与件（未処理の見本品・返品を含む）
     const inv=physical-valuationLoss+salesReturnCost;
     const cogs=openingInv+purchases-sampleAmt-book+valuationLoss-salesReturnCost;
     if(cogs<=0)continue;
     if(inv<=0)continue;
+    // 恒等式アサーション（ロジックエラー検知）
+    console.assert(openingInv+purchases-sampleAmt-book+valuationLoss-salesReturnCost===cogs,'BUG:cogs');
+    console.assert(physical-valuationLoss+salesReturnCost===inv,'BUG:inv');
+    console.assert((book-returnAmt-sampleAmt)-physical===wear,'BUG:wear');
     return{openingInv,purchases,book,physical,returnAmt,valuationLoss,sampleAmt,inv,wear,cogs,salesReturnCost};
   }
   return null;
@@ -237,7 +241,10 @@ function grade(){
   if(g.sampleAmt>0){lines.push(`${i++}. 見本品: (借)見本品費 ${fmt(g.sampleAmt)} / (貸)仕入 ${fmt(g.sampleAmt)}`);}
   lines.push(`${i++}. 期首振替: (借)仕入 ${fmt(g.openingInv)} / (貸)繰越商品 ${fmt(g.openingInv)}`);
   lines.push(`${i++}. 期末振替: (借)繰越商品 ${fmt(g.physical)} / (貸)仕入 ${fmt(g.physical)}`);
-  lines.push(`${i++}. 棚卸減耗損: (借)棚卸減耗損 ${fmt(g.wear)} / (貸)繰越商品 ${fmt(g.wear)}　※修正後帳簿${fmt(modBook)}−実地${fmt(g.physical)}`);
+  const wearNote=g.sampleAmt>0
+    ?`※（修正後帳簿${fmt(modBook)}−見本品${fmt(g.sampleAmt)}）−実地${fmt(g.physical)}`
+    :`※修正後帳簿${fmt(modBook)}−実地${fmt(g.physical)}`;
+  lines.push(`${i++}. 棚卸減耗損: (借)棚卸減耗損 ${fmt(g.wear)} / (貸)繰越商品 ${fmt(g.wear)}　${wearNote}`);
   if(g.valuationLoss>0){lines.push(`${i++}. 商品評価損: (借)仕入 ${fmt(g.valuationLoss)} / (貸)繰越商品 ${fmt(g.valuationLoss)}　※評価損は仕入に含めるため、(借)を仕入で計上`);}
   const invFormula=g.salesReturnCost>0
     ?`実地${fmt(g.physical)} ＋ 返品原価${fmt(g.salesReturnCost)} − 評価損${fmt(g.valuationLoss)}`
@@ -255,6 +262,20 @@ function grade(){
 }
 
 function nextQ(){newQ();}
+
+// セルフテスト：期首420/仕入1470/帳簿605/実地580/評価損10/見本品20 → 繰越商品570,仕入1275,減耗5,見本品費20
+(function selfTest(){
+  const t={openingInv:420,purchases:1470,book:605,physical:580,returnAmt:0,valuationLoss:10,sampleAmt:20,salesReturnCost:0};
+  const inv=t.physical-t.valuationLoss+t.salesReturnCost;
+  const cogs=t.openingInv+t.purchases-t.sampleAmt-t.book+t.valuationLoss-t.salesReturnCost;
+  const wear=(t.book-t.returnAmt-t.sampleAmt)-t.physical;
+  console.assert(inv===570,'selfTest:inv expected 570 got '+inv);
+  console.assert(cogs===1275,'selfTest:cogs expected 1275 got '+cogs);
+  console.assert(wear===5,'selfTest:wear expected 5 got '+wear);
+  console.assert(t.sampleAmt===20,'selfTest:sample');
+  // bookの構成が前提Aと一致するか確認
+  console.assert(t.book===t.physical+wear+t.sampleAmt+t.returnAmt,'selfTest:book construction');
+})();
 
 newQ();
 
