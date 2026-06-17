@@ -130,8 +130,22 @@ function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
 function parseNum(v){
   if(v==null)return 0;
-  let s=String(v).replace(/[,，\s]/g,'').replace(/[－−]/g,'-').replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  let s=String(v).trim()
+    .replace(/[，]/g,',')
+    .replace(/[ \t]/g,'')
+    .replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
   if(s===''||s==='-')return 0;
+  if(s.includes(',')){
+    const parts=s.split(',');
+    // 千区切り判定：先頭が符号付き1〜3桁、以降が全て厳密に3桁
+    const looksThousands=/^-?\d{1,3}$/.test(parts[0])&&parts.slice(1).every(p=>/^\d{3}$/.test(p));
+    if(looksThousands){const n=parseInt(s.replace(/,/g,''),10);return isNaN(n)?0:n;}
+    // コンマ区切りで各値を合算
+    let total=0;
+    for(const p of parts){const n=parseInt(p,10);if(!isNaN(n))total+=n;}
+    return total;
+  }
   const n=parseInt(s,10);
   return isNaN(n)?0:n;
 }
