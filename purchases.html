@@ -45,7 +45,7 @@ button:active{opacity:0.85}
 .ans-grid{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;align-items:center}
 .ans-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
 .ans-grid .ans-cell{display:flex;align-items:center;gap:8px}
-.ans-grid input{width:140px;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.ans-grid input{width:180px;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
 .ans-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 .ans-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 .ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
@@ -161,6 +161,12 @@ function genQ(){
     if(srRnd<0.40){salesReturnType=1;salesReturnCost=rand(1,5)*10;}      // 実地に含まれている
     else if(srRnd<0.80){salesReturnType=2;salesReturnCost=rand(1,5)*10;} // 実地に含まれていない
     const salesReturnAdj=salesReturnType===2?salesReturnCost:0;          // 計算に反映する原価
+    // 調整項目がすべて異なる金額になるよう確認（混同防止）
+    const adjVals=[wear,valuationLoss];
+    if(sampleAmt>0)adjVals.push(sampleAmt);
+    if(returnAmt>0)adjVals.push(returnAmt);
+    if(salesReturnCost>0)adjVals.push(salesReturnCost);
+    if(new Set(adjVals).size<adjVals.length)continue;
     if(valuationLoss>=physical)continue;
     const modifiedBook=physical+wear;                           // 前提A：見本品・返品控除後の帳簿
     const book=modifiedBook+sampleAmt+returnAmt;                // 与件（未処理の見本品・返品を含む）
