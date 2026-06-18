@@ -60,6 +60,14 @@ button:active{opacity:0.85}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+.box-t{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0 4px}
+.box-t th,.box-t td{border:1px solid #ccc;padding:3px 7px}
+.box-t .bt-name{text-align:center;font-weight:600;background:#E8E6DE;font-size:13px;letter-spacing:3px;padding:5px}
+.box-t .bt-side{text-align:center;font-size:11px;color:var(--color-text2);font-weight:600;background:#F4F3EF}
+.box-t .bt-lbl{font-size:12px}
+.box-t .bt-val{text-align:right;white-space:nowrap;min-width:52px;font-size:12px}
+.box-t tr.bt-bold td{font-weight:700}
+.box-t tr.bt-total td{border-top:2px solid #888;font-weight:600;text-align:right;font-size:12px}
 </style>
 </head>
 <body>
@@ -280,8 +288,28 @@ function grade(){
   lines.push(`<b>繰越商品</b> ＝ ${invFormula} ＝ ${fmt(g.inv)}`);
   lines.push(`<b>仕入</b> ＝ ${cogsFormula} ＝ ${fmt(g.cogs)}`);
   lines.push(`<b>棚卸減耗損</b> ＝ ${fmt(g.wear)}　／　<b>見本品費</b> ＝ ${fmt(g.sampleAmt)}`);
+  // 仕入ボックス図
+  const drRows=[[`期首商品`,g.openingInv],[`当期仕入`,g.purchases]];
+  if(g.valuationLoss>0)drRows.push([`商品評価損`,g.valuationLoss]);
+  const crRows=[];
+  if(g.returnAmt>0)crRows.push([`仕入返品`,g.returnAmt]);
+  if(g.sampleAmt>0)crRows.push([`見本品費`,g.sampleAmt]);
+  if(srAdj>0)crRows.push([`売上返品`,srAdj]);
+  crRows.push([`期末商品`,adjBook]);
+  crRows.push([`残高（仕入）`,g.cogs]);
+  const totalDr=drRows.reduce((s,[,v])=>s+v,0);
+  const totalCr=crRows.reduce((s,[,v])=>s+v,0);
+  const nRows=Math.max(drRows.length,crRows.length);
+  let btBody='';
+  for(let r=0;r<nRows;r++){
+    const[dl,dv]=drRows[r]||['',''];
+    const[cl,cv]=crRows[r]||['',''];
+    const isCogs=r===crRows.length-1;
+    btBody+=`<tr${isCogs?' class="bt-bold"':''}><td class="bt-lbl">${dl}</td><td class="bt-val">${dv!==''?fmt(dv):''}</td><td class="bt-lbl">${cl}</td><td class="bt-val">${cv!==''?fmt(cv):''}</td></tr>`;
+  }
+  const boxHtml=`<table class="box-t"><thead><tr><th colspan="4" class="bt-name">仕　入</th></tr><tr><th colspan="2" class="bt-side">借　方</th><th colspan="2" class="bt-side">貸　方</th></tr></thead><tbody>${btBody}<tr class="bt-total"><td colspan="2">${fmt(totalDr)}</td><td colspan="2">${fmt(totalCr)}</td></tr></tbody></table>`;
   const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
-  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
+  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxHtml+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
