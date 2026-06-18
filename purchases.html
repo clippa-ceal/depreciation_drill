@@ -308,8 +308,26 @@ function grade(){
     btBody+=`<tr${isCogs?' class="bt-bold"':''}><td class="bt-lbl">${dl}</td><td class="bt-val">${dv!==''?fmt(dv):''}</td><td class="bt-lbl">${cl}</td><td class="bt-val">${cv!==''?fmt(cv):''}</td></tr>`;
   }
   const boxHtml=`<table class="box-t"><thead><tr><th colspan="4" class="bt-name">仕　入</th></tr><tr><th colspan="2" class="bt-side">借　方</th><th colspan="2" class="bt-side">貸　方</th></tr></thead><tbody>${btBody}<tr class="bt-total"><td colspan="2">${fmt(totalDr)}</td><td colspan="2">${fmt(totalCr)}</td></tr></tbody></table>`;
+  // 繰越商品ボックス図
+  const drRows2=[[`期首残高`,g.openingInv],[`期末商品`,adjBook]];
+  if(srAdj>0)drRows2.push([`売上返品`,srAdj]);
+  const crRows2=[[`仕入(期首)`,g.openingInv]];
+  if(g.wear>0)crRows2.push([`棚卸減耗損`,g.wear]);
+  if(g.valuationLoss>0)crRows2.push([`商品評価損`,g.valuationLoss]);
+  crRows2.push([`次期繰越`,g.inv]);
+  const totalDr2=drRows2.reduce((s,[,v])=>s+v,0);
+  const totalCr2=crRows2.reduce((s,[,v])=>s+v,0);
+  const nRows2=Math.max(drRows2.length,crRows2.length);
+  let btBody2='';
+  for(let r=0;r<nRows2;r++){
+    const[dl,dv]=drRows2[r]||['',''];
+    const[cl,cv]=crRows2[r]||['',''];
+    const isInv=r===crRows2.length-1;
+    btBody2+=`<tr${isInv?' class="bt-bold"':''}><td class="bt-lbl">${dl}</td><td class="bt-val">${dv!==''?fmt(dv):''}</td><td class="bt-lbl">${cl}</td><td class="bt-val">${cv!==''?fmt(cv):''}</td></tr>`;
+  }
+  const boxHtml2=`<table class="box-t"><thead><tr><th colspan="4" class="bt-name">繰越商品</th></tr><tr><th colspan="2" class="bt-side">借　方</th><th colspan="2" class="bt-side">貸　方</th></tr></thead><tbody>${btBody2}<tr class="bt-total"><td colspan="2">${fmt(totalDr2)}</td><td colspan="2">${fmt(totalCr2)}</td></tr></tbody></table>`;
   const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
-  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxHtml+recon;
+  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxHtml+boxHtml2+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
