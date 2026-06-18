@@ -185,8 +185,8 @@ function renderGiven(g){
   h+=`<div class="g-row"><span class="g-key">期末実地棚卸高</span><span class="g-val">${fmt(g.physical)}</span></div>`;
   const adj=[];
   if(g.returnAmt>0)adj.push(`期末近くに ${fmt(g.returnAmt)} を仕入先へ返品したが未処理`);
-  if(g.salesReturnType===1)adj.push(`得意先から原価 ${fmt(g.salesReturnCost)} の商品が返品されたが未処理（期末実地棚卸高に含まれている）`);
-  if(g.salesReturnType===2)adj.push(`得意先から原価 ${fmt(g.salesReturnCost)} の商品が返品されたが未着（期末実地棚卸高に含まれていない）`);
+  if(g.salesReturnType===1)adj.push(`得意先から原価 ${fmt(g.salesReturnCost)} の商品が返品されたが未処理`);
+  if(g.salesReturnType===2)adj.push(`得意先から原価 ${fmt(g.salesReturnCost)} の商品が返品されたが未着`);
   if(g.valuationLoss>0)adj.push(`商品の一部に評価損 ${fmt(g.valuationLoss)} あり`);
   if(g.sampleAmt>0)adj.push(`見本品 ${fmt(g.sampleAmt)} を支出したが未処理`);
   h+=`<div class="g-head">決算整理事項</div>`;
