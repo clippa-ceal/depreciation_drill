@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(node --check /tmp/pension_check.js)",
+      "Bash(rm /tmp/pension_check.js)",
+      "Bash(node --check ./_check.js)",
+      "Bash(rm ./_check.js)",
+      "Bash(node _check.js)",
+      "Bash(node _check2.js)"
+    ]
+  }
+}
