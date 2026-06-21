@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>リースドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:180px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.ans-section{font-size:13px;font-weight:600;color:var(--color-info);margin:10px 0 6px}
+.ans-grid{display:grid;grid-template-columns:140px 1fr;gap:10px 12px;align-items:center}
+.ans-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
+.ans-grid .ans-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ans-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.ans-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.ans-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>リースドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html" class="nav-on">リース</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div class="label">与件（単位：千円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">決算整理後の各勘定残高</div>
+    <div class="ans-section">第1期末</div>
+    <div class="ans-grid">
+      <span class="ans-label">リース資産</span>
+      <div class="ans-cell"><input type="text" id="a1-asset" autocomplete="off"><span class="ans-ng-msg" id="ng1-asset"></span></div>
+      <span class="ans-label">減価償却累計額</span>
+      <div class="ans-cell"><input type="text" id="a1-depr" autocomplete="off"><span class="ans-ng-msg" id="ng1-depr"></span></div>
+      <span class="ans-label">リース債務</span>
+      <div class="ans-cell"><input type="text" id="a1-liab" autocomplete="off"><span class="ans-ng-msg" id="ng1-liab"></span></div>
+      <span class="ans-label">支払利息</span>
+      <div class="ans-cell"><input type="text" id="a1-int" autocomplete="off"><span class="ans-ng-msg" id="ng1-int"></span></div>
+    </div>
+    <div class="ans-section" style="margin-top:14px">第2期末</div>
+    <div class="ans-grid">
+      <span class="ans-label">リース資産</span>
+      <div class="ans-cell"><input type="text" id="a2-asset" autocomplete="off"><span class="ans-ng-msg" id="ng2-asset"></span></div>
+      <span class="ans-label">減価償却累計額</span>
+      <div class="ans-cell"><input type="text" id="a2-depr" autocomplete="off"><span class="ans-ng-msg" id="ng2-depr"></span></div>
+      <span class="ans-label">リース債務</span>
+      <div class="ans-cell"><input type="text" id="a2-liab" autocomplete="off"><span class="ans-ng-msg" id="ng2-liab"></span></div>
+      <span class="ans-label">支払利息</span>
+      <div class="ans-cell"><input type="text" id="a2-int" autocomplete="off"><span class="ans-ng-msg" id="ng2-int"></span></div>
+    </div>
+    <div class="hint">所有権移転→残存10%・経済的耐用年数で償却。移転外→残存0円・リース期間で償却。<br>利子相当額＝（リース料総額−計上額）÷リース期間（定額法）。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,g:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim()
+    .replace(/[,，]/g,'')
+    .replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+')
+    .replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  if(s.includes('+')||s.replace(/^-/,'').includes('-')){
+    const tokens=s.match(/[+-]?\d+/g)||[];
+    return tokens.reduce((a,t)=>a+parseInt(t,10),0);
+  }
+  const n=parseInt(s,10);
+  return isNaN(n)?0:n;
+}
+
+function genQ(){
+  for(let t=0;t<500;t++){
+    const isTransfer=Math.random()<0.5;
+    const leaseTerm=rand(3,7);
+    const economicLife=isTransfer?rand(leaseTerm,leaseTerm+4):rand(leaseTerm+1,leaseTerm+5);
+
+    // 計上額はleaseTerm×100の倍数にすることでannualPaymentが整数になる
+    const assetVal=rand(2,20)*leaseTerm*100;
+    if(assetVal<500||assetVal>8000)continue;
+
+    // 年間利子相当額（定額法）：切りのいい数字
+    const annualInterest=rand(1,8)*10;
+    const annualPayment=assetVal/leaseTerm+annualInterest;
+
+    // 残存価額
+    const residual=isTransfer?assetVal*0.1:0;
+    if(residual!==Math.floor(residual))continue;
+
+    // 償却期間と年間償却費
+    const deprPeriod=isTransfer?economicLife:leaseTerm;
+    const depreciable=assetVal-residual;
+    if(depreciable%deprPeriod!==0)continue;
+    const annualDepr=depreciable/deprPeriod;
+
+    const annualPrincipal=assetVal/leaseTerm;
+    if(annualPrincipal!==Math.floor(annualPrincipal))continue;
+
+    // 第2期末でもリース債務が残るか確認
+    if(assetVal-annualPrincipal*2<=0)continue;
+
+    return{
+      isTransfer,leaseTerm,economicLife,assetVal,annualPayment,
+      annualInterest,annualPrincipal,annualDepr,residual,deprPeriod,
+      y1:{
+        asset:assetVal,
+        accumDepr:annualDepr,
+        liability:assetVal-annualPrincipal,
+        interest:annualInterest,
+      },
+      y2:{
+        asset:assetVal,
+        accumDepr:annualDepr*2,
+        liability:assetVal-annualPrincipal*2,
+        interest:annualInterest,
+      },
+    };
+  }
+  return null;
+}
+
+function renderGiven(g){
+  let h='';
+  const typeLabel=g.isTransfer?'所有権移転ファイナンスリース':'所有権移転外ファイナンスリース';
+  h+=`<div class="g-row"><span class="g-key">取引の種類</span><span class="g-val" style="font-size:13px">${typeLabel}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">リース開始</span><span class="g-val">期首</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">リース資産計上額</span><span class="g-val">${fmt(g.assetVal)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">年間リース料（期末払）</span><span class="g-val">${fmt(g.annualPayment)}</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">リース期間</span><span class="g-val">${g.leaseTerm}年</span></div>`;
+  h+=`<div class="g-row"><span class="g-key">経済的耐用年数</span><span class="g-val">${g.economicLife}年</span></div>`;
+  h+=`<div class="g-head">条件</div>`;
+  h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・減価償却方法：定額法</span></div>`;
+  h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・利子相当額の配分：定額法</span></div>`;
+  h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・残存価額：取得原価の10%（所有権移転）／ 0円（移転外）</span></div>`;
+  document.getElementById('given-area').innerHTML=h;
+}
+
+function mark(id,ok){
+  const el=document.getElementById(id);
+  el.classList.remove('cell-ok','cell-ng');
+  el.classList.add(ok?'cell-ok':'cell-ng');
+}
+
+function newQ(){
+  const g=genQ();
+  if(!g)return;
+  STATE.g=g;STATE.graded=false;STATE.startTime=Date.now();
+  renderGiven(g);
+  const ids=['a1-asset','a1-depr','a1-liab','a1-int','a2-asset','a2-depr','a2-liab','a2-int'];
+  const ngIds=['ng1-asset','ng1-depr','ng1-liab','ng1-int','ng2-asset','ng2-depr','ng2-liab','ng2-int'];
+  for(const id of ids){const el=document.getElementById(id);el.value='';el.classList.remove('cell-ok','cell-ng');}
+  for(const id of ngIds){const el=document.getElementById(id);el.style.display='none';el.textContent='';}
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function grade(){
+  if(!STATE.g||STATE.graded)return;
+  const g=STATE.g;
+  const fields=[
+    ['a1-asset','ng1-asset',g.y1.asset],
+    ['a1-depr','ng1-depr',g.y1.accumDepr],
+    ['a1-liab','ng1-liab',g.y1.liability],
+    ['a1-int','ng1-int',g.y1.interest],
+    ['a2-asset','ng2-asset',g.y2.asset],
+    ['a2-depr','ng2-depr',g.y2.accumDepr],
+    ['a2-liab','ng2-liab',g.y2.liability],
+    ['a2-int','ng2-int',g.y2.interest],
+  ];
+  let ok=0;
+  for(const[id,ngId,exp]of fields){
+    const val=parseNum(document.getElementById(id).value);
+    const correct=val===exp;
+    if(correct)ok++;
+    mark(id,correct);
+    const ng=document.getElementById(ngId);
+    if(!correct){ng.textContent='正:'+fmt(exp);ng.style.display='inline';}
+    else{ng.style.display='none';}
+  }
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===fields.length;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+  const totalInterest=g.annualInterest*g.leaseTerm;
+  const totalPayments=g.annualPayment*g.leaseTerm;
+  const lines=[`所要時間：${elapsed}`];
+  lines.push(`<b>種類：</b>${g.isTransfer?'所有権移転':'移転外'} → 残存${g.isTransfer?'取得原価の10%':'0円'}、償却期間 ${g.deprPeriod}年（${g.isTransfer?'経済的耐用年数':'リース期間'}）`);
+  lines.push(`<b>年間償却費：</b>（${fmt(g.assetVal)}−${fmt(g.residual)}）÷ ${g.deprPeriod}年 ＝ ${fmt(g.annualDepr)}`);
+  lines.push(`<b>利子相当額合計：</b>${fmt(g.annualPayment)}×${g.leaseTerm}年 − ${fmt(g.assetVal)} ＝ ${fmt(totalInterest)}`);
+  lines.push(`<b>年間利子（定額法）：</b>${fmt(totalInterest)} ÷ ${g.leaseTerm}年 ＝ ${fmt(g.annualInterest)}`);
+  lines.push(`<b>年間元本返済：</b>${fmt(g.annualPayment)} − ${fmt(g.annualInterest)} ＝ ${fmt(g.annualPrincipal)}`);
+  lines.push('');
+  lines.push('<b>第1期末</b>');
+  lines.push(`　リース資産 ${fmt(g.y1.asset)} ／ 減価償却累計額 ${fmt(g.y1.accumDepr)}`);
+  lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.annualPrincipal)} ＝ ${fmt(g.y1.liability)}`);
+  lines.push(`　支払利息 ${fmt(g.y1.interest)}`);
+  lines.push('<b>第2期末</b>');
+  lines.push(`　リース資産 ${fmt(g.y2.asset)} ／ 減価償却累計額 ${fmt(g.y2.accumDepr)}`);
+  lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.annualPrincipal)}×2 ＝ ${fmt(g.y2.liability)}`);
+  lines.push(`　支払利息 ${fmt(g.y2.interest)}（定額法のため毎期同額）`);
+  const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='%'){
+    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
