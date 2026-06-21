@@ -220,6 +220,11 @@ function genQ(){
     const begConvEquiv=begUnits*begPct/100;
     const endConvEquiv=endUnits*endPct/100;
 
+    // 仕損の負担：始点発生→両者負担（分母から除外）／終点発生→完成品のみ負担（分母に含め完成品が吸収）
+    const compOnly=scrapUnits>0&&scrapPoint==='終点';
+    const scrapMatEq=compOnly?scrapUnits:0;   // 完成品のみ負担のときだけ分母に算入
+    const scrapConvEq=compOnly?scrapUnits:0;  // 終点発生→加工進捗100%
+
     // 当期単位原価（整数）
     const matUC=rand(2,10)*100;            // 200~1000
     const convUC=rand(1,8)*100;            // 100~800
@@ -229,8 +234,8 @@ function genQ(){
 
     if(isAverage){
       // 平均法：(期首+当期) ÷ 当量 = 単位原価 になるよう逆算
-      const totalMatEquiv=completed+endUnits;
-      const totalConvEquiv=completed+endConvEquiv;
+      const totalMatEquiv=completed+scrapMatEq+endUnits;
+      const totalConvEquiv=completed+scrapConvEq+endConvEquiv;
       // 期首は今期と少し異なる単価で
       const mVar=rand(-2,2)*50;
       const cVar=rand(-2,2)*50;
@@ -243,12 +248,12 @@ function genQ(){
       if(currMat<=0||currConv<=0)continue;
       ansEndMat=matUC*endUnits;
       ansEndConv=convUC*endConvEquiv;
-      ansCompMat=matUC*completed;
-      ansCompConv=convUC*completed;
+      ansCompMat=matUC*totalMatEquiv-ansEndMat;   // 完成品のみ負担なら仕損分を吸収
+      ansCompConv=convUC*totalConvEquiv-ansEndConv;
     }else{
       // 先入先出法：当期投入コスト ＝ 当期単位原価 × 当期換算量
-      const matCurrEquiv=(completed-begUnits)+endUnits;   // 材料：始点投入
-      const convCurrEquiv=begUnits*(1-begPct/100)+(completed-begUnits)+endConvEquiv;
+      const matCurrEquiv=(completed-begUnits)+scrapMatEq+endUnits;   // 材料：始点投入
+      const convCurrEquiv=begUnits*(1-begPct/100)+(completed-begUnits)+scrapConvEq+endConvEquiv;
       currMat=matUC*matCurrEquiv;
       currConv=convUC*convCurrEquiv;
       // 期首コストは任意の整数（単位あたり切りのいい数）
@@ -257,7 +262,7 @@ function genQ(){
       if(begConv===0&&begConvEquiv===0)begConv=0;  // begConvEquiv=0のケースは0で問題なし
       ansEndMat=matUC*endUnits;
       ansEndConv=convUC*endConvEquiv;
-      ansCompMat=begMat+currMat-ansEndMat;
+      ansCompMat=begMat+currMat-ansEndMat;   // 完成品のみ負担なら仕損分を吸収
       ansCompConv=begConv+currConv-ansEndConv;
       if(ansCompMat<=0||ansCompConv<=0)continue;
     }
@@ -271,7 +276,7 @@ function genQ(){
     return{isAverage,begUnits,begPct,endUnits,endPct,completed,started,
            begMat,begConv,currMat,currConv,
            ansCompMat,ansCompConv,ansEndMat,ansEndConv,
-           matUC,convUC,scrapUnits,scrapPoint};
+           matUC,convUC,scrapUnits,scrapPoint,compOnly,scrapMatEq,scrapConvEq};
   }
   return null;
 }
@@ -292,7 +297,7 @@ function renderGiven(g){
     ${g.scrapUnits>0?`<tr><td class="g-key">　正常仕損品</td><td class="g-val">${g.scrapUnits}個（${g.scrapPoint}発生）</td></tr>`:''}
     <tr><td class="g-key">　期末仕掛品</td><td class="g-val">${g.endUnits}個（進捗度${g.endPct}%）</td></tr>
   </table>
-  ${g.scrapUnits>0?'<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理すること</div>':''}`;
+  ${g.scrapUnits>0?`<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理（${g.compOnly?'終点発生 → 完成品のみ負担':'始点発生 → 両者負担'}）</div>`:''}`;
 
   h+=`<div class="qty-box">
     <div class="qty-col">
@@ -365,46 +370,48 @@ function grade(){
 
   const begConvEquiv=g.begUnits*g.begPct/100;
   const endConvEquiv=g.endUnits*g.endPct/100;
+  const sMat=g.scrapMatEq, sConv=g.scrapConvEq;   // 完成品のみ負担のとき>0
   const lines=[`所要時間：${elapsed}`];
 
-  if(g.isAverage){
-    const totalMatEquiv=g.completed+g.endUnits;
-    const totalConvEquiv=g.completed+endConvEquiv;
-    lines.push('<b>平均法</b>');
-    if(g.scrapUnits>0){
-      const convExcl=g.scrapPoint==='終点'?`${g.scrapUnits}個当量`:`0個当量（始点発生のため加工費換算量0）`;
-      lines.push(`<b>【正常仕損 ─ 度外視法】</b> 仕損${g.scrapUnits}個（材料）・${convExcl}（加工費）を分母から除外`);
+  // 仕損の負担説明（共通）
+  if(g.scrapUnits>0){
+    if(g.compOnly){
+      lines.push(`<b>【正常仕損 ─ 度外視法・完成品のみ負担】</b> 終点発生 → 仕損を分母に含めて単価を計算し、期末は単価×換算量、完成品が残り（仕損コスト）を吸収`);
+    }else{
+      lines.push(`<b>【正常仕損 ─ 度外視法・両者負担】</b> 始点発生 → 仕損数量を分母から除外（単価が上がり、完成品・期末仕掛品が按分負担）`);
     }
-    lines.push(`<b>【当量計算${g.scrapUnits>0?'（仕損除外後）':''}】</b>`);
-    lines.push(`　材料費：完成${g.completed}＋期末${g.endUnits}×100% ＝ ${totalMatEquiv}個`);
-    lines.push(`　加工費：完成${g.completed}＋期末${g.endUnits}×${g.endPct}% ＝ ${totalConvEquiv}個`);
+  }
+
+  if(g.isAverage){
+    const totalMatEquiv=g.completed+sMat+g.endUnits;
+    const totalConvEquiv=g.completed+sConv+endConvEquiv;
+    lines.push('<b>平均法</b>');
+    lines.push(`<b>【当量計算${g.scrapUnits>0?(g.compOnly?'（仕損を分母に算入）':'（仕損を分母から除外）'):''}】</b>`);
+    lines.push(`　材料費：完成${g.completed}${sMat?`＋仕損${g.scrapUnits}`:''}＋期末${g.endUnits} ＝ ${totalMatEquiv}個`);
+    lines.push(`　加工費：完成${g.completed}${sConv?`＋仕損${g.scrapUnits}`:''}＋期末${endConvEquiv}（${g.endUnits}×${g.endPct}%）＝ ${totalConvEquiv}個`);
     lines.push(`<b>【単位原価 ＝（期首＋当期）÷ 当量】</b>`);
     lines.push(`　材料費：（${fmt(g.begMat)}＋${fmt(g.currMat)}）÷ ${totalMatEquiv} ＝ ${fmt(g.matUC)}`);
     lines.push(`　加工費：（${fmt(g.begConv)}＋${fmt(g.currConv)}）÷ ${totalConvEquiv} ＝ ${fmt(g.convUC)}`);
-    lines.push(`<b>【完成品原価】</b>`);
-    lines.push(`　材料費：${fmt(g.matUC)} × ${g.completed}個 ＝ ${fmt(g.ansCompMat)}`);
-    lines.push(`　加工費：${fmt(g.convUC)} × ${g.completed}個 ＝ ${fmt(g.ansCompConv)}`);
+    lines.push(`<b>【完成品原価${sMat?'（仕損コストを吸収）':''}】</b>`);
+    lines.push(`　材料費：${fmt(g.matUC)} × ${g.completed+sMat}個${sMat?`（完成${g.completed}＋仕損${g.scrapUnits}）`:''} ＝ ${fmt(g.ansCompMat)}`);
+    lines.push(`　加工費：${fmt(g.convUC)} × ${g.completed+sConv}個${sConv?`（完成${g.completed}＋仕損${g.scrapUnits}）`:''} ＝ ${fmt(g.ansCompConv)}`);
     lines.push(`<b>【期末仕掛品原価】</b>`);
     lines.push(`　材料費：${fmt(g.matUC)} × ${g.endUnits}個 ＝ ${fmt(g.ansEndMat)}`);
     lines.push(`　加工費：${fmt(g.convUC)} × ${endConvEquiv}個当量（${g.endUnits}×${g.endPct}%）＝ ${fmt(g.ansEndConv)}`);
   }else{
-    const matCurrEquiv=(g.completed-g.begUnits)+g.endUnits;
+    const matCurrEquiv=(g.completed-g.begUnits)+sMat+g.endUnits;
     const begRemain=g.begUnits*(100-g.begPct)/100;
-    const convCurrEquiv=begRemain+(g.completed-g.begUnits)+endConvEquiv;
+    const convCurrEquiv=begRemain+(g.completed-g.begUnits)+sConv+endConvEquiv;
     lines.push('<b>先入先出法（当期投入コストのみで単位原価を計算）</b>');
-    if(g.scrapUnits>0){
-      const convExcl=g.scrapPoint==='終点'?`${g.scrapUnits}個当量`:`0個当量（始点発生のため加工費換算量0）`;
-      lines.push(`<b>【正常仕損 ─ 度外視法】</b> 仕損${g.scrapUnits}個（材料）・${convExcl}（加工費）を分母から除外`);
-    }
-    lines.push(`<b>【当量計算（当期投入分）】</b>`);
-    lines.push(`　材料費：新完成(${g.completed}−${g.begUnits})＋期末${g.endUnits} ＝ ${matCurrEquiv}個`);
-    lines.push(`　加工費：期首完成分${begRemain}＋新完成${g.completed-g.begUnits}＋期末${endConvEquiv} ＝ ${convCurrEquiv}個`);
+    lines.push(`<b>【当量計算（当期投入分）${g.scrapUnits>0?(g.compOnly?'─仕損を算入':'─仕損を除外'):''}】</b>`);
+    lines.push(`　材料費：新完成(${g.completed}−${g.begUnits})${sMat?`＋仕損${g.scrapUnits}`:''}＋期末${g.endUnits} ＝ ${matCurrEquiv}個`);
+    lines.push(`　加工費：期首完成分${begRemain}＋新完成${g.completed-g.begUnits}${sConv?`＋仕損${g.scrapUnits}`:''}＋期末${endConvEquiv} ＝ ${convCurrEquiv}個`);
     lines.push(`<b>【単位原価 ＝ 当期投入 ÷ 当量】</b>`);
     lines.push(`　材料費：${fmt(g.currMat)} ÷ ${matCurrEquiv} ＝ ${fmt(g.matUC)}`);
     lines.push(`　加工費：${fmt(g.currConv)} ÷ ${convCurrEquiv} ＝ ${fmt(g.convUC)}`);
-    lines.push(`<b>【完成品原価】</b>`);
-    lines.push(`　材料費：期首${fmt(g.begMat)} ＋ ${fmt(g.matUC)}×${g.completed-g.begUnits}個 ＝ ${fmt(g.ansCompMat)}`);
-    lines.push(`　加工費：期首${fmt(g.begConv)} ＋ ${fmt(g.convUC)}×${begRemain}（期首完成）＋ ${fmt(g.convUC)}×${g.completed-g.begUnits} ＝ ${fmt(g.ansCompConv)}`);
+    lines.push(`<b>【完成品原価${sMat?'（仕損コストを吸収）':''}】</b>`);
+    lines.push(`　材料費：期首${fmt(g.begMat)} ＋ ${fmt(g.matUC)}×${(g.completed-g.begUnits)+sMat}個${sMat?`（新完成${g.completed-g.begUnits}＋仕損${g.scrapUnits}）`:''} ＝ ${fmt(g.ansCompMat)}`);
+    lines.push(`　加工費：期首${fmt(g.begConv)} ＋ ${fmt(g.convUC)}×${begRemain}（期首完成）＋ ${fmt(g.convUC)}×${g.completed-g.begUnits}（新完成）${sConv?`＋ ${fmt(g.convUC)}×${g.scrapUnits}（仕損）`:''} ＝ ${fmt(g.ansCompConv)}`);
     lines.push(`<b>【期末仕掛品原価】</b>`);
     lines.push(`　材料費：${fmt(g.matUC)} × ${g.endUnits}個 ＝ ${fmt(g.ansEndMat)}`);
     lines.push(`　加工費：${fmt(g.convUC)} × ${endConvEquiv}個当量 ＝ ${fmt(g.ansEndConv)}`);
