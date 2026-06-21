@@ -188,6 +188,22 @@ let STATE={total:0,perfect:0,g:null,graded:false,startTime:0};
 function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+// 換算量ボックス（解答時に材料・加工で別々に表示）
+function qtyBox(title,beg,inp,comp,scrap,end,showScrap){
+  return `<div class="label" style="margin:8px 0 2px">${title}</div>
+  <div class="qty-box">
+    <div class="qty-col">
+      <div><span class="qk">期首 </span><span class="qv">${fmt(beg)}</span></div>
+      <div><span class="qk">投入 </span><span class="qv">${fmt(inp)}</span></div>
+    </div>
+    <div class="qty-arrow">→</div>
+    <div class="qty-col">
+      <div><span class="qk">完成 </span><span class="qv">${fmt(comp)}</span></div>
+      ${showScrap?`<div><span class="qk">仕損 </span><span class="qv">${fmt(scrap)}</span></div>`:''}
+      <div><span class="qk">期末 </span><span class="qv">${fmt(end)}</span></div>
+    </div>
+  </div>`;
+}
 function parseNum(v){
   if(v==null)return 0;
   let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
@@ -298,19 +314,6 @@ function renderGiven(g){
     <tr><td class="g-key">　期末仕掛品</td><td class="g-val">${g.endUnits}個（進捗度${g.endPct}%）</td></tr>
   </table>
   ${g.scrapUnits>0?`<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理（${g.compOnly?'終点発生 → 完成品のみ負担':'始点発生 → 両者負担'}）</div>`:''}`;
-
-  h+=`<div class="qty-box">
-    <div class="qty-col">
-      <div><span class="qk">期首 </span><span class="qv">${g.begUnits}個</span></div>
-      <div><span class="qk">投入 </span><span class="qv">${g.started}個</span></div>
-    </div>
-    <div class="qty-arrow">→</div>
-    <div class="qty-col">
-      <div><span class="qk">完成 </span><span class="qv">${g.completed}個</span></div>
-      ${g.scrapUnits>0?`<div><span class="qk">仕損 </span><span class="qv">${g.scrapUnits}個</span></div>`:''}
-      <div><span class="qk">期末 </span><span class="qv">${g.endUnits}個</span></div>
-    </div>
-  </div>`;
   document.getElementById('given-area').innerHTML=h;
   // T勘定の左側を埋める
   const fv=(id,v)=>{document.getElementById(id).textContent=fmt(v);};
@@ -416,9 +419,17 @@ function grade(){
     lines.push(`　材料費：${fmt(g.matUC)} × ${g.endUnits}個 ＝ ${fmt(g.ansEndMat)}`);
     lines.push(`　加工費：${fmt(g.convUC)} × ${endConvEquiv}個当量 ＝ ${fmt(g.ansEndConv)}`);
   }
+  // 換算量ボックス（材料費・加工費を別々に表示。投入＝産出合計−期首）
+  const matInp=(g.completed+sMat+g.endUnits)-g.begUnits;
+  const convInp=(g.completed+sConv+endConvEquiv)-begConvEquiv;
+  const boxes=`<div class="card" style="margin-bottom:8px">
+    <div class="label" style="margin-bottom:0">換算量ボックス</div>
+    ${qtyBox('材料費（始点投入 → 進捗100%）',g.begUnits,matInp,g.completed,sMat,g.endUnits,sMat>0)}
+    ${qtyBox('加工費（進捗度で換算）',begConvEquiv,convInp,g.completed,sConv,endConvEquiv,sConv>0)}
+  </div>`;
   const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
   document.getElementById('result-area').innerHTML=
-    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxes+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
