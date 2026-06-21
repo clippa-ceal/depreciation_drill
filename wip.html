@@ -211,7 +211,9 @@ function genQ(){
     const endPct=rand(1,4)*20;
     const completed=rand(4,15)*10;         // 40~150
     if(completed<=begUnits)continue;
-    const started=completed+endUnits-begUnits;
+    const scrapUnits=Math.random()<0.5?rand(1,2)*10:0;
+    const scrapPoint=Math.random()<0.5?'始点':'終点';
+    const started=completed+scrapUnits+endUnits-begUnits;
     if(started<=0)continue;
 
     // 換算量（整数保証）
@@ -269,7 +271,7 @@ function genQ(){
     return{isAverage,begUnits,begPct,endUnits,endPct,completed,started,
            begMat,begConv,currMat,currConv,
            ansCompMat,ansCompConv,ansEndMat,ansEndConv,
-           matUC,convUC};
+           matUC,convUC,scrapUnits,scrapPoint};
   }
   return null;
 }
@@ -287,8 +289,11 @@ function renderGiven(g){
     <tr><td class="g-key">　加工費</td><td class="g-val">${fmt(g.currConv)}</td></tr>
     <tr><td colspan="2" class="g-sep">完成品・期末仕掛品</td></tr>
     <tr><td class="g-key">　完成品数量</td><td class="g-val">${g.completed}個</td></tr>
+    ${g.scrapUnits>0?`<tr><td class="g-key">　正常仕損品</td><td class="g-val">${g.scrapUnits}個（${g.scrapPoint}発生）</td></tr>`:''}
     <tr><td class="g-key">　期末仕掛品</td><td class="g-val">${g.endUnits}個（進捗度${g.endPct}%）</td></tr>
-  </table>`;
+  </table>
+  ${g.scrapUnits>0?'<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理すること</div>':''}`;
+
   h+=`<div class="qty-box">
     <div class="qty-col">
       <div><span class="qk">期首 </span><span class="qv">${g.begUnits}個</span></div>
@@ -297,6 +302,7 @@ function renderGiven(g){
     <div class="qty-arrow">→</div>
     <div class="qty-col">
       <div><span class="qk">完成 </span><span class="qv">${g.completed}個</span></div>
+      ${g.scrapUnits>0?`<div><span class="qk">仕損 </span><span class="qv">${g.scrapUnits}個</span></div>`:''}
       <div><span class="qk">期末 </span><span class="qv">${g.endUnits}個</span></div>
     </div>
   </div>`;
@@ -365,7 +371,11 @@ function grade(){
     const totalMatEquiv=g.completed+g.endUnits;
     const totalConvEquiv=g.completed+endConvEquiv;
     lines.push('<b>平均法</b>');
-    lines.push(`<b>【当量計算】</b>`);
+    if(g.scrapUnits>0){
+      const convExcl=g.scrapPoint==='終点'?`${g.scrapUnits}個当量`:`0個当量（始点発生のため加工費換算量0）`;
+      lines.push(`<b>【正常仕損 ─ 度外視法】</b> 仕損${g.scrapUnits}個（材料）・${convExcl}（加工費）を分母から除外`);
+    }
+    lines.push(`<b>【当量計算${g.scrapUnits>0?'（仕損除外後）':''}】</b>`);
     lines.push(`　材料費：完成${g.completed}＋期末${g.endUnits}×100% ＝ ${totalMatEquiv}個`);
     lines.push(`　加工費：完成${g.completed}＋期末${g.endUnits}×${g.endPct}% ＝ ${totalConvEquiv}個`);
     lines.push(`<b>【単位原価 ＝（期首＋当期）÷ 当量】</b>`);
@@ -382,6 +392,10 @@ function grade(){
     const begRemain=g.begUnits*(100-g.begPct)/100;
     const convCurrEquiv=begRemain+(g.completed-g.begUnits)+endConvEquiv;
     lines.push('<b>先入先出法（当期投入コストのみで単位原価を計算）</b>');
+    if(g.scrapUnits>0){
+      const convExcl=g.scrapPoint==='終点'?`${g.scrapUnits}個当量`:`0個当量（始点発生のため加工費換算量0）`;
+      lines.push(`<b>【正常仕損 ─ 度外視法】</b> 仕損${g.scrapUnits}個（材料）・${convExcl}（加工費）を分母から除外`);
+    }
     lines.push(`<b>【当量計算（当期投入分）】</b>`);
     lines.push(`　材料費：新完成(${g.completed}−${g.begUnits})＋期末${g.endUnits} ＝ ${matCurrEquiv}個`);
     lines.push(`　加工費：期首完成分${begRemain}＋新完成${g.completed-g.begUnits}＋期末${endConvEquiv} ＝ ${convCurrEquiv}個`);
