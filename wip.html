@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>仕掛品ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;--color-card:#FFFFFF;--color-border:#E5E3DC;--color-border2:#D8D5CC;
+  --color-text:#1A1A18;--color-text2:#6B6B64;--color-info:#185FA5;--color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;--radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:6px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+/* 与件テーブル */
+.g-table{width:100%;border-collapse:collapse;font-size:13px}
+.g-table td{padding:4px 6px;vertical-align:top}
+.g-table .g-key{color:var(--color-text2);white-space:nowrap;width:1%;padding-right:12px}
+.g-table .g-val{font-weight:600}
+.g-table .g-sep{padding:6px 0 2px;font-size:12px;font-weight:600;color:var(--color-info);border-top:0.5px solid var(--color-border);margin-top:4px}
+/* 数量ボックス */
+.qty-box{display:flex;align-items:center;gap:6px;background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;margin:8px 0 0;font-size:12px}
+.qty-col{flex:1;line-height:1.8}
+.qty-col .qk{color:var(--color-text2)}
+.qty-col .qv{font-weight:600;font-size:13px}
+.qty-arrow{font-size:20px;color:var(--color-border2)}
+/* T勘定テーブル */
+.t-wrap{overflow-x:auto}
+table.t-acct{width:100%;border-collapse:collapse;font-size:13px;min-width:260px}
+table.t-acct th,table.t-acct td{border:1px solid #ccc;padding:5px 8px}
+table.t-acct .t-name{text-align:center;font-weight:600;background:#E8E6DE;font-size:13px;letter-spacing:2px;padding:6px}
+table.t-acct .t-side{text-align:center;font-size:11px;color:var(--color-text2);font-weight:600;background:#F4F3EF;padding:4px}
+table.t-acct .t-lbl{color:var(--color-text2);white-space:nowrap;width:38%}
+table.t-acct .t-val{text-align:right;white-space:nowrap;font-weight:500}
+table.t-acct .t-input{padding:3px 5px;width:38%}
+table.t-acct .t-input input{width:100%;font-size:13px;padding:5px 7px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card)}
+table.t-acct .t-input input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.t-acct .t-input input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.t-ng{font-size:10px;color:#A32D2D;font-weight:600;display:none;margin-top:2px;white-space:nowrap}
+table.t-acct tr.t-total td{border-top:2px solid #888;font-weight:600;text-align:right;font-size:12px;background:#F9F8F6}
+table.t-acct tr.t-total td.t-total-right{color:var(--color-info)}
+/* 結果 */
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+/* 電卓 */
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>仕掛品ドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="wip.html" class="nav-on">仕掛品</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div class="label">与件（単位：円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">仕掛品 ─ 材料費</div>
+    <div class="t-wrap">
+      <table class="t-acct">
+        <thead>
+          <tr><th colspan="4" class="t-name">材　料　費</th></tr>
+          <tr><th colspan="2" class="t-side">借　方</th><th colspan="2" class="t-side">貸　方</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-lbl">期首仕掛品</td>
+            <td class="t-val" id="gv-beg-mat"></td>
+            <td class="t-lbl">完成品</td>
+            <td class="t-input"><input type="text" id="a-comp-mat" autocomplete="off"><div class="t-ng" id="ng-comp-mat"></div></td>
+          </tr>
+          <tr>
+            <td class="t-lbl">当期投入</td>
+            <td class="t-val" id="gv-curr-mat"></td>
+            <td class="t-lbl">期末仕掛品</td>
+            <td class="t-input"><input type="text" id="a-end-mat" autocomplete="off"><div class="t-ng" id="ng-end-mat"></div></td>
+          </tr>
+          <tr class="t-total">
+            <td colspan="2" id="tot-left-mat"></td>
+            <td colspan="2" class="t-total-right" id="tot-right-mat">?</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">仕掛品 ─ 加工費</div>
+    <div class="t-wrap">
+      <table class="t-acct">
+        <thead>
+          <tr><th colspan="4" class="t-name">加　工　費</th></tr>
+          <tr><th colspan="2" class="t-side">借　方</th><th colspan="2" class="t-side">貸　方</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-lbl">期首仕掛品</td>
+            <td class="t-val" id="gv-beg-conv"></td>
+            <td class="t-lbl">完成品</td>
+            <td class="t-input"><input type="text" id="a-comp-conv" autocomplete="off"><div class="t-ng" id="ng-comp-conv"></div></td>
+          </tr>
+          <tr>
+            <td class="t-lbl">当期投入</td>
+            <td class="t-val" id="gv-curr-conv"></td>
+            <td class="t-lbl">期末仕掛品</td>
+            <td class="t-input"><input type="text" id="a-end-conv" autocomplete="off"><div class="t-ng" id="ng-end-conv"></div></td>
+          </tr>
+          <tr class="t-total">
+            <td colspan="2" id="tot-left-conv"></td>
+            <td colspan="2" class="t-total-right" id="tot-right-conv">?</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,g:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  if(s.includes('+')||s.replace(/^-/,'').includes('-')){
+    const tokens=s.match(/[+-]?\d+/g)||[];
+    return tokens.reduce((a,t)=>a+parseInt(t,10),0);
+  }
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+
+function genQ(){
+  for(let t=0;t<500;t++){
+    const isAverage=Math.random()<0.5;
+    // 個数：20%刻みの進捗度 × 10の倍数の個数 → 換算量が整数に
+    const begUnits=rand(1,4)*10;           // 10,20,30,40
+    const begPct=rand(1,4)*20;             // 20,40,60,80%
+    const endUnits=rand(1,4)*10;
+    const endPct=rand(1,4)*20;
+    const completed=rand(4,15)*10;         // 40~150
+    if(completed<=begUnits)continue;
+    const started=completed+endUnits-begUnits;
+    if(started<=0)continue;
+
+    // 換算量（整数保証）
+    const begConvEquiv=begUnits*begPct/100;
+    const endConvEquiv=endUnits*endPct/100;
+
+    // 当期単位原価（整数）
+    const matUC=rand(2,10)*100;            // 200~1000
+    const convUC=rand(1,8)*100;            // 100~800
+
+    let begMat,begConv,currMat,currConv;
+    let ansCompMat,ansCompConv,ansEndMat,ansEndConv;
+
+    if(isAverage){
+      // 平均法：(期首+当期) ÷ 当量 = 単位原価 になるよう逆算
+      const totalMatEquiv=completed+endUnits;
+      const totalConvEquiv=completed+endConvEquiv;
+      // 期首は今期と少し異なる単価で
+      const mVar=rand(-2,2)*50;
+      const cVar=rand(-2,2)*50;
+      const begMatUC=matUC+mVar; const begConvUC=convUC+cVar;
+      if(begMatUC<=0||begConvUC<=0)continue;
+      begMat=begMatUC*begUnits;
+      begConv=begConvUC*begConvEquiv;
+      currMat=matUC*totalMatEquiv-begMat;
+      currConv=convUC*totalConvEquiv-begConv;
+      if(currMat<=0||currConv<=0)continue;
+      ansEndMat=matUC*endUnits;
+      ansEndConv=convUC*endConvEquiv;
+      ansCompMat=matUC*completed;
+      ansCompConv=convUC*completed;
+    }else{
+      // 先入先出法：当期投入コスト ＝ 当期単位原価 × 当期換算量
+      const matCurrEquiv=(completed-begUnits)+endUnits;   // 材料：始点投入
+      const convCurrEquiv=begUnits*(1-begPct/100)+(completed-begUnits)+endConvEquiv;
+      currMat=matUC*matCurrEquiv;
+      currConv=convUC*convCurrEquiv;
+      // 期首コストは任意の整数（単位あたり切りのいい数）
+      begMat=rand(2,8)*begUnits*100;
+      begConv=rand(1,6)*begConvEquiv*100;
+      if(begConv===0&&begConvEquiv===0)begConv=0;  // begConvEquiv=0のケースは0で問題なし
+      ansEndMat=matUC*endUnits;
+      ansEndConv=convUC*endConvEquiv;
+      ansCompMat=begMat+currMat-ansEndMat;
+      ansCompConv=begConv+currConv-ansEndConv;
+      if(ansCompMat<=0||ansCompConv<=0)continue;
+    }
+
+    // 整数検証
+    for(const v of[begMat,begConv,currMat,currConv,ansCompMat,ansCompConv,ansEndMat,ansEndConv]){
+      if(v!==Math.floor(v)){begMat=-1;break;}
+    }
+    if(begMat<0)continue;
+
+    return{isAverage,begUnits,begPct,endUnits,endPct,completed,started,
+           begMat,begConv,currMat,currConv,
+           ansCompMat,ansCompConv,ansEndMat,ansEndConv,
+           matUC,convUC};
+  }
+  return null;
+}
+
+function renderGiven(g){
+  const method=g.isAverage?'平均法':'先入先出法';
+  let h=`<table class="g-table">
+    <tr><td class="g-key">計算方法</td><td class="g-val">${method}</td></tr>
+    <tr><td colspan="2" class="g-sep">期首仕掛品</td></tr>
+    <tr><td class="g-key">　数量</td><td class="g-val">${g.begUnits}個（進捗度${g.begPct}%）</td></tr>
+    <tr><td class="g-key">　材料費</td><td class="g-val">${fmt(g.begMat)}</td></tr>
+    <tr><td class="g-key">　加工費</td><td class="g-val">${fmt(g.begConv)}</td></tr>
+    <tr><td colspan="2" class="g-sep">当期投入</td></tr>
+    <tr><td class="g-key">　材料費</td><td class="g-val">${fmt(g.currMat)}</td></tr>
+    <tr><td class="g-key">　加工費</td><td class="g-val">${fmt(g.currConv)}</td></tr>
+    <tr><td colspan="2" class="g-sep">完成品・期末仕掛品</td></tr>
+    <tr><td class="g-key">　完成品数量</td><td class="g-val">${g.completed}個</td></tr>
+    <tr><td class="g-key">　期末仕掛品</td><td class="g-val">${g.endUnits}個（進捗度${g.endPct}%）</td></tr>
+  </table>`;
+  h+=`<div class="qty-box">
+    <div class="qty-col">
+      <div><span class="qk">期首 </span><span class="qv">${g.begUnits}個</span></div>
+      <div><span class="qk">投入 </span><span class="qv">${g.started}個</span></div>
+    </div>
+    <div class="qty-arrow">→</div>
+    <div class="qty-col">
+      <div><span class="qk">完成 </span><span class="qv">${g.completed}個</span></div>
+      <div><span class="qk">期末 </span><span class="qv">${g.endUnits}個</span></div>
+    </div>
+  </div>`;
+  document.getElementById('given-area').innerHTML=h;
+  // T勘定の左側を埋める
+  const fv=(id,v)=>{document.getElementById(id).textContent=fmt(v);};
+  fv('gv-beg-mat',g.begMat);fv('gv-curr-mat',g.currMat);
+  fv('gv-beg-conv',g.begConv);fv('gv-curr-conv',g.currConv);
+  fv('tot-left-mat',g.begMat+g.currMat);
+  fv('tot-left-conv',g.begConv+g.currConv);
+}
+
+function newQ(){
+  const g=genQ();if(!g)return;
+  STATE.g=g;STATE.graded=false;STATE.startTime=Date.now();
+  renderGiven(g);
+  for(const id of['a-comp-mat','a-end-mat','a-comp-conv','a-end-conv']){
+    const el=document.getElementById(id);el.value='';el.classList.remove('cell-ok','cell-ng');
+  }
+  for(const id of['ng-comp-mat','ng-end-mat','ng-comp-conv','ng-end-conv']){
+    const el=document.getElementById(id);el.style.display='none';el.textContent='';
+  }
+  document.getElementById('tot-right-mat').textContent='?';
+  document.getElementById('tot-right-conv').textContent='?';
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function grade(){
+  if(!STATE.g||STATE.graded)return;
+  const g=STATE.g;
+  const fields=[
+    ['a-comp-mat','ng-comp-mat',g.ansCompMat],
+    ['a-end-mat','ng-end-mat',g.ansEndMat],
+    ['a-comp-conv','ng-comp-conv',g.ansCompConv],
+    ['a-end-conv','ng-end-conv',g.ansEndConv],
+  ];
+  let ok=0;
+  for(const[id,ngId,exp]of fields){
+    const val=parseNum(document.getElementById(id).value);
+    const correct=val===exp;
+    if(correct)ok++;
+    const el=document.getElementById(id);
+    el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
+    const ng=document.getElementById(ngId);
+    if(!correct){ng.textContent='正: '+fmt(exp);ng.style.display='block';}
+    else ng.style.display='none';
+  }
+  // T勘定の合計右側を表示
+  document.getElementById('tot-right-mat').textContent=fmt(g.ansCompMat+g.ansEndMat);
+  document.getElementById('tot-right-conv').textContent=fmt(g.ansCompConv+g.ansEndConv);
+
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===fields.length;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  const begConvEquiv=g.begUnits*g.begPct/100;
+  const endConvEquiv=g.endUnits*g.endPct/100;
+  const lines=[`所要時間：${elapsed}`];
+
+  if(g.isAverage){
+    const totalMatEquiv=g.completed+g.endUnits;
+    const totalConvEquiv=g.completed+endConvEquiv;
+    lines.push('<b>平均法</b>');
+    lines.push(`<b>【当量計算】</b>`);
+    lines.push(`　材料費：完成${g.completed}＋期末${g.endUnits}×100% ＝ ${totalMatEquiv}個`);
+    lines.push(`　加工費：完成${g.completed}＋期末${g.endUnits}×${g.endPct}% ＝ ${totalConvEquiv}個`);
+    lines.push(`<b>【単位原価 ＝（期首＋当期）÷ 当量】</b>`);
+    lines.push(`　材料費：（${fmt(g.begMat)}＋${fmt(g.currMat)}）÷ ${totalMatEquiv} ＝ ${fmt(g.matUC)}`);
+    lines.push(`　加工費：（${fmt(g.begConv)}＋${fmt(g.currConv)}）÷ ${totalConvEquiv} ＝ ${fmt(g.convUC)}`);
+    lines.push(`<b>【完成品原価】</b>`);
+    lines.push(`　材料費：${fmt(g.matUC)} × ${g.completed}個 ＝ ${fmt(g.ansCompMat)}`);
+    lines.push(`　加工費：${fmt(g.convUC)} × ${g.completed}個 ＝ ${fmt(g.ansCompConv)}`);
+    lines.push(`<b>【期末仕掛品原価】</b>`);
+    lines.push(`　材料費：${fmt(g.matUC)} × ${g.endUnits}個 ＝ ${fmt(g.ansEndMat)}`);
+    lines.push(`　加工費：${fmt(g.convUC)} × ${endConvEquiv}個当量（${g.endUnits}×${g.endPct}%）＝ ${fmt(g.ansEndConv)}`);
+  }else{
+    const matCurrEquiv=(g.completed-g.begUnits)+g.endUnits;
+    const begRemain=g.begUnits*(100-g.begPct)/100;
+    const convCurrEquiv=begRemain+(g.completed-g.begUnits)+endConvEquiv;
+    lines.push('<b>先入先出法（当期投入コストのみで単位原価を計算）</b>');
+    lines.push(`<b>【当量計算（当期投入分）】</b>`);
+    lines.push(`　材料費：新完成(${g.completed}−${g.begUnits})＋期末${g.endUnits} ＝ ${matCurrEquiv}個`);
+    lines.push(`　加工費：期首完成分${begRemain}＋新完成${g.completed-g.begUnits}＋期末${endConvEquiv} ＝ ${convCurrEquiv}個`);
+    lines.push(`<b>【単位原価 ＝ 当期投入 ÷ 当量】</b>`);
+    lines.push(`　材料費：${fmt(g.currMat)} ÷ ${matCurrEquiv} ＝ ${fmt(g.matUC)}`);
+    lines.push(`　加工費：${fmt(g.currConv)} ÷ ${convCurrEquiv} ＝ ${fmt(g.convUC)}`);
+    lines.push(`<b>【完成品原価】</b>`);
+    lines.push(`　材料費：期首${fmt(g.begMat)} ＋ ${fmt(g.matUC)}×${g.completed-g.begUnits}個 ＝ ${fmt(g.ansCompMat)}`);
+    lines.push(`　加工費：期首${fmt(g.begConv)} ＋ ${fmt(g.convUC)}×${begRemain}（期首完成）＋ ${fmt(g.convUC)}×${g.completed-g.begUnits} ＝ ${fmt(g.ansCompConv)}`);
+    lines.push(`<b>【期末仕掛品原価】</b>`);
+    lines.push(`　材料費：${fmt(g.matUC)} × ${g.endUnits}個 ＝ ${fmt(g.ansEndMat)}`);
+    lines.push(`　加工費：${fmt(g.convUC)} × ${endConvEquiv}個当量 ＝ ${fmt(g.ansEndConv)}`);
+  }
+  const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}else s.disp=s.disp==='0'?v:s.disp+v;}
+  else if(v==='%'){s.disp=String(parseFloat(s.disp)/100);s.fresh=true;}
+  else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else s.prev=parseFloat(s.disp);
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('service-worker.js').catch(()=>{});});}
+</script>
+</body>
+</html>
