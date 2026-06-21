@@ -105,7 +105,7 @@ button:active{opacity:0.85}
       <span class="ans-label">支払利息</span>
       <div class="ans-cell"><input type="text" id="a2-int" autocomplete="off"><span class="ans-ng-msg" id="ng2-int"></span></div>
     </div>
-    <div class="hint">所有権移転→残存10%・経済的耐用年数で償却。移転外→残存0円・リース期間で償却。<br>利子相当額＝（リース料総額−計上額）÷リース期間（定額法）。</div>
+    <div class="hint">所有権移転→残存10%・経済的耐用年数で償却。移転外→残存0円・リース期間で償却。<br>利子配分は定額法／利息法（与件参照）。利息法は支払利息＝期首債務×利率（千円未満四捨五入）。</div>
   </div>
 
   <div id="result-area"></div>
@@ -162,50 +162,50 @@ function parseNum(v){
 }
 
 function genQ(){
-  for(let t=0;t<500;t++){
+  for(let t=0;t<2000;t++){
     const isTransfer=Math.random()<0.5;
-    const leaseTerm=rand(3,7);
+    const useInterest=Math.random()<0.5;   // 利子配分：利息法 or 定額法
+    const leaseTerm=rand(3,6);
     const economicLife=isTransfer?rand(leaseTerm,leaseTerm+4):rand(leaseTerm+1,leaseTerm+5);
 
-    // 計上額はleaseTerm×100の倍数にすることでannualPaymentが整数になる
-    const assetVal=rand(2,20)*leaseTerm*100;
-    if(assetVal<500||assetVal>8000)continue;
+    const assetVal=rand(3,20)*leaseTerm*100;
+    if(assetVal<600||assetVal>9000)continue;
 
-    // 年間利子相当額（定額法）：切りのいい数字
-    const annualInterest=rand(1,8)*10;
-    const annualPayment=assetVal/leaseTerm+annualInterest;
-
-    // 残存価額
+    // 残存価額・減価償却（共通：定額法）
     const residual=isTransfer?assetVal*0.1:0;
     if(residual!==Math.floor(residual))continue;
-
-    // 償却期間と年間償却費
     const deprPeriod=isTransfer?economicLife:leaseTerm;
     const depreciable=assetVal-residual;
     if(depreciable%deprPeriod!==0)continue;
     const annualDepr=depreciable/deprPeriod;
 
-    const annualPrincipal=assetVal/leaseTerm;
-    if(annualPrincipal!==Math.floor(annualPrincipal))continue;
-
-    // 第2期末でもリース債務が残るか確認
-    if(assetVal-annualPrincipal*2<=0)continue;
+    let ratePct=0,annualPayment,y1int,y1prin,y1liab,y2int,y2prin,y2liab;
+    if(useInterest){
+      ratePct=rand(2,8);
+      const r=ratePct/100;
+      const a=(1-Math.pow(1+r,-leaseTerm))/r;        // 年金現価係数
+      annualPayment=Math.round(assetVal/a);
+      y1int=Math.round(assetVal*r);                  // 千円未満四捨五入
+      y1prin=annualPayment-y1int;
+      y1liab=assetVal-y1prin;
+      y2int=Math.round(y1liab*r);
+      y2prin=annualPayment-y2int;
+      y2liab=y1liab-y2prin;
+    }else{
+      const annualPrincipal=assetVal/leaseTerm;
+      if(annualPrincipal!==Math.floor(annualPrincipal))continue;
+      const annualInterest=rand(1,8)*10;
+      annualPayment=annualPrincipal+annualInterest;
+      y1int=annualInterest;y1prin=annualPrincipal;y1liab=assetVal-annualPrincipal;
+      y2int=annualInterest;y2prin=annualPrincipal;y2liab=assetVal-annualPrincipal*2;
+    }
+    if(y1prin<=0||y2prin<=0||y2liab<=0)continue;
 
     return{
-      isTransfer,leaseTerm,economicLife,assetVal,annualPayment,
-      annualInterest,annualPrincipal,annualDepr,residual,deprPeriod,
-      y1:{
-        asset:assetVal,
-        accumDepr:annualDepr,
-        liability:assetVal-annualPrincipal,
-        interest:annualInterest,
-      },
-      y2:{
-        asset:assetVal,
-        accumDepr:annualDepr*2,
-        liability:assetVal-annualPrincipal*2,
-        interest:annualInterest,
-      },
+      isTransfer,useInterest,ratePct,leaseTerm,economicLife,assetVal,annualPayment,
+      annualDepr,residual,deprPeriod,
+      y1:{asset:assetVal,accumDepr:annualDepr,liability:y1liab,interest:y1int,principal:y1prin},
+      y2:{asset:assetVal,accumDepr:annualDepr*2,liability:y2liab,interest:y2int,principal:y2prin},
     };
   }
   return null;
@@ -220,9 +220,11 @@ function renderGiven(g){
   h+=`<div class="g-row"><span class="g-key">年間リース料（期末払）</span><span class="g-val">${fmt(g.annualPayment)}</span></div>`;
   h+=`<div class="g-row"><span class="g-key">リース期間</span><span class="g-val">${g.leaseTerm}年</span></div>`;
   h+=`<div class="g-row"><span class="g-key">経済的耐用年数</span><span class="g-val">${g.economicLife}年</span></div>`;
+  if(g.useInterest)h+=`<div class="g-row"><span class="g-key">計算利子率（年）</span><span class="g-val">${g.ratePct}%</span></div>`;
   h+=`<div class="g-head">条件</div>`;
   h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・減価償却方法：定額法</span></div>`;
-  h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・利子相当額の配分：定額法</span></div>`;
+  h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・利子相当額の配分：${g.useInterest?'利息法':'定額法'}</span></div>`;
+  if(g.useInterest)h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・支払利息は千円未満を四捨五入</span></div>`;
   h+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・残存価額：取得原価の10%（所有権移転）／ 0円（移転外）</span></div>`;
   document.getElementById('given-area').innerHTML=h;
 }
@@ -276,23 +278,36 @@ function grade(){
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-perfect').textContent=STATE.perfect;
   const elapsed=fmtElapsed(Date.now()-STATE.startTime);
-  const totalInterest=g.annualInterest*g.leaseTerm;
-  const totalPayments=g.annualPayment*g.leaseTerm;
   const lines=[`所要時間：${elapsed}`];
   lines.push(`<b>種類：</b>${g.isTransfer?'所有権移転':'移転外'} → 残存${g.isTransfer?'取得原価の10%':'0円'}、償却期間 ${g.deprPeriod}年（${g.isTransfer?'経済的耐用年数':'リース期間'}）`);
   lines.push(`<b>年間償却費：</b>（${fmt(g.assetVal)}−${fmt(g.residual)}）÷ ${g.deprPeriod}年 ＝ ${fmt(g.annualDepr)}`);
-  lines.push(`<b>利子相当額合計：</b>${fmt(g.annualPayment)}×${g.leaseTerm}年 − ${fmt(g.assetVal)} ＝ ${fmt(totalInterest)}`);
-  lines.push(`<b>年間利子（定額法）：</b>${fmt(totalInterest)} ÷ ${g.leaseTerm}年 ＝ ${fmt(g.annualInterest)}`);
-  lines.push(`<b>年間元本返済：</b>${fmt(g.annualPayment)} − ${fmt(g.annualInterest)} ＝ ${fmt(g.annualPrincipal)}`);
-  lines.push('');
-  lines.push('<b>第1期末</b>');
-  lines.push(`　リース資産 ${fmt(g.y1.asset)} ／ 減価償却累計額 ${fmt(g.y1.accumDepr)}`);
-  lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.annualPrincipal)} ＝ ${fmt(g.y1.liability)}`);
-  lines.push(`　支払利息 ${fmt(g.y1.interest)}`);
-  lines.push('<b>第2期末</b>');
-  lines.push(`　リース資産 ${fmt(g.y2.asset)} ／ 減価償却累計額 ${fmt(g.y2.accumDepr)}`);
-  lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.annualPrincipal)}×2 ＝ ${fmt(g.y2.liability)}`);
-  lines.push(`　支払利息 ${fmt(g.y2.interest)}（定額法のため毎期同額）`);
+  if(g.useInterest){
+    lines.push(`<b>利子配分：利息法（年利${g.ratePct}%）</b>　支払利息＝期首債務×利率（千円未満四捨五入）`);
+    lines.push('');
+    lines.push('<b>第1期末</b>');
+    lines.push(`　支払利息：${fmt(g.assetVal)} × ${g.ratePct}% ＝ ${fmt(g.y1.interest)}`);
+    lines.push(`　元本返済：${fmt(g.annualPayment)} − ${fmt(g.y1.interest)} ＝ ${fmt(g.y1.principal)}`);
+    lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.y1.principal)} ＝ ${fmt(g.y1.liability)}`);
+    lines.push(`　減価償却累計額 ${fmt(g.y1.accumDepr)}`);
+    lines.push('<b>第2期末</b>');
+    lines.push(`　支払利息：${fmt(g.y1.liability)} × ${g.ratePct}% ＝ ${fmt(g.y2.interest)}`);
+    lines.push(`　元本返済：${fmt(g.annualPayment)} − ${fmt(g.y2.interest)} ＝ ${fmt(g.y2.principal)}`);
+    lines.push(`　リース債務：${fmt(g.y1.liability)} − ${fmt(g.y2.principal)} ＝ ${fmt(g.y2.liability)}`);
+    lines.push(`　減価償却累計額 ${fmt(g.y2.accumDepr)}`);
+  }else{
+    const totalInterest=g.y1.interest*g.leaseTerm;
+    lines.push(`<b>利子配分：定額法</b>`);
+    lines.push(`<b>利子相当額合計：</b>${fmt(g.annualPayment)}×${g.leaseTerm}年 − ${fmt(g.assetVal)} ＝ ${fmt(totalInterest)}`);
+    lines.push(`<b>年間利子：</b>${fmt(totalInterest)} ÷ ${g.leaseTerm}年 ＝ ${fmt(g.y1.interest)}`);
+    lines.push(`<b>年間元本返済：</b>${fmt(g.annualPayment)} − ${fmt(g.y1.interest)} ＝ ${fmt(g.y1.principal)}`);
+    lines.push('');
+    lines.push('<b>第1期末</b>');
+    lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.y1.principal)} ＝ ${fmt(g.y1.liability)}`);
+    lines.push(`　支払利息 ${fmt(g.y1.interest)}／減価償却累計額 ${fmt(g.y1.accumDepr)}`);
+    lines.push('<b>第2期末</b>');
+    lines.push(`　リース債務：${fmt(g.assetVal)} − ${fmt(g.y1.principal)}×2 ＝ ${fmt(g.y2.liability)}`);
+    lines.push(`　支払利息 ${fmt(g.y2.interest)}（毎期同額）／減価償却累計額 ${fmt(g.y2.accumDepr)}`);
+  }
   const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
   document.getElementById('result-area').innerHTML=
     `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+recon;
