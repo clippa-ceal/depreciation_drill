@@ -1,9 +1,12 @@
-const CACHE = 'shokyaku-drill-v15';
+const CACHE = 'shokyaku-drill-v16';
 const ASSETS = [
   './',
   './index.html',
   './pension.html',
   './purchases.html',
+  './lease.html',
+  './wip.html',
+  './hedge.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
