@@ -51,9 +51,9 @@ table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixe
 table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
 table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
 table.j-tbl .acct{color:var(--color-text);width:30%}
-table.j-tbl .acct input{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none}
-table.j-tbl .acct input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
-table.j-tbl .acct input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .acct select{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none;color:var(--color-text);appearance:none;-webkit-appearance:none}
+table.j-tbl .acct select.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .acct select.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 table.j-tbl .amt{padding:2px 4px;width:20%}
 table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
 table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
@@ -300,12 +300,17 @@ function renderJournal(g){
   document.getElementById('journal-area').innerHTML=html;
 }
 
+const ACCTS=['','売掛金','売上','仕入','買掛金','現金預金','為替差損益','前払費用','前受収益','為替予約'];
+function acctSelect(id){
+  const opts=ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('');
+  return `<select id="${id}">${opts}</select>`;
+}
 function cell(mv,ei,side,i){
   if(!mv)return `<td class="acct none"></td><td class="amt none"></td>`;
   const id=`in-${ei}-${side}-${i}`;
   STATE.answers[id]=Math.abs(mv.amt);
   STATE.acctAnswers[id+'_acct']=mv.acct;
-  return `<td class="acct"><input type="text" id="${id}_acct" autocomplete="off" placeholder="科目名"><div class="j-ng" id="ng-${id}_acct"></div></td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><div class="j-ng j-ng-amt" id="ng-${id}"></div></td>`;
+  return `<td class="acct">${acctSelect(id+'_acct')}<div class="j-ng" id="ng-${id}_acct"></div></td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><div class="j-ng j-ng-amt" id="ng-${id}"></div></td>`;
 }
 
 function newQ(){
@@ -339,7 +344,7 @@ function grade(){
   for(const aid of acctIds){
     const exp=STATE.acctAnswers[aid];
     const el=document.getElementById(aid);
-    const val=(el.value||'').trim().replace(/\s+/g,'');
+    const val=el.value||'';
     const correct=val===exp;
     if(correct)ok++;
     el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
