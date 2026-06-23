@@ -152,7 +152,7 @@ function genQ(){
   for(let tries=0;tries<6000;tries++){
     const pattern=pick(['同時','事後','独立']);
     const type=pick(['AR','AP']);          // AR=売掛金(輸出), AP=買掛金(輸入)
-    const FC=rand(1,9)*1000;
+    const FC=rand(1,9)*10;
     const T=rand(4,12);
     const b=rand(2,T-1);
     let a=0;
