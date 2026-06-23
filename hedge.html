@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>外貨ヘッジドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;--color-card:#FFFFFF;--color-border:#E5E3DC;--color-border2:#D8D5CC;
+  --color-text:#1A1A18;--color-text2:#6B6B64;--color-info:#185FA5;--color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;--radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:560px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:6px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+.badge{display:inline-block;font-size:12px;font-weight:600;color:#fff;background:var(--color-info);border-radius:999px;padding:3px 12px;margin-bottom:8px}
+.badge.b2{background:#0F6E56}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+/* 与件テーブル */
+.g-table{width:100%;border-collapse:collapse;font-size:13px}
+.g-table td{padding:4px 6px;vertical-align:top}
+.g-table .g-key{color:var(--color-text2);white-space:nowrap;width:1%;padding-right:12px}
+.g-table .g-val{font-weight:600}
+.g-table .g-sep{padding:6px 0 2px;font-size:12px;font-weight:600;color:var(--color-info);border-top:0.5px solid var(--color-border)}
+/* レート表 */
+.rate-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.rate-tbl th,.rate-tbl td{border:1px solid #ccc;padding:5px 8px;text-align:center}
+.rate-tbl th{background:#F4F3EF;font-weight:600;font-size:12px;color:var(--color-text2)}
+.rate-tbl td:first-child{text-align:left;color:var(--color-text2)}
+.rate-tbl .rv{font-weight:600;font-variant-numeric:tabular-nums}
+/* 仕訳テーブル */
+.j-entry{margin-bottom:12px}
+.j-title{font-size:13px;font-weight:600;color:var(--color-info);margin-bottom:4px}
+table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
+table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.j-tbl .acct{color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:30%}
+table.j-tbl .amt{padding:2px 4px;width:20%}
+table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
+table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .none{background:#FAF9F6}
+.j-ng{font-size:10px;color:#A32D2D;font-weight:600;display:none;margin-top:1px;white-space:nowrap;text-align:right}
+.noentry{font-size:12px;color:var(--color-text2);padding:6px 8px;border:1px dashed var(--color-border2);border-radius:6px}
+/* 結果 */
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+/* 電卓 */
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>外貨ヘッジドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html" class="nav-on">為替予約</a>
+    <a href="hedge2.html">為替予約２</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">仕訳（各空欄に金額を入力。仕訳不要の欄は空欄のまま）</div>
+    <div id="journal-area"></div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,g:null,graded:false,startTime:0,answers:{}};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function fmtRate(r){return Number.isInteger(r)?r.toFixed(2):r.toFixed(2);}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+// 繰延・為替差損益の科目（符号で振分。amt>0=借, <0=貸）
+function defAcct(amt){return amt>0?'前払費用':'前受収益';}
+function fxAcct(){return '為替差損益';}
+
+function genQ(){
+  for(let tries=0;tries<6000;tries++){
+    const pattern=pick(['同時','事後','独立']);
+    const type=pick(['AR','AP']);          // AR=売掛金(輸出), AP=買掛金(輸入)
+    const FC=rand(1,9)*10000;
+    const T=rand(4,12);
+    const b=rand(2,T-1);
+    let a=0;
+    if(pattern==='事後'){a=rand(1,b-1);}
+
+    const up=Math.random()<0.5?1:-1;
+    const SR0=rand(100,130);
+    const d1=up*rand(1,5)*0.5,d2=up*rand(1,5)*0.5,d3=up*rand(1,5)*0.5;
+    const SR_a=SR0+d1, SR_b=SR_a+d2, SR_T=SR_b+d3;
+    const sgnp=Math.random()<0.5?1:-1;
+    const u0=rand(3,6),ua=rand(2,u0-1),ub=rand(1,ua);
+    let FR0=SR0+sgnp*u0*0.5;
+    let FR_a=SR_a+sgnp*ua*0.5;
+    const FR_b=SR_b+sgnp*ub*0.5;
+    let SRa=SR_a,FRa=FR_a;
+    if(pattern==='同時'){SRa=SR0;FRa=FR0;}
+
+    const entries=[];
+    const E=(title,rows)=>entries.push({title,rows:rows.filter(r=>r.amt!==0)});
+
+    if(pattern==='同時'||pattern==='事後'){
+      const sAcct=type==='AR'?'売掛金':'買掛金';
+      const sgnM=type==='AR'?1:-1;
+      E('取引日',[
+        type==='AR'?{acct:'売掛金',amt:+FC*SR0}:{acct:'仕入',amt:+FC*SR0},
+        type==='AR'?{acct:'売上',amt:-FC*SR0}:{acct:'買掛金',amt:-FC*SR0},
+      ]);
+      const chokuchoku=FC*(SRa-SR0);
+      const D=FC*(FRa-SRa);
+      const monMove=sgnM*(FC*(FRa-SR0));
+      const fxMove=type==='AR'?-chokuchoku:+chokuchoku;
+      const defMove=type==='AR'?-D:+D;
+      E(`${a===0?'予約日（＝取引日）：振当':'予約日：振当'}`,[
+        {acct:sAcct,amt:monMove},
+        {acct:fxAcct(),amt:fxMove},
+        {acct:defAcct(defMove),amt:defMove},
+      ]);
+      const amort1=D*(b-a)/(T-a);
+      const defAmort1=type==='AR'?+amort1:-amort1;
+      E(`決算日：直先差額の配分（${b-a}/${T-a}ヶ月）`,[
+        {acct:defAcct(defMove),amt:defAmort1},
+        {acct:fxAcct(),amt:-defAmort1},
+      ]);
+      const rem=D*(T-b)/(T-a);
+      const defAmort2=type==='AR'?+rem:-rem;
+      E('決済日',[
+        {acct:'現金預金',amt:type==='AR'?+FC*FRa:-FC*FRa},
+        {acct:sAcct,amt:type==='AR'?-FC*FRa:+FC*FRa},
+        {acct:defAcct(defMove),amt:defAmort2},
+        {acct:fxAcct(),amt:-defAmort2},
+      ]);
+    } else {
+      const sAcct=type==='AR'?'売掛金':'買掛金';
+      const sgnM=type==='AR'?1:-1;
+      E('取引日',[
+        type==='AR'?{acct:'売掛金',amt:+FC*SR0}:{acct:'仕入',amt:+FC*SR0},
+        type==='AR'?{acct:'売上',amt:-FC*SR0}:{acct:'買掛金',amt:-FC*SR0},
+      ]);
+      E(`決算日①：${sAcct}の換算替え`,[
+        {acct:sAcct,amt:sgnM*FC*(SR_b-SR0)},
+        {acct:fxAcct(),amt:type==='AR'?-FC*(SR_b-SR0):+FC*(SR_b-SR0)},
+      ]);
+      const fwdVal=type==='AR'?FC*(FR0-FR_b):FC*(FR_b-FR0);
+      E('決算日②：為替予約の評価',[
+        {acct:'為替予約',amt:+fwdVal},
+        {acct:fxAcct(),amt:-fwdVal},
+      ]);
+      E(`決済日①：${sAcct}の決済`,[
+        {acct:'現金預金',amt:type==='AR'?+FC*SR_T:-FC*SR_T},
+        {acct:sAcct,amt:type==='AR'?-FC*SR_b:+FC*SR_b},
+        {acct:fxAcct(),amt:type==='AR'?-FC*(SR_T-SR_b):+FC*(SR_T-SR_b)},
+      ]);
+      const fwdCash=type==='AR'?FC*(FR0-SR_T):FC*(SR_T-FR0);
+      E('決済日②：為替予約の決済',[
+        {acct:'現金預金',amt:fwdCash},
+        {acct:'為替予約',amt:-fwdVal},
+        {acct:fxAcct(),amt:-(fwdCash-fwdVal)},
+      ]);
+    }
+
+    // 整数・非ゼロ・貸借一致の検証
+    let bad=false;
+    for(const e of entries){let s=0;for(const r of e.rows){if(!Number.isInteger(r.amt))bad=true;s+=r.amt;}if(Math.abs(s)>1e-6)bad=true;}
+    if(bad)continue;
+    // 仕訳が全く無いentryが混ざらないように（配分0など）。最低限の体裁チェック
+    if(entries.some(e=>e.rows.length===0&&!/決算/.test(e.title)))continue;
+
+    return{pattern,type,FC,T,a,b,SR0,SR_a:SRa,SR_b,SR_T,FR0,FR_a:FRa,FR_b,up,lockRate:FRa,entries};
+  }
+  return null;
+}
+
+function renderGiven(g){
+  const dir=g.type==='AR'?'輸出取引（売掛金）':'輸入取引（買掛金）';
+  const pname={'同時':'振当処理（取引時予約）','事後':'振当処理（取引後予約）','独立':'独立処理'}[g.pattern];
+  const badgeClass=g.pattern==='独立'?'b2':'';
+  let h=`<span class="badge ${badgeClass}">${pname}</span>`;
+  h+=`<table class="g-table">
+    <tr><td class="g-key">取引</td><td class="g-val">${dir}</td></tr>
+    <tr><td class="g-key">外貨建金額</td><td class="g-val">${fmt(g.FC)} 通貨単位（FC）</td></tr>
+  </table>`;
+  // レート表（パターンが使う相場のみ）
+  let rows='';
+  if(g.pattern==='同時'){
+    rows=`<tr><td>取引日（＝予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>`;
+  }else if(g.pattern==='事後'){
+    rows=`<tr><td>取引日</td><td class="rv">${fmtRate(g.SR0)}</td><td>―</td></tr>
+          <tr><td>予約日</td><td class="rv">${fmtRate(g.SR_a)}</td><td class="rv">${fmtRate(g.FR_a)}</td></tr>`;
+  }else{
+    rows=`<tr><td>取引日</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
+          <tr><td>決算日</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
+          <tr><td>決済日</td><td class="rv">${fmtRate(g.SR_T)}</td><td>＝直物</td></tr>`;
+  }
+  h+=`<table class="rate-tbl"><tr><th>日付</th><th>直物相場</th><th>先物相場</th></tr>${rows}</table>`;
+  // 期間
+  if(g.pattern==='同時'){
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)} で債権債務を固定。直先差額を取引日〜決済日 ${g.T}ヶ月で配分（当期：取引日〜決算日 ${g.b}ヶ月）。</div>`;
+  }else if(g.pattern==='事後'){
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR_a)}。直直差額は当期の損益、直先差額は予約日〜決済日 ${g.T-g.a}ヶ月で配分（当期：予約日〜決算日 ${g.b-g.a}ヶ月）。</div>`;
+  }else{
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。債権債務は直物で換算替えし、為替予約はデリバティブとして時価評価（ともに当期損益）。</div>`;
+  }
+  document.getElementById('given-area').innerHTML=h;
+}
+
+function renderJournal(g){
+  STATE.answers={};
+  let html='';
+  g.entries.forEach((e,ei)=>{
+    const debits=e.rows.filter(r=>r.amt>0);
+    const credits=e.rows.filter(r=>r.amt<0);
+    if(debits.length===0&&credits.length===0){
+      html+=`<div class="j-entry"><div class="j-title">${e.title}</div><div class="noentry">仕訳なし</div></div>`;
+      return;
+    }
+    const n=Math.max(debits.length,credits.length);
+    let body='';
+    for(let i=0;i<n;i++){
+      const dr=debits[i],cr=credits[i];
+      body+=`<tr>${cell(dr,ei,'d',i)}${cell(cr,ei,'c',i)}</tr>`;
+    }
+    html+=`<div class="j-entry"><div class="j-title">${e.title}</div>
+      <table class="j-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${body}</table></div>`;
+  });
+  document.getElementById('journal-area').innerHTML=html;
+}
+function cell(mv,ei,side,i){
+  if(!mv)return `<td class="acct none"></td><td class="amt none"></td>`;
+  const id=`in-${ei}-${side}-${i}`;
+  STATE.answers[id]=Math.abs(mv.amt);
+  return `<td class="acct">${mv.acct}</td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><div class="j-ng" id="ng-${id}"></div></td>`;
+}
+
+function newQ(){
+  const g=genQ();if(!g)return;
+  STATE.g=g;STATE.graded=false;STATE.startTime=Date.now();
+  renderGiven(g);renderJournal(g);
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function grade(){
+  if(!STATE.g||STATE.graded)return;
+  const ids=Object.keys(STATE.answers);
+  let ok=0;
+  for(const id of ids){
+    const exp=STATE.answers[id];
+    const el=document.getElementById(id);
+    const val=parseNum(el.value);
+    const correct=val===exp;
+    if(correct)ok++;
+    el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
+    const ng=document.getElementById('ng-'+id);
+    if(!correct){ng.textContent='正 '+fmt(exp);ng.style.display='block';}
+    else ng.style.display='none';
+  }
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===ids.length;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  const g=STATE.g;
+  const lines=[`所要時間：${elapsed}`];
+  const FCf=fmt(g.FC);
+  if(g.pattern==='同時'){
+    const D=g.FC*Math.abs(g.FR0-g.SR0);
+    lines.push(`<b>振当処理（取引時予約）</b>`);
+    lines.push(`売上・取引日の債権債務は直物 ${fmtRate(g.SR0)} で計上 → ${FCf}×${fmtRate(g.SR0)} ＝ ${fmt(g.FC*g.SR0)}`);
+    lines.push(`債権債務を予約相場 ${fmtRate(g.FR0)} に振当 → 差額（直先差額）${FCf}×|${fmtRate(g.FR0)}−${fmtRate(g.SR0)}| ＝ ${fmt(D)} を繰延`);
+    lines.push(`直先差額を ${g.T}ヶ月で配分：当期 ${fmt(Math.round(D*g.b/g.T))}（${g.b}/${g.T}）、決済時 残り`);
+  }else if(g.pattern==='事後'){
+    const cc=g.FC*Math.abs(g.SR_a-g.SR0);
+    const D=g.FC*Math.abs(g.FR_a-g.SR_a);
+    lines.push(`<b>振当処理（取引後予約）</b>`);
+    lines.push(`取引日：直物 ${fmtRate(g.SR0)} で計上 → ${fmt(g.FC*g.SR0)}`);
+    lines.push(`予約日に振当：直直差額 ${FCf}×|${fmtRate(g.SR_a)}−${fmtRate(g.SR0)}| ＝ ${fmt(cc)}（当期の為替差損益）`);
+    lines.push(`　　　　　　直先差額 ${FCf}×|${fmtRate(g.FR_a)}−${fmtRate(g.SR_a)}| ＝ ${fmt(D)}（繰延 → ${g.T-g.a}ヶ月で配分）`);
+    lines.push(`決算日：直先差額の当期配分 ${fmt(Math.round(D*(g.b-g.a)/(g.T-g.a)))}（${g.b-g.a}/${g.T-g.a}）`);
+    lines.push(`決済日：予約相場 ${fmtRate(g.FR_a)} で決済（${fmt(g.FC*g.FR_a)}）＋ 残りの直先差額を配分`);
+  }else{
+    const monL=g.FC*Math.abs(g.SR_b-g.SR0);
+    const fwdL=g.FC*Math.abs((g.type==='AR'?(g.FR0-g.FR_b):(g.FR_b-g.FR0)));
+    lines.push(`<b>独立処理</b>`);
+    lines.push(`決算日① 債権債務の換算替え：${FCf}×|${fmtRate(g.SR_b)}−${fmtRate(g.SR0)}| ＝ ${fmt(monL)}`);
+    lines.push(`決算日② 為替予約の時価評価：${FCf}×（先物相場の変動 ${fmtRate(g.FR0)}→${fmtRate(g.FR_b)}）＝ ${fmt(fwdL)}`);
+    lines.push(`→ 債権債務の損益と予約の損益がほぼ相殺（ヘッジ効果）。両方とも当期損益に計上。`);
+    lines.push(`決済日：債権債務は直物 ${fmtRate(g.SR_T)} で決済、為替予約は差金決済。`);
+  }
+  const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+ids.length+' 箇所（赤枠に正答を表示）'}</div>`+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}else s.disp=s.disp==='0'?v:s.disp+v;}
+  else if(v==='%'){s.disp=String(parseFloat(s.disp)/100);s.fresh=true;}
+  else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else s.prev=parseFloat(s.disp);
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('service-worker.js').catch(()=>{});});}
+</script>
+</body>
+</html>
