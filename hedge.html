@@ -245,33 +245,46 @@ function genQ(){
   return null;
 }
 
+function lastDay(m){return[31,28,31,30,31,30,31,31,30,31,30,31][m-1];}
+function moff(base,delta){return((base-1+delta)%12+12)%12+1;}
+function mds(m,dy){return`${m}月${dy}日`;}
+function getDates(g){
+  const sm=3;
+  const tm=moff(sm,-g.b);
+  const bm=g.pattern==='同時'?tm:moff(sm,-(g.b-g.a));
+  const pm=moff(sm,g.T-g.b);
+  return{trade:mds(tm,1),book:mds(bm,1),close:'3月31日',pay:mds(pm,lastDay(pm))};
+}
 function renderGiven(g){
   const dir=g.type==='AR'?'輸出取引（売掛金）':'輸入取引（買掛金）';
   const pname={'同時':'振当処理（取引時予約）','事後':'振当処理（取引後予約）','独立':'独立処理'}[g.pattern];
   const badgeClass=g.pattern==='独立'?'b2':'';
+  const d=getDates(g);
   let h=`<span class="badge ${badgeClass}">${pname}</span>`;
   h+=`<table class="g-table">
     <tr><td class="g-key">取引</td><td class="g-val">${dir}</td></tr>
     <tr><td class="g-key">外貨建金額</td><td class="g-val">${fmt(g.FC)} 通貨単位（FC）</td></tr>
   </table>`;
-  // レート表（パターンが使う相場のみ）
   let rows='';
   if(g.pattern==='同時'){
-    rows=`<tr><td>取引日（＝予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>`;
+    rows=`<tr><td>${d.trade}（取引日・予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
+          <tr><td>${d.close}（決算日）</td><td>―</td><td>―</td></tr>
+          <tr><td>${d.pay}（決済日）</td><td>―</td><td>―</td></tr>`;
   }else if(g.pattern==='事後'){
-    rows=`<tr><td>取引日</td><td class="rv">${fmtRate(g.SR0)}</td><td>―</td></tr>
-          <tr><td>予約日</td><td class="rv">${fmtRate(g.SR_a)}</td><td class="rv">${fmtRate(g.FR_a)}</td></tr>`;
+    rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td>―</td></tr>
+          <tr><td>${d.book}（予約日）</td><td class="rv">${fmtRate(g.SR_a)}</td><td class="rv">${fmtRate(g.FR_a)}</td></tr>
+          <tr><td>${d.close}（決算日）</td><td>―</td><td>―</td></tr>
+          <tr><td>${d.pay}（決済日）</td><td>―</td><td>―</td></tr>`;
   }else{
-    rows=`<tr><td>取引日</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
-          <tr><td>決算日</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
-          <tr><td>決済日</td><td class="rv">${fmtRate(g.SR_T)}</td><td>＝直物</td></tr>`;
+    rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
+          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
+          <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td>＝直物</td></tr>`;
   }
   h+=`<table class="rate-tbl"><tr><th>日付</th><th>直物相場</th><th>先物相場</th></tr>${rows}</table>`;
-  // 期間
   if(g.pattern==='同時'){
-    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)} で債権債務を固定。直先差額を取引日〜決済日 ${g.T}ヶ月で配分（当期：取引日〜決算日 ${g.b}ヶ月）。</div>`;
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)} で債権債務を固定。直先差額を取引日〜決済日の期間で配分（決算日 3月31日まで当期分）。</div>`;
   }else if(g.pattern==='事後'){
-    h+=`<div class="hint">予約相場 ${fmtRate(g.FR_a)}。直直差額は当期の損益、直先差額は予約日〜決済日 ${g.T-g.a}ヶ月で配分（当期：予約日〜決算日 ${g.b-g.a}ヶ月）。</div>`;
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR_a)}。直直差額は当期の損益。直先差額は予約日〜決済日の期間で配分（決算日 3月31日まで当期分）。</div>`;
   }else{
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。債権債務は直物で換算替えし、為替予約はデリバティブとして時価評価（ともに当期損益）。</div>`;
   }
