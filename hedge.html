@@ -268,17 +268,17 @@ function renderGiven(g){
   let rows='';
   if(g.pattern==='同時'){
     rows=`<tr><td>${d.trade}（取引日・予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
-          <tr><td>${d.close}（決算日）</td><td>―</td><td>―</td></tr>
-          <tr><td>${d.pay}（決済日）</td><td>―</td><td>―</td></tr>`;
+          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
+          <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
   }else if(g.pattern==='事後'){
-    rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td>―</td></tr>
+    rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
           <tr><td>${d.book}（予約日）</td><td class="rv">${fmtRate(g.SR_a)}</td><td class="rv">${fmtRate(g.FR_a)}</td></tr>
-          <tr><td>${d.close}（決算日）</td><td>―</td><td>―</td></tr>
-          <tr><td>${d.pay}（決済日）</td><td>―</td><td>―</td></tr>`;
+          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
+          <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
   }else{
     rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
           <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
-          <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td>＝直物</td></tr>`;
+          <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
   }
   h+=`<table class="rate-tbl"><tr><th>日付</th><th>直物相場</th><th>先物相場</th></tr>${rows}</table>`;
   if(g.pattern==='同時'){
