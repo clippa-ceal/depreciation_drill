@@ -168,7 +168,7 @@ function fxAcct(){return '為替差損益';}
 
 function genQ(){
   for(let tries=0;tries<6000;tries++){
-    const pattern=pick(['同時','事後','独立']);
+    const pattern=Math.random()<0.5?'独立':(Math.random()<1/3?'同時':'事後');
     const type=pick(['AR','AP']);
     const FC=rand(1,9)*10;
     const T=rand(4,12);
