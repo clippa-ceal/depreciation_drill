@@ -56,6 +56,8 @@ table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px soli
 table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 table.j-tbl .none{background:#FAF9F6}
+.xvl-btn{display:block;width:100%;margin:3px 0 0;font-size:11px;padding:3px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-bg-secondary);color:var(--color-text2);cursor:pointer;font-weight:600;line-height:1.2}
+.xvl-btn:active{opacity:0.7}
 .j-ng{font-size:10px;color:#A32D2D;font-weight:600;display:none;margin-top:1px;white-space:nowrap;text-align:right}
 .noentry{font-size:12px;color:var(--color-text2);padding:6px 8px;border:1px dashed var(--color-border2);border-radius:6px}
 /* 結果 */
@@ -144,6 +146,19 @@ function parseNum(v){
   if(s===''||s==='-')return 0;
   const n=parseInt(s,10);return isNaN(n)?0:n;
 }
+function parseFloatJP(v){
+  let s=String(v==null?'':v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0)).replace(/．/g,'.');
+  if(s===''||s==='-')return NaN;
+  return parseFloat(s);
+}
+function mulFC(id){
+  if(!STATE.g)return;
+  const el=document.getElementById(id);
+  const v=parseFloatJP(el.value);
+  if(!isFinite(v)||v===0)return;
+  el.value=String(Math.round(v*STATE.g.FC));
+}
 // 繰延・為替差損益の科目（符号で振分。amt>0=借, <0=貸）
 function defAcct(amt){return amt>0?'前払費用':'前受収益';}
 function fxAcct(){return '為替差損益';}
@@ -185,14 +200,14 @@ function genQ(){
       const monMove=sgnM*(FC*(FRa-SR0));
       const fxMove=type==='AR'?-chokuchoku:+chokuchoku;
       const defMove=type==='AR'?-D:+D;
-      E(`${a===0?'予約日（＝取引日）：振当':'予約日：振当'}`,[
+      E(`${a===0?'予約日（＝取引日）':'予約日'}`,[
         {acct:sAcct,amt:monMove},
         {acct:fxAcct(),amt:fxMove},
         {acct:defAcct(defMove),amt:defMove},
       ]);
       const amort1=D*(b-a)/(T-a);
       const defAmort1=type==='AR'?+amort1:-amort1;
-      E(`決算日：直先差額の配分（${b-a}/${T-a}ヶ月）`,[
+      E('決算日',[
         {acct:defAcct(defMove),amt:defAmort1},
         {acct:fxAcct(),amt:-defAmort1},
       ]);
@@ -211,22 +226,22 @@ function genQ(){
         type==='AR'?{acct:'売掛金',amt:+FC*SR0}:{acct:'仕入',amt:+FC*SR0},
         type==='AR'?{acct:'売上',amt:-FC*SR0}:{acct:'買掛金',amt:-FC*SR0},
       ]);
-      E(`決算日①：${sAcct}の換算替え`,[
+      E('決算日①',[
         {acct:sAcct,amt:sgnM*FC*(SR_b-SR0)},
         {acct:fxAcct(),amt:type==='AR'?-FC*(SR_b-SR0):+FC*(SR_b-SR0)},
       ]);
       const fwdVal=type==='AR'?FC*(FR0-FR_b):FC*(FR_b-FR0);
-      E('決算日②：為替予約の評価',[
+      E('決算日②',[
         {acct:'為替予約',amt:+fwdVal},
         {acct:fxAcct(),amt:-fwdVal},
       ]);
-      E(`決済日①：${sAcct}の決済`,[
+      E('決済日①',[
         {acct:'現金預金',amt:type==='AR'?+FC*SR_T:-FC*SR_T},
         {acct:sAcct,amt:type==='AR'?-FC*SR_b:+FC*SR_b},
         {acct:fxAcct(),amt:type==='AR'?-FC*(SR_T-SR_b):+FC*(SR_T-SR_b)},
       ]);
       const fwdCash=type==='AR'?FC*(FR0-SR_T):FC*(SR_T-FR0);
-      E('決済日②：為替予約の決済',[
+      E('決済日②',[
         {acct:'現金預金',amt:fwdCash},
         {acct:'為替予約',amt:-fwdVal},
         {acct:fxAcct(),amt:-(fwdCash-fwdVal)},
@@ -316,7 +331,7 @@ function cell(mv,ei,side,i){
   if(!mv)return `<td class="acct none"></td><td class="amt none"></td>`;
   const id=`in-${ei}-${side}-${i}`;
   STATE.answers[id]=Math.abs(mv.amt);
-  return `<td class="acct">${mv.acct}</td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><div class="j-ng" id="ng-${id}"></div></td>`;
+  return `<td class="acct">${mv.acct}</td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><button type="button" class="xvl-btn" onclick="mulFC('${id}')">xvl</button><div class="j-ng" id="ng-${id}"></div></td>`;
 }
 
 function newQ(){
