@@ -328,10 +328,9 @@ function renderJournal(g){
   document.getElementById('journal-area').innerHTML=html;
 }
 function cell(mv,ei,side,i){
-  if(!mv)return `<td class="acct none"></td><td class="amt none"></td>`;
   const id=`in-${ei}-${side}-${i}`;
-  STATE.answers[id]=Math.abs(mv.amt);
-  return `<td class="acct">${mv.acct}</td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><button type="button" class="xvl-btn" onclick="mulFC('${id}')">xvl</button><div class="j-ng" id="ng-${id}"></div></td>`;
+  STATE.answers[id]=mv?Math.abs(mv.amt):0;
+  return `<td class="acct">${mv?mv.acct:''}</td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><button type="button" class="xvl-btn" onclick="mulFC('${id}')">xvl</button><div class="j-ng" id="ng-${id}"></div></td>`;
 }
 
 function newQ(){
@@ -355,7 +354,7 @@ function grade(){
     if(correct)ok++;
     el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
     const ng=document.getElementById('ng-'+id);
-    if(!correct){ng.textContent='正 '+fmt(exp);ng.style.display='block';}
+    if(!correct){ng.textContent='正 '+(exp===0?'空欄':fmt(exp));ng.style.display='block';}
     else ng.style.display='none';
   }
   STATE.graded=true;STATE.total++;

@@ -336,10 +336,9 @@ function acctSelect(id){
   return `<select id="${id}">${opts}</select>`;
 }
 function cell(mv,ei,side,i){
-  if(!mv)return `<td class="acct none"></td><td class="amt none"></td>`;
   const id=`in-${ei}-${side}-${i}`;
-  STATE.answers[id]=Math.abs(mv.amt);
-  STATE.acctAnswers[id+'_acct']=mv.acct;
+  STATE.answers[id]=mv?Math.abs(mv.amt):0;
+  STATE.acctAnswers[id+'_acct']=mv?mv.acct:'';
   return `<td class="acct">${acctSelect(id+'_acct')}<div class="j-ng" id="ng-${id}_acct"></div></td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><button type="button" class="xvl-btn" onclick="mulFC('${id}')">xvl</button><div class="j-ng j-ng-amt" id="ng-${id}"></div></td>`;
 }
 
@@ -367,7 +366,7 @@ function grade(){
     if(correct)ok++;
     el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
     const ng=document.getElementById('ng-'+id);
-    if(!correct){ng.textContent='正 '+fmt(exp);ng.style.display='block';}
+    if(!correct){ng.textContent='正 '+(exp===0?'空欄':fmt(exp));ng.style.display='block';}
     else ng.style.display='none';
   }
 
@@ -379,7 +378,7 @@ function grade(){
     if(correct)ok++;
     el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
     const ng=document.getElementById('ng-'+aid);
-    if(!correct){ng.textContent='正 '+exp;ng.style.display='block';}
+    if(!correct){ng.textContent='正 '+(exp===''?'空欄':exp);ng.style.display='block';}
     else ng.style.display='none';
   }
 
