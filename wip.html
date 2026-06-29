@@ -315,7 +315,7 @@ function renderGiven(g){
     ${g.scrapUnits>0?`<tr><td class="g-key">　正常仕損品</td><td class="g-val">${g.scrapUnits}個（${g.scrapPoint}発生）</td></tr>`:''}
     <tr><td class="g-key">　期末仕掛品</td><td class="g-val">${g.endUnits}個（進捗度${g.endPct}%）</td></tr>
   </table>
-  ${g.scrapUnits>0?`<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理（${g.compOnly?'終点発生 → 完成品のみ負担':'始点発生 → 両者負担'}）</div>`:''}`;
+  ${g.scrapUnits>0?`<div class="hint" style="margin-top:4px">※ 正常仕損は度外視法で処理（${g.compOnly?'終点発生':'始点発生'}）</div>`:''}`;
   document.getElementById('given-area').innerHTML=h;
   // T勘定の左側を埋める
   const fv=(id,v)=>{document.getElementById(id).textContent=fmt(v);};
