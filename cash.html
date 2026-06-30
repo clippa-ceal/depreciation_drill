@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>現金預金ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;background:#EAF3DE;color:#3B6D11}
+.cat-genkin{background:#FAEEDA;color:#854F0B}
+.cat-touza{background:#E1EEF8;color:#185FA5}
+.cat-kogu{background:#E8E1F0;color:#5A3D8A}
+.q-text{font-size:15px;line-height:1.75;color:var(--color-text)}
+.je-grid{display:grid;grid-template-columns:60px minmax(0,1fr) 60px minmax(0,1fr);gap:8px 10px;align-items:center;margin-top:4px}
+.je-side{font-size:13px;color:var(--color-text2);text-align:center;font-weight:600}
+.je-grid input{width:100%;font-size:15px;padding:10px 12px;border:1px solid var(--color-border2);border-radius:8px;background:var(--color-card)}
+.je-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.je-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.je-grid input:disabled{background:#F4F3EF;color:var(--color-text2)}
+.btn-sub{background:var(--color-bg-secondary);color:var(--color-text);font-size:13px;padding:10px;margin-top:4px}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.explain .ans-line{font-weight:600;color:var(--color-text);margin-bottom:6px;font-size:14px}
+@media (max-width:380px){
+  .je-grid{grid-template-columns:48px minmax(0,1fr) 48px minmax(0,1fr);gap:6px 6px}
+  .je-grid input{font-size:14px;padding:9px 8px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>現金預金ドリル</h1>
+  <div class="nav"><a href="index.html">減価償却</a><a href="pension.html">退職給付</a><a href="purchases.html">仕入</a><a href="lease.html">リース</a><a href="lease2.html">リース２</a><a href="wip.html">仕掛品</a><a href="hedge.html">為替予約</a><a href="hedge2.html">為替予約２</a><a href="cash.html" class="nav-on">現金預金</a></div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-correct">0</span><span class="l">正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="cat-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" class="q-text" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">仕訳</div>
+    <div class="je-grid">
+      <span class="je-side">借方</span>
+      <input type="text" id="dr" autocomplete="off" spellcheck="false" placeholder="科目">
+      <span class="je-side">貸方</span>
+      <input type="text" id="cr" autocomplete="off" spellcheck="false" placeholder="科目">
+    </div>
+    <button class="btn-sub" onclick="markNoEntry()">仕訳なし</button>
+    <div class="hint">借方・貸方の勘定科目だけを入力（金額不要）。「営業費」には通信費・水道光熱費・販売管理費等を含みます。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+</div>
+
+<script>
+// === 同義語マップ（左：正規形、右：受け入れる表記） ===
+const SYN = {
+  '現金':['現金'],
+  '当座預金':['当座預金','当座'],
+  '小口現金':['小口現金'],
+  '売掛金':['売掛金'],
+  '買掛金':['買掛金'],
+  '未払金':['未払金','未払費用'],
+  '受取手形':['受取手形'],
+  '不渡手形':['不渡手形','不渡り手形'],
+  '支払手形':['支払手形'],
+  '受取配当金':['受取配当金','配当金'],
+  '有価証券利息':['有価証券利息'],
+  '為替差損益':['為替差損益','為替差益','為替差損'],
+  '営業費':['営業費','その他営業費','通信費','電話代','水道光熱費','光熱費','販売管理費','販売費','販売費及び一般管理費','支払利息','支払家賃'],
+  '支払リース料':['支払リース料','リース料'],
+  '退職給付費用':['退職給付費用','退職給付引当金繰入額'],
+  '雑損失':['雑損失','雑損'],
+  '雑収入':['雑収入','雑益'],
+  '貯蔵品':['貯蔵品'],
+  '支店':['支店'],
+};
+
+// === 論点（カテゴリ・言い回し・仕訳） ===
+const CONCEPTS = [
+  // ----- 現金実査 -----
+  {id:'dividend',cat:'現金実査',dr:'現金',cr:'受取配当金',
+    wordings:[
+      '決算日に金庫を実査したところ、Ａ社株式に係る配当金領収書が保管されていた。なお、未処理である。',
+      '期末に金庫の中を実査したところ、Ｍ社株式について受け取った配当金領収証が保管されていたが、未処理であった。',
+      '金庫を実地調査したところ、当期中に受け取ったＶ社株式に関する配当金領収書が保管されていた。'
+    ],
+    explain:'配当金領収書は通貨代用証券として現金扱い。未処理なので、現金の増加と受取配当金（収益）を計上する。'},
+  {id:'coupon',cat:'現金実査',dr:'現金',cr:'有価証券利息',
+    wordings:[
+      '決算日に金庫の中を実査したところ、Ｌ社社債のクーポン利息（利払日：当期末）が保管されていたが、未処理であった。',
+      '期末に金庫の中を確認したところ、Ｇ社社債のクーポン利息（当期末に利払日が到来したもの）が保管されていたが、未処理であった。',
+      '金庫を実査したところ、Ｘ社債券のクーポン利息（当期末利払日）について未記帳のものが保管されていた。'
+    ],
+    explain:'クーポン利息（社債の利札）も通貨代用証券として現金扱い。利息受取の処理が未済なので、現金と有価証券利息を計上する。'},
+  {id:'other_check_unproc',cat:'現金実査',dr:'現金',cr:'売掛金',
+    wordings:[
+      '金庫を実査したところ、他人振出小切手が保管されていた。売掛金の回収として受け取ったものであるが、未処理であった。',
+      '期末日に金庫の中を実査したところ、甲社振出小切手が発見された。売掛金回収時の処理が未済であった。'
+    ],
+    explain:'他人（他社）振出小切手は通貨代用証券として現金扱い。売掛金回収の処理が未済なので、現金の増加と売掛金の取消を計上する。'},
+  {id:'other_check_misposted',cat:'現金実査',dr:'現金',cr:'当座預金',
+    wordings:[
+      '金庫の中にＡ社振出小切手が保管されていた。売掛金の回収として受け取ったものであるが、当座預金に入金したものとして処理している。'
+    ],
+    explain:'他人振出小切手は本来「現金」だが、誤って当座預金に入金として処理している。当座預金を取り消し、現金に振り替える。'},
+  {id:'postdated',cat:'現金実査',dr:'受取手形',cr:'現金',
+    wordings:[
+      '現金出納帳に、Ｂ社振り出しの小切手（振出日が翌期となるもの）が入金として記帳されていた。',
+      '金庫の中に他社振出小切手が保管されていた。受取時に現金勘定で処理していたが、振出日が翌期であった。'
+    ],
+    explain:'振出日が翌期となる先日付小切手は実質的に受取手形と同じ。現金から受取手形に振り替える。'},
+  {id:'fx_gain',cat:'現金実査',dr:'現金',cr:'為替差損益',
+    wordings:[
+      '金庫の中に外貨建ての通貨が保管されていた。受取日の直物為替レートで記帳されているが、決算日の直物為替レートは受取日より円安となっている。'
+    ],
+    explain:'外貨建ての現金は決算日レートで換算替えする。円安なので円換算額が増加 → 現金の増加・為替差益（為替差損益）を計上。'},
+  {id:'fx_loss',cat:'現金実査',dr:'為替差損益',cr:'現金',
+    wordings:[
+      '金庫の中に外貨建ての通貨が保管されていた。帳簿価額は受取日のレートで記帳されているが、決算日の直物為替レートは受取日より円高となっている。'
+    ],
+    explain:'外貨建ての現金は決算日レートで換算替えする。円高なので円換算額が減少 → 現金の減少・為替差損（為替差損益）を計上。'},
+  {id:'stamps',cat:'現金実査',dr:'貯蔵品',cr:'営業費',
+    wordings:[
+      '金庫の中に未使用の収入印紙・切手が保管されていた。なお、購入時に営業費勘定に計上している。'
+    ],
+    explain:'未使用の収入印紙・切手は貯蔵品。購入時に営業費として費用処理しているので、未使用分を貯蔵品に振り替える。'},
+  {id:'cash_loss',cat:'現金実査',dr:'雑損失',cr:'現金',
+    wordings:[
+      '決算日に現金の実査を行ったところ、実際有高が帳簿残高を下回っていた。原因不明であるため、差額を雑損失とする。'
+    ],
+    explain:'現金の実際有高が帳簿残高より少ない（不足）。原因不明分は雑損失に振り替える。'},
+  {id:'cash_gain',cat:'現金実査',dr:'現金',cr:'雑収入',
+    wordings:[
+      '決算日に現金の実査を行ったところ、実際有高が帳簿残高を上回っていた。原因不明であるため、差額を雑収入とする。'
+    ],
+    explain:'現金の実際有高が帳簿残高より多い（過剰）。原因不明分は雑収入に振り替える。'},
+
+  // ----- 銀行勘定調整 -----
+  {id:'after_hours',cat:'銀行勘定調整',noEntry:true,
+    wordings:[
+      '決算日に現金を当座預金に預け入れたが、銀行の営業時間終了後であったため、銀行では翌日の入金として処理されていた。',
+      '期末日に当座預金口座に現金を預け入れる予定であったが、担当者の手違いで実際の預入は翌日であった。当社では当座預金口座に預け入れたものとして処理している。'
+    ],
+    explain:'時間外預入は銀行側の翌日処理であり、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の加算項目）。'},
+  {id:'unpresented',cat:'銀行勘定調整',noEntry:true,
+    wordings:[
+      '買掛金の支払いのために振り出した小切手が、銀行に未呈示であった。',
+      '買掛金の支払いとして振り出した小切手が決済されていなかった。',
+      '営業費の支払いのために振り出した小切手について記帳済みであったが、未取付となっていた。'
+    ],
+    explain:'未取付小切手は相手先が銀行に呈示していないだけで、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の減算項目）。'},
+  {id:'undelivered_buy',cat:'銀行勘定調整',dr:'当座預金',cr:'買掛金',
+    wordings:[
+      '買掛金の支払いとして振り出した小切手が、相手先に交付されておらず、当社の金庫に保管されていた。',
+      '買掛金支払のために振り出した小切手が、仕入先の担当者が回収に来なかったため、金庫に保管されていた。'
+    ],
+    explain:'未渡小切手（買掛金支払用）は、まだ相手に渡していないため当座預金が実質的に減少していない。当座預金を戻し、買掛金も復活させる。'},
+  {id:'undelivered_other',cat:'銀行勘定調整',dr:'当座預金',cr:'未払金',
+    wordings:[
+      '営業費の支払いのために振り出した小切手が、相手先に交付されておらず、当社の金庫に保管されていた。'
+    ],
+    explain:'未渡小切手（営業費支払用）は、費用は既に発生しているため取り消せない。当座預金を戻し、貸方は未払金とする。'},
+  {id:'draw_op',cat:'銀行勘定調整',dr:'営業費',cr:'当座預金',
+    wordings:[
+      '当座勘定照合表に電話代の引落しがあったが、当社では未記帳である。',
+      '営業費が当座預金口座から引き落とされていたが、未処理であった。',
+      '水道光熱費が当座預金口座から引き落とされていたが、未処理であった。',
+      '販売管理費が当座預金から引き落とされていたが、未記帳であった。'
+    ],
+    explain:'銀行側で営業費（通信費・水道光熱費等を含む）が引き落とされたのに当社が未記帳。費用計上と当座預金の減少を計上する。'},
+  {id:'draw_lease',cat:'銀行勘定調整',dr:'支払リース料',cr:'当座預金',
+    wordings:[
+      'リース料が当座預金から引き落とされていたが、未記帳であった。'
+    ],
+    explain:'リース料が引き落とされたのに未記帳。支払リース料と当座預金の減少を計上する。'},
+  {id:'draw_pension',cat:'銀行勘定調整',dr:'退職給付費用',cr:'当座預金',
+    wordings:[
+      '企業年金制度に係る掛金が当座預金から引き落とされていたが、未処理であった。',
+      '企業年金掛金が当座預金から引き落とされていたが、未処理であった。'
+    ],
+    explain:'企業年金掛金の支払いは退職給付費用として処理。引落としが未記帳なので、退職給付費用と当座預金の減少を計上する。'},
+  {id:'receivable_in',cat:'銀行勘定調整',dr:'当座預金',cr:'売掛金',
+    wordings:[
+      '得意先から売掛金の回収として当座預金に振り込みがあったが、当社では未処理であった。',
+      '売掛金が当座預金に振り込まれていたが、未記帳であった。',
+      '得意先Ａ社から売掛金の回収として振込みがあったが、未記帳であった。'
+    ],
+    explain:'売掛金が当座預金に振り込まれたのに当社が未記帳。当座預金の増加と売掛金の減少を計上する。'},
+  {id:'note_payment',cat:'銀行勘定調整',dr:'支払手形',cr:'当座預金',
+    wordings:[
+      '決算日に手形代金が当座預金から引き落とされていたが、当社では何ら処理を行っていなかった。',
+      '支払手形代金が当座預金から引き落とされていたが、この通知が当社に未達であった。'
+    ],
+    explain:'支払手形の決済（引落とし）が未記帳。支払手形の消滅と当座預金の減少を計上する。'},
+  {id:'note_dishonor',cat:'銀行勘定調整',dr:'不渡手形',cr:'当座預金',
+    wordings:[
+      '取立依頼していた得意先振出約束手形について入金記帳済であったが、不渡りとなり入金されていなかった。'
+    ],
+    explain:'取立依頼の手形が不渡りとなった場合、入金記帳の取消＋不渡手形への振替を行う。当座預金を減らし、不渡手形を計上する。'},
+  {id:'branch_in',cat:'銀行勘定調整',dr:'当座預金',cr:'支店',
+    wordings:[
+      '本店の当座預金に支店からの振込みがあったが、未記帳であった。'
+    ],
+    explain:'本店当座預金に支店から送金が振り込まれたが未記帳。当座預金の増加と相手勘定として「支店」を計上する。'},
+
+  // ----- 小口現金 -----
+  {id:'petty',cat:'小口現金',dr:'営業費',cr:'小口現金',
+    wordings:[
+      '定額資金渡制度を採用しており、決算日に用度係から月分の支払報告（営業費として処理する）があったが、未処理である。'
+    ],
+    explain:'小口現金から営業費が支払われたが、支払報告に基づく仕訳が未処理。営業費の計上と小口現金の減少を計上する。'}
+];
+
+// === 状態 ===
+const STATE = {total:0,correct:0,q:null,history:[],graded:false};
+
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function normalize(s){
+  if(s==null)return'';
+  let v=String(s).trim();
+  // 全角英数→半角
+  v=v.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  // 空白・記号除去
+  v=v.replace(/[\s　・,，()（）「」"'`]/g,'');
+  // 末尾「勘定」除去
+  v=v.replace(/勘定$/,'');
+  // 「等」除去（販管費等→販管費）
+  v=v.replace(/等$/,'');
+  return v;
+}
+
+function canonicalize(input){
+  const s=normalize(input);
+  if(s==='')return'';
+  for(const[canon,syns]of Object.entries(SYN)){
+    for(const w of syns){
+      if(normalize(w)===s)return canon;
+    }
+  }
+  return s;
+}
+
+function isNoEntryInput(s){
+  const n=normalize(s);
+  return n===''||n==='なし'||n==='仕訳なし'||n==='処理なし'||n==='-'||n==='ー';
+}
+
+const catCls={'現金実査':'cat-genkin','銀行勘定調整':'cat-touza','小口現金':'cat-kogu'};
+
+function pickConceptNoRepeat(){
+  // 直近5問は避ける
+  const recent=STATE.history.slice(-5);
+  const pool=CONCEPTS.filter(c=>!recent.includes(c.id));
+  const arr=pool.length?pool:CONCEPTS;
+  return pick(arr);
+}
+
+function newQ(){
+  const c=pickConceptNoRepeat();
+  const wording=pick(c.wordings);
+  STATE.q={concept:c,wording};
+  STATE.history.push(c.id);
+  STATE.graded=false;
+  document.getElementById('cat-wrap').innerHTML=`<span class="cat-badge ${catCls[c.cat]||''}">${c.cat}</span>`;
+  document.getElementById('q-body').textContent=wording;
+  for(const id of['dr','cr']){
+    const el=document.getElementById(id);
+    el.value='';el.disabled=false;el.classList.remove('cell-ok','cell-ng');
+  }
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function markNoEntry(){
+  if(STATE.graded)return;
+  document.getElementById('dr').value='仕訳なし';
+  document.getElementById('cr').value='仕訳なし';
+}
+
+function mark(id,ok){
+  const el=document.getElementById(id);
+  el.classList.remove('cell-ok','cell-ng');
+  el.classList.add(ok?'cell-ok':'cell-ng');
+}
+
+function grade(){
+  if(STATE.graded)return;
+  const c=STATE.q.concept;
+  const drIn=document.getElementById('dr').value;
+  const crIn=document.getElementById('cr').value;
+  let drOk,crOk,allOk,ansText;
+
+  if(c.noEntry){
+    drOk=isNoEntryInput(drIn);
+    crOk=isNoEntryInput(crIn);
+    allOk=drOk&&crOk;
+    ansText='仕訳なし';
+  }else{
+    drOk=canonicalize(drIn)===c.dr;
+    crOk=canonicalize(crIn)===c.cr;
+    allOk=drOk&&crOk;
+    ansText=`(借) ${c.dr} ／ (貸) ${c.cr}`;
+  }
+  mark('dr',drOk);mark('cr',crOk);
+
+  STATE.graded=true;
+  STATE.total++;
+  if(allOk)STATE.correct++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-correct').textContent=STATE.correct;
+
+  document.getElementById('result-area').innerHTML=`
+    <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 正解！':'✗ 不正解'}</div>
+    <div class="explain"><div class="ans-line">正解：${ansText}</div>${c.explain}</div>
+  `;
+  document.getElementById('dr').disabled=true;
+  document.getElementById('cr').disabled=true;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+
+// Enterで答え合わせ
+for(const id of['dr','cr']){
+  document.getElementById(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();if(!STATE.graded)grade();else nextQ();}
+  });
+}
+
+// セルフテスト
+(function selfTest(){
+  console.assert(canonicalize('通信費')==='営業費','SYN:通信費→営業費');
+  console.assert(canonicalize('水道光熱費')==='営業費','SYN:水道光熱費→営業費');
+  console.assert(canonicalize('電話代')==='営業費','SYN:電話代→営業費');
+  console.assert(canonicalize('当座')==='当座預金','SYN:当座→当座預金');
+  console.assert(canonicalize('現金 ')==='現金','SYN:trim');
+  console.assert(canonicalize('現金勘定')==='現金','SYN:勘定除去');
+  console.assert(canonicalize('リース料')==='支払リース料','SYN:リース料');
+  console.assert(canonicalize('未払費用')==='未払金','SYN:未払費用');
+  console.assert(isNoEntryInput('')===true,'noEntry:空');
+  console.assert(isNoEntryInput('なし')===true,'noEntry:なし');
+  console.assert(isNoEntryInput('仕訳なし')===true,'noEntry:仕訳なし');
+})();
+
+newQ();
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
