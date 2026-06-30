@@ -277,7 +277,7 @@ function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 const catCls={'現金実査':'cat-genkin','銀行勘定調整':'cat-touza','小口現金':'cat-kogu'};
 
 // === ボタン表示の略称（値・採点は正式名のまま） ===
-const ABBREV={'現金':'げ','当座預金':'と','売掛金':'うK','買掛金':'KK','営業費':'え','有価証券利息':'R','受取手形':'う手','支払手形':'し手','不渡手形':'不手'};
+const ABBREV={'現金':'げ','当座預金':'と','売掛金':'うK','買掛金':'KK','営業費':'え','有価証券利息':'R','受取手形':'う手','支払手形':'し手','不渡手形':'不手','受取配当金':'うは','未払金':'未払'};
 
 function renderChips(){
   const html=ACCOUNTS.map(a=>`<button type="button" class="acct-chip" data-acct="${a}" onclick="pickAcct('${a}')">${ABBREV[a]||a}</button>`).join('');
