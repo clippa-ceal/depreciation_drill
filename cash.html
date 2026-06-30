@@ -42,21 +42,34 @@ button:active{opacity:0.85}
 .cat-touza{background:#E1EEF8;color:#185FA5}
 .cat-kogu{background:#E8E1F0;color:#5A3D8A}
 .q-text{font-size:15px;line-height:1.75;color:var(--color-text)}
-.je-grid{display:grid;grid-template-columns:60px minmax(0,1fr) 60px minmax(0,1fr);gap:8px 10px;align-items:center;margin-top:4px}
-.je-side{font-size:13px;color:var(--color-text2);text-align:center;font-weight:600}
-.je-grid input{width:100%;font-size:15px;padding:10px 12px;border:1px solid var(--color-border2);border-radius:8px;background:var(--color-card)}
-.je-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
-.je-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
-.je-grid input:disabled{background:#F4F3EF;color:var(--color-text2)}
-.btn-sub{background:var(--color-bg-secondary);color:var(--color-text);font-size:13px;padding:10px;margin-top:4px}
+
+.je-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.je-slot{padding:10px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:#FAFAF8;text-align:center;transition:border-color .15s,background .15s}
+.je-slot.active{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.je-slot.filled{border-color:var(--color-text);background:var(--color-card)}
+.je-slot.ok{border-color:#7FB04A;background:#F2F8EA}
+.je-slot.ng{border-color:#D98A8A;background:#FCF0F0}
+.je-slot-label{font-size:11px;color:var(--color-text2);font-weight:600;margin-bottom:3px;letter-spacing:0.05em}
+.je-slot-val{font-size:16px;font-weight:600;min-height:22px;color:var(--color-text)}
+.je-slot-val.empty{color:#BBB8AE;font-weight:400}
+.je-status{font-size:12px;color:var(--color-info);text-align:center;margin:10px 0 6px;font-weight:500;min-height:18px}
+.je-status.done{color:var(--color-text2)}
+.je-status.warn{color:#A32D2D}
+
+.acct-label{font-size:11px;color:var(--color-text2);font-weight:600;margin:6px 0 6px;letter-spacing:0.05em}
+.acct-chips{display:flex;flex-wrap:wrap;gap:6px}
+.acct-chip{width:auto;margin:0;padding:8px 12px;border:1px solid var(--color-border2);border-radius:999px;background:var(--color-card);font-size:13px;color:var(--color-text);font-weight:500;cursor:pointer;line-height:1.2}
+.acct-chip:hover{background:var(--color-bg-secondary)}
+.acct-chip:active{opacity:0.7}
+.acct-chip:disabled{opacity:0.4;cursor:not-allowed}
+
+.acct-actions{display:flex;gap:8px;margin-top:10px}
+.acct-actions button{flex:1;margin:0;background:var(--color-bg-secondary);color:var(--color-text);font-size:13px;padding:10px;font-weight:500;border:0.5px solid var(--color-border2)}
+
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
 .result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
 .explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
 .explain .ans-line{font-weight:600;color:var(--color-text);margin-bottom:6px;font-size:14px}
-@media (max-width:380px){
-  .je-grid{grid-template-columns:48px minmax(0,1fr) 48px minmax(0,1fr);gap:6px 6px}
-  .je-grid input{font-size:14px;padding:9px 8px}
-}
 </style>
 </head>
 <body>
@@ -75,15 +88,25 @@ button:active{opacity:0.85}
   </div>
 
   <div class="card">
-    <div class="label">仕訳</div>
-    <div class="je-grid">
-      <span class="je-side">借方</span>
-      <input type="text" id="dr" autocomplete="off" spellcheck="false" placeholder="科目">
-      <span class="je-side">貸方</span>
-      <input type="text" id="cr" autocomplete="off" spellcheck="false" placeholder="科目">
+    <div class="label">仕訳（科目を借方→貸方の順にタップ）</div>
+    <div class="je-slots">
+      <div class="je-slot" id="slot-dr">
+        <div class="je-slot-label">借方</div>
+        <div class="je-slot-val empty" id="dr-val">—</div>
+      </div>
+      <div class="je-slot" id="slot-cr">
+        <div class="je-slot-label">貸方</div>
+        <div class="je-slot-val empty" id="cr-val">—</div>
+      </div>
     </div>
-    <button class="btn-sub" onclick="markNoEntry()">仕訳なし</button>
-    <div class="hint">借方・貸方の勘定科目だけを入力（金額不要）。「営業費」には通信費・水道光熱費・販売管理費等を含みます。</div>
+    <div class="je-status" id="je-status">借方の科目を選んでください</div>
+    <div class="acct-label">科目</div>
+    <div class="acct-chips" id="acct-chips"></div>
+    <div class="acct-actions">
+      <button onclick="setNoEntry()">仕訳なし</button>
+      <button onclick="clearSelection()">クリア</button>
+    </div>
+    <div class="hint">「営業費」には通信費・水道光熱費・販売管理費等を含みます。</div>
   </div>
 
   <div id="result-area"></div>
@@ -92,28 +115,15 @@ button:active{opacity:0.85}
 </div>
 
 <script>
-// === 同義語マップ（左：正規形、右：受け入れる表記） ===
-const SYN = {
-  '現金':['現金'],
-  '当座預金':['当座預金','当座'],
-  '小口現金':['小口現金'],
-  '売掛金':['売掛金'],
-  '買掛金':['買掛金'],
-  '未払金':['未払金','未払費用'],
-  '受取手形':['受取手形'],
-  '不渡手形':['不渡手形','不渡り手形'],
-  '支払手形':['支払手形'],
-  '受取配当金':['受取配当金','配当金'],
-  '有価証券利息':['有価証券利息'],
-  '為替差損益':['為替差損益','為替差益','為替差損'],
-  '営業費':['営業費','その他営業費','通信費','電話代','水道光熱費','光熱費','販売管理費','販売費','販売費及び一般管理費','支払利息','支払家賃'],
-  '支払リース料':['支払リース料','リース料'],
-  '退職給付費用':['退職給付費用','退職給付引当金繰入額'],
-  '雑損失':['雑損失','雑損'],
-  '雑収入':['雑収入','雑益'],
-  '貯蔵品':['貯蔵品'],
-  '支店':['支店'],
-};
+// === 科目リスト（チップとして表示） ===
+const ACCOUNTS = [
+  '現金','当座預金','小口現金',
+  '売掛金','受取手形','不渡手形','貯蔵品',
+  '買掛金','支払手形','未払金',
+  '受取配当金','有価証券利息','雑収入',
+  '営業費','支払リース料','退職給付費用','雑損失',
+  '為替差損益','支店'
+];
 
 // === 論点（カテゴリ・言い回し・仕訳） ===
 const CONCEPTS = [
@@ -253,98 +263,123 @@ const CONCEPTS = [
 
 // === 状態 ===
 const STATE = {total:0,correct:0,q:null,history:[],graded:false};
+const SEL = {dr:null,cr:null,next:'dr'};
 
-function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
-
-function normalize(s){
-  if(s==null)return'';
-  let v=String(s).trim();
-  // 全角英数→半角
-  v=v.replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
-  // 空白・記号除去
-  v=v.replace(/[\s　・,，()（）「」"'`]/g,'');
-  // 末尾「勘定」除去
-  v=v.replace(/勘定$/,'');
-  // 「等」除去（販管費等→販管費）
-  v=v.replace(/等$/,'');
-  return v;
-}
-
-function canonicalize(input){
-  const s=normalize(input);
-  if(s==='')return'';
-  for(const[canon,syns]of Object.entries(SYN)){
-    for(const w of syns){
-      if(normalize(w)===s)return canon;
-    }
-  }
-  return s;
-}
-
-function isNoEntryInput(s){
-  const n=normalize(s);
-  return n===''||n==='なし'||n==='仕訳なし'||n==='処理なし'||n==='-'||n==='ー';
-}
 
 const catCls={'現金実査':'cat-genkin','銀行勘定調整':'cat-touza','小口現金':'cat-kogu'};
 
-function pickConceptNoRepeat(){
-  // 直近5問は避ける
-  const recent=STATE.history.slice(-5);
-  const pool=CONCEPTS.filter(c=>!recent.includes(c.id));
-  const arr=pool.length?pool:CONCEPTS;
-  return pick(arr);
+function renderChips(){
+  const html=ACCOUNTS.map(a=>`<button type="button" class="acct-chip" data-acct="${a}" onclick="pickAcct('${a}')">${a}</button>`).join('');
+  document.getElementById('acct-chips').innerHTML=html;
+}
+
+function pickAcct(acct){
+  if(STATE.graded)return;
+  if(SEL.next==='dr'){
+    SEL.dr=acct;SEL.next='cr';
+  }else if(SEL.next==='cr'){
+    SEL.cr=acct;SEL.next=null;
+  }else{
+    // 両方埋まっている → 貸方を上書きする運用
+    SEL.cr=acct;
+  }
+  updateSlots();
+}
+
+function updateSlots(){
+  const drVal=document.getElementById('dr-val');
+  const crVal=document.getElementById('cr-val');
+  const drSlot=document.getElementById('slot-dr');
+  const crSlot=document.getElementById('slot-cr');
+  const status=document.getElementById('je-status');
+
+  drVal.textContent=SEL.dr||'—';
+  drVal.classList.toggle('empty',!SEL.dr);
+  crVal.textContent=SEL.cr||'—';
+  crVal.classList.toggle('empty',!SEL.cr);
+
+  for(const el of[drSlot,crSlot])el.classList.remove('active','filled','ok','ng');
+  if(!STATE.graded){
+    if(SEL.next==='dr')drSlot.classList.add('active');
+    else if(SEL.next==='cr')crSlot.classList.add('active');
+    if(SEL.dr)drSlot.classList.add('filled');
+    if(SEL.cr)crSlot.classList.add('filled');
+  }
+
+  status.classList.remove('done','warn');
+  if(STATE.graded){
+    status.textContent='';
+  }else if(SEL.next==='dr'){
+    status.textContent='借方の科目を選んでください';
+  }else if(SEL.next==='cr'){
+    status.textContent='貸方の科目を選んでください';
+  }else{
+    status.textContent='答え合わせを押してください';
+    status.classList.add('done');
+  }
+}
+
+function clearSelection(){
+  if(STATE.graded)return;
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';
+  updateSlots();
+}
+
+function setNoEntry(){
+  if(STATE.graded)return;
+  SEL.dr='仕訳なし';SEL.cr='仕訳なし';SEL.next=null;
+  updateSlots();
+}
+
+function setChipsDisabled(disabled){
+  for(const el of document.querySelectorAll('.acct-chip')){
+    el.disabled=disabled;
+  }
 }
 
 function newQ(){
-  const c=pickConceptNoRepeat();
+  // 直近5問は避ける
+  const recent=STATE.history.slice(-5);
+  const pool=CONCEPTS.filter(c=>!recent.includes(c.id));
+  const c=pick(pool.length?pool:CONCEPTS);
   const wording=pick(c.wordings);
   STATE.q={concept:c,wording};
   STATE.history.push(c.id);
   STATE.graded=false;
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';
+
   document.getElementById('cat-wrap').innerHTML=`<span class="cat-badge ${catCls[c.cat]||''}">${c.cat}</span>`;
   document.getElementById('q-body').textContent=wording;
-  for(const id of['dr','cr']){
-    const el=document.getElementById(id);
-    el.value='';el.disabled=false;el.classList.remove('cell-ok','cell-ng');
-  }
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
-}
-
-function markNoEntry(){
-  if(STATE.graded)return;
-  document.getElementById('dr').value='仕訳なし';
-  document.getElementById('cr').value='仕訳なし';
-}
-
-function mark(id,ok){
-  const el=document.getElementById(id);
-  el.classList.remove('cell-ok','cell-ng');
-  el.classList.add(ok?'cell-ok':'cell-ng');
+  setChipsDisabled(false);
+  updateSlots();
 }
 
 function grade(){
   if(STATE.graded)return;
   const c=STATE.q.concept;
-  const drIn=document.getElementById('dr').value;
-  const crIn=document.getElementById('cr').value;
-  let drOk,crOk,allOk,ansText;
+  if(SEL.dr===null||SEL.cr===null){
+    const status=document.getElementById('je-status');
+    status.textContent='借方と貸方を両方選んでから答え合わせしてください';
+    status.classList.remove('done');status.classList.add('warn');
+    return;
+  }
 
+  let drOk,crOk,allOk,ansText;
   if(c.noEntry){
-    drOk=isNoEntryInput(drIn);
-    crOk=isNoEntryInput(crIn);
+    drOk=(SEL.dr==='仕訳なし');
+    crOk=(SEL.cr==='仕訳なし');
     allOk=drOk&&crOk;
     ansText='仕訳なし';
   }else{
-    drOk=canonicalize(drIn)===c.dr;
-    crOk=canonicalize(crIn)===c.cr;
+    drOk=(SEL.dr===c.dr);
+    crOk=(SEL.cr===c.cr);
     allOk=drOk&&crOk;
     ansText=`(借) ${c.dr} ／ (貸) ${c.cr}`;
   }
-  mark('dr',drOk);mark('cr',crOk);
 
   STATE.graded=true;
   STATE.total++;
@@ -352,40 +387,36 @@ function grade(){
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-correct').textContent=STATE.correct;
 
+  // スロットの結果表示
+  const drSlot=document.getElementById('slot-dr');
+  const crSlot=document.getElementById('slot-cr');
+  for(const el of[drSlot,crSlot])el.classList.remove('active','filled');
+  drSlot.classList.add(drOk?'ok':'ng');
+  crSlot.classList.add(crOk?'ok':'ng');
+  document.getElementById('je-status').textContent='';
+
+  setChipsDisabled(true);
   document.getElementById('result-area').innerHTML=`
     <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 正解！':'✗ 不正解'}</div>
     <div class="explain"><div class="ans-line">正解：${ansText}</div>${c.explain}</div>
   `;
-  document.getElementById('dr').disabled=true;
-  document.getElementById('cr').disabled=true;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
 
 function nextQ(){newQ();}
 
-// Enterで答え合わせ
-for(const id of['dr','cr']){
-  document.getElementById(id).addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();if(!STATE.graded)grade();else nextQ();}
-  });
-}
-
 // セルフテスト
 (function selfTest(){
-  console.assert(canonicalize('通信費')==='営業費','SYN:通信費→営業費');
-  console.assert(canonicalize('水道光熱費')==='営業費','SYN:水道光熱費→営業費');
-  console.assert(canonicalize('電話代')==='営業費','SYN:電話代→営業費');
-  console.assert(canonicalize('当座')==='当座預金','SYN:当座→当座預金');
-  console.assert(canonicalize('現金 ')==='現金','SYN:trim');
-  console.assert(canonicalize('現金勘定')==='現金','SYN:勘定除去');
-  console.assert(canonicalize('リース料')==='支払リース料','SYN:リース料');
-  console.assert(canonicalize('未払費用')==='未払金','SYN:未払費用');
-  console.assert(isNoEntryInput('')===true,'noEntry:空');
-  console.assert(isNoEntryInput('なし')===true,'noEntry:なし');
-  console.assert(isNoEntryInput('仕訳なし')===true,'noEntry:仕訳なし');
+  // ACCOUNTSにCONCEPTSのdr/crが含まれているか確認
+  for(const c of CONCEPTS){
+    if(c.noEntry)continue;
+    console.assert(ACCOUNTS.includes(c.dr),`ACCOUNTS missing dr: ${c.dr} (${c.id})`);
+    console.assert(ACCOUNTS.includes(c.cr),`ACCOUNTS missing cr: ${c.cr} (${c.id})`);
+  }
 })();
 
+renderChips();
 newQ();
 
 // PWA
