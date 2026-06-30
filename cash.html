@@ -63,6 +63,13 @@ button:active{opacity:0.85}
 .acct-chip:active{opacity:0.7}
 .acct-chip:disabled{opacity:0.4;cursor:not-allowed}
 
+.bankside-wrap{margin-top:10px}
+.bankside-chips{display:flex;gap:8px}
+.bankside-chip{flex:1;margin:0;padding:10px;border:1.5px solid var(--color-border2);border-radius:10px;background:var(--color-card);font-size:14px;font-weight:600;color:var(--color-text);cursor:pointer}
+.bankside-chip.sel{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.bankside-chip.ok{border-color:#7FB04A;background:#F2F8EA}
+.bankside-chip.ng{border-color:#D98A8A;background:#FCF0F0}
+
 .acct-actions{display:flex;gap:8px;margin-top:10px}
 .acct-actions button{flex:1;margin:0;background:var(--color-bg-secondary);color:var(--color-text);font-size:13px;padding:10px;font-weight:500;border:0.5px solid var(--color-border2)}
 
@@ -97,6 +104,13 @@ button:active{opacity:0.85}
       <div class="je-slot" id="slot-cr">
         <div class="je-slot-label">貸方</div>
         <div class="je-slot-val empty" id="cr-val">—</div>
+      </div>
+    </div>
+    <div class="bankside-wrap" id="bankside-wrap" style="display:none">
+      <div class="acct-label">銀行勘定調整（銀行残高への影響）</div>
+      <div class="bankside-chips">
+        <button type="button" class="bankside-chip" id="bs-plus" onclick="pickBankSide('plus')">銀行側 ＋</button>
+        <button type="button" class="bankside-chip" id="bs-minus" onclick="pickBankSide('minus')">銀行側 −</button>
       </div>
     </div>
     <div class="je-status" id="je-status">借方の科目を選んでください</div>
@@ -186,13 +200,13 @@ const CONCEPTS = [
     explain:'現金の実際有高が帳簿残高より多い（過剰）。原因不明分は雑収入に振り替える。'},
 
   // ----- 銀行勘定調整 -----
-  {id:'after_hours',cat:'銀行勘定調整',noEntry:true,
+  {id:'after_hours',cat:'銀行勘定調整',noEntry:true,bankSide:'plus',
     wordings:[
       '決算日に現金を当座預金に預け入れたが、銀行の営業時間終了後であったため、銀行では翌日の入金として処理されていた。',
       '期末日に当座預金口座に現金を預け入れる予定であったが、担当者の手違いで実際の預入は翌日であった。当社では当座預金口座に預け入れたものとして処理している。'
     ],
     explain:'時間外預入は銀行側の翌日処理であり、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の加算項目）。'},
-  {id:'unpresented',cat:'銀行勘定調整',noEntry:true,
+  {id:'unpresented',cat:'銀行勘定調整',noEntry:true,bankSide:'minus',
     wordings:[
       '買掛金の支払いのために振り出した小切手が、銀行に未呈示であった。',
       '買掛金の支払いとして振り出した小切手が決済されていなかった。',
@@ -263,14 +277,17 @@ const CONCEPTS = [
 
 // === 状態 ===
 const STATE = {total:0,correct:0,q:null,history:[],graded:false};
-const SEL = {dr:null,cr:null,next:'dr'};
+const SEL = {dr:null,cr:null,next:'dr',bankSide:null};
 
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 
 const catCls={'現金実査':'cat-genkin','銀行勘定調整':'cat-touza','小口現金':'cat-kogu'};
 
+// === ボタン表示の略称（値・採点は正式名のまま） ===
+const ABBREV={'現金':'げ','当座預金':'と','売掛金':'うK','買掛金':'KK','営業費':'え','有価証券利息':'R'};
+
 function renderChips(){
-  const html=ACCOUNTS.map(a=>`<button type="button" class="acct-chip" data-acct="${a}" onclick="pickAcct('${a}')">${a}</button>`).join('');
+  const html=ACCOUNTS.map(a=>`<button type="button" class="acct-chip" data-acct="${a}" onclick="pickAcct('${a}')">${ABBREV[a]||a}</button>`).join('');
   document.getElementById('acct-chips').innerHTML=html;
 }
 
@@ -284,6 +301,12 @@ function pickAcct(acct){
     // 両方埋まっている → 貸方を上書きする運用
     SEL.cr=acct;
   }
+  updateSlots();
+}
+
+function pickBankSide(side){
+  if(STATE.graded)return;
+  SEL.bankSide=side;
   updateSlots();
 }
 
@@ -307,9 +330,23 @@ function updateSlots(){
     if(SEL.cr)crSlot.classList.add('filled');
   }
 
+  // 銀行側＋／− セレクタ（仕訳なしのときだけ表示）
+  const bw=document.getElementById('bankside-wrap');
+  const showBank=(SEL.dr==='仕訳なし');
+  bw.style.display=showBank?'block':'none';
+  const bp=document.getElementById('bs-plus'),bm=document.getElementById('bs-minus');
+  for(const el of[bp,bm])el.classList.remove('sel','ok','ng');
+  if(showBank&&!STATE.graded){
+    if(SEL.bankSide==='plus')bp.classList.add('sel');
+    if(SEL.bankSide==='minus')bm.classList.add('sel');
+  }
+
   status.classList.remove('done','warn');
   if(STATE.graded){
     status.textContent='';
+  }else if(showBank){
+    if(SEL.bankSide===null){status.textContent='銀行側 ＋ / − を選んでください';}
+    else{status.textContent='答え合わせを押してください';status.classList.add('done');}
   }else if(SEL.next==='dr'){
     status.textContent='借方の科目を選んでください';
   }else if(SEL.next==='cr'){
@@ -322,13 +359,13 @@ function updateSlots(){
 
 function clearSelection(){
   if(STATE.graded)return;
-  SEL.dr=null;SEL.cr=null;SEL.next='dr';
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.bankSide=null;
   updateSlots();
 }
 
 function setNoEntry(){
   if(STATE.graded)return;
-  SEL.dr='仕訳なし';SEL.cr='仕訳なし';SEL.next=null;
+  SEL.dr='仕訳なし';SEL.cr='仕訳なし';SEL.next=null;SEL.bankSide=null;
   updateSlots();
 }
 
@@ -347,7 +384,7 @@ function newQ(){
   STATE.q={concept:c,wording};
   STATE.history.push(c.id);
   STATE.graded=false;
-  SEL.dr=null;SEL.cr=null;SEL.next='dr';
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.bankSide=null;
 
   document.getElementById('cat-wrap').innerHTML=`<span class="cat-badge ${catCls[c.cat]||''}">${c.cat}</span>`;
   document.getElementById('q-body').textContent=wording;
@@ -367,13 +404,21 @@ function grade(){
     status.classList.remove('done');status.classList.add('warn');
     return;
   }
+  if(SEL.dr==='仕訳なし'&&SEL.bankSide===null){
+    const status=document.getElementById('je-status');
+    status.textContent='銀行側 ＋ / − を選んでください';
+    status.classList.remove('done');status.classList.add('warn');
+    return;
+  }
 
-  let drOk,crOk,allOk,ansText;
+  const sideLabel=s=>s==='plus'?'銀行側＋':'銀行側−';
+  let drOk,crOk,allOk,ansText,bankOk=true;
   if(c.noEntry){
     drOk=(SEL.dr==='仕訳なし');
     crOk=(SEL.cr==='仕訳なし');
-    allOk=drOk&&crOk;
-    ansText='仕訳なし';
+    bankOk=(SEL.bankSide===c.bankSide);
+    allOk=drOk&&crOk&&bankOk;
+    ansText=`仕訳なし（${sideLabel(c.bankSide)}）`;
   }else{
     drOk=(SEL.dr===c.dr);
     crOk=(SEL.cr===c.cr);
@@ -394,6 +439,16 @@ function grade(){
   drSlot.classList.add(drOk?'ok':'ng');
   crSlot.classList.add(crOk?'ok':'ng');
   document.getElementById('je-status').textContent='';
+
+  // 銀行側＋／− の結果表示（仕訳なしのとき）
+  if(c.noEntry){
+    const bp=document.getElementById('bs-plus'),bm=document.getElementById('bs-minus');
+    for(const el of[bp,bm])el.classList.remove('sel','ok','ng');
+    const chosen=SEL.bankSide==='plus'?bp:(SEL.bankSide==='minus'?bm:null);
+    const correctChip=c.bankSide==='plus'?bp:bm;
+    if(chosen)chosen.classList.add(bankOk?'ok':'ng');
+    if(!bankOk)correctChip.classList.add('ok');
+  }
 
   setChipsDisabled(true);
   document.getElementById('result-area').innerHTML=`
