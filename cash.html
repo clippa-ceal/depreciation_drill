@@ -38,6 +38,7 @@ button:active{opacity:0.85}
 .stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
 .stat .l{font-size:12px;color:var(--color-text2)}
 .cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;background:#EAF3DE;color:#3B6D11}
+.q-num{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;margin-right:6px;font-weight:600;background:var(--color-text);color:#fff;font-variant-numeric:tabular-nums}
 .cat-genkin{background:#FAEEDA;color:#854F0B}
 .cat-touza{background:#E1EEF8;color:#185FA5}
 .cat-kogu{background:#E8E1F0;color:#5A3D8A}
@@ -197,10 +198,10 @@ const CONCEPTS = [
   // ----- 銀行勘定調整 -----
   {id:'after_hours',cat:'銀行勘定調整',noEntry:true,bankSide:'plus',
     wordings:[
-      '決算日に現金を当座預金に預け入れたが、銀行の営業時間終了後であったため、銀行では翌日の入金として処理されていた。',
-      '期末日に当座預金口座に現金を預け入れる予定であったが、担当者の手違いで実際の預入は翌日であった。当社では当座預金口座に預け入れたものとして処理している。'
+      '決算日に現金を当座預金に預け入れたが、銀行の営業時間終了後であったため、銀行では翌日の入金として処理されていた。当社では預入日に適正に記帳している。',
+      '決算日の営業時間終了後に現金を当座預金口座へ預け入れたため、銀行では翌日付の入金として処理されていた。当社の記帳は適正である。'
     ],
-    explain:'時間外預入は銀行側の翌日処理であり、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の加算項目）。'},
+    explain:'時間外預入は銀行側が翌日処理したことによるズレであり、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の加算項目）。'},
   {id:'unpresented',cat:'銀行勘定調整',noEntry:true,bankSide:'minus',
     wordings:[
       '買掛金の支払いのために振り出した小切手が、銀行に未呈示であった。',
@@ -208,6 +209,12 @@ const CONCEPTS = [
       '営業費の支払いのために振り出した小切手について記帳済みであったが、未取付となっていた。'
     ],
     explain:'未取付小切手は相手先が銀行に呈示していないだけで、当社の処理は適正。当社側の修正仕訳は不要（銀行残高の減算項目）。'},
+  {id:'deposit_staff_error',cat:'銀行勘定調整',dr:'現金',cr:'当座預金',
+    wordings:[
+      '期末日に現金を当座預金口座へ預け入れる予定であったが、当社の経理担当者の手違いで実際には預け入れておらず、現金は手許に残っていた。なお、当社では当座預金口座に預け入れたものとして処理している。',
+      '当社の担当者の誤りにより、実際には当座預金へ預け入れていない現金を、預け入れたものとして記帳していた（現金は手許にある）。'
+    ],
+    explain:'当社は預入の仕訳を計上済みだが、実際には預け入れておらず現金は手許にある（当社側の誤り）。誤って計上した当座預金の増加を取り消し、現金に戻す。'},
   {id:'undelivered_buy',cat:'銀行勘定調整',dr:'当座預金',cr:'買掛金',
     wordings:[
       '買掛金の支払いとして振り出した小切手が、相手先に交付されておらず、当社の金庫に保管されていた。',
@@ -375,7 +382,8 @@ function newQ(){
   STATE.graded=false;
   SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.bankSide=null;
 
-  document.getElementById('cat-wrap').innerHTML=`<span class="cat-badge ${catCls[c.cat]||''}">${c.cat}</span>`;
+  const qNum=CONCEPTS.indexOf(c)+1;
+  document.getElementById('cat-wrap').innerHTML=`<span class="q-num">${qNum} / ${CONCEPTS.length}</span><span class="cat-badge ${catCls[c.cat]||''}">${c.cat}</span>`;
   document.getElementById('q-body').textContent=wording;
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
