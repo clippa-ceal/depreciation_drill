@@ -305,9 +305,10 @@ function updateSlots(){
   const crSlot=document.getElementById('slot-cr');
   const status=document.getElementById('je-status');
 
-  drVal.textContent=SEL.dr||'—';
+  const disp=v=>v?(ABBREV[v]||v):'—';
+  drVal.textContent=disp(SEL.dr);
   drVal.classList.toggle('empty',!SEL.dr);
-  crVal.textContent=SEL.cr||'—';
+  crVal.textContent=disp(SEL.cr);
   crVal.classList.toggle('empty',!SEL.cr);
 
   for(const el of[drSlot,crSlot])el.classList.remove('active','filled','ok','ng');
