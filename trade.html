@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>車両買換えドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:180px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
+.cat-badge.b2{background:#FAEEDA;color:#854F0B}
+/* 解答欄 */
+.ans-grid{display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center}
+.ans-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
+.ans-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ans-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.ans-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.ans-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.choice-chip{width:auto;margin:0;padding:8px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:var(--color-card);font-size:13px;color:var(--color-text);font-weight:600;cursor:pointer}
+.choice-chip.sel{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.choice-chip.ok{border-color:#7FB04A;background:#F2F8EA}
+.choice-chip.ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>車両買換えドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html" class="nav-on">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="badge-area"></div>
+    <div class="label">与件（単位：千円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">解答</div>
+    <div id="answer-area"></div>
+    <div class="hint">下取価格が<b>時価を上回る</b>とき、超過分は新車両の値引き（取得原価から控除）。売却損益は時価−簿価。<br>時価の記載がなければ下取価格を時価とみなす。現金支払額は常に「定価−下取価格」。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,q:null,graded:false,startTime:0,choices:{}};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  if(s.includes('+')||s.replace(/^-/,'').includes('-')){
+    const tokens=s.match(/[+-]?\d+/g)||[];
+    return tokens.reduce((a,t)=>a+parseInt(t,10),0);
+  }
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+
+// ============ 問題生成 ============
+// パターン：時価の与え方（なし／下取価格>時価／下取価格=時価）× 買換え時期（期首／期中）
+function genQ(){
+  for(let t=0;t<8000;t++){
+    const fvMode=pick(['none','premium','equal']);   // 時価：記載なし／下取>時価／下取=時価
+    const midYear=Math.random()<0.5;                  // 期中買換えか
+    const EL=pick([4,5,6,8]);                         // 耐用年数
+    // 取得原価：EL×12で割り切れる千円単位 → 月割償却が整数
+    const C0=EL*12*rand(30,90);                       // 1,440〜8,640
+    const annualDepr=C0/EL;
+    const monthlyDepr=C0/(EL*12);
+    const y=rand(1,EL-2);                             // 経過年数（期首時点）
+    const accum=annualDepr*y;                         // 期首減価償却累計額
+    const m=midYear?rand(2,10):0;                     // 期首からの経過月数
+    const midDepr=monthlyDepr*m;                      // 期中償却費
+    const bv=C0-accum-midDepr;                        // 買換え時簿価
+    if(bv<=0)continue;
+    // 時価（売却損益の方向をランダムに）
+    const gainSide=Math.random()<0.5;
+    const delta=rand(2,20)*10;                        // 損益額 20〜200
+    let FV=gainSide?bv+delta:bv-delta;
+    FV=Math.round(FV/10)*10;
+    if(FV<=0)continue;
+    const gainLoss=FV-bv;                             // 売却損益（+益/−損）
+    if(gainLoss===0)continue;
+    // 下取価格
+    let T,discount=0;
+    if(fvMode==='none'){T=FV;}                        // 時価は表示しない（下取価格=時価とみなす）
+    else if(fvMode==='premium'){discount=rand(5,30)*10;T=FV+discount;}  // 超過分=値引き
+    else{T=FV;}                                       // equal：時価を表示するが値引きゼロ
+    // 新車両の定価
+    const P=Math.round((C0+rand(0,150)*10)/10)*10;
+    if(P<=T)continue;
+    const newCost=P-discount;                         // 新車両の取得原価
+    const cashPaid=P-T;                               // 現金支払額
+    // 整数チェック
+    let bad=false;
+    for(const v of[midDepr,bv,FV,T,newCost,cashPaid,Math.abs(gainLoss)])
+      if(!Number.isInteger(v)||v<0){bad=true;break;}
+    if(bad)continue;
+
+    // ===== 与件 =====
+    const tradeMonth=m===0?'期首（4月1日）':`${(3+m)%12+1}月1日（期首から${m}ヶ月経過）`;
+    let g=`<div class="g-head">旧車両</div>`;
+    g+=`<div class="g-row"><span class="g-key">取得原価</span><span class="g-val">${fmt(C0)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">期首減価償却累計額</span><span class="g-val">${fmt(accum)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${EL}年・残存価額0（記帳は間接法）</span></div>`;
+    g+=`<div class="g-head">買換え（会計期間：4月1日〜3月31日）</div>`;
+    g+=`<div class="g-row"><span class="g-key">買換え日</span><span class="g-val" style="font-size:14px">${tradeMonth}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">新車両の購入価額（定価）</span><span class="g-val">${fmt(P)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">旧車両の下取価格</span><span class="g-val">${fmt(T)}</span></div>`;
+    if(fvMode!=='none'){
+      g+=`<div class="g-row"><span class="g-key">旧車両の時価（適正売却価額）</span><span class="g-val">${fmt(FV)}</span></div>`;
+    }
+    g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 下取価格は新車両の購入代金に充当し、残額を現金で支払う</span></div>`;
+
+    // ===== 解説 =====
+    const explain=[];
+    explain.push(`<b>① 旧車両の簿価</b>`);
+    if(m>0){
+      explain.push(`　期中償却費：${fmt(C0)} ÷ ${EL}年 ÷ 12 × ${m}ヶ月 ＝ ${fmt(midDepr)}`);
+      explain.push(`　簿価 ＝ ${fmt(C0)} − ${fmt(accum)} − ${fmt(midDepr)} ＝ ${fmt(bv)}`);
+    }else{
+      explain.push(`　簿価 ＝ ${fmt(C0)} − ${fmt(accum)} ＝ ${fmt(bv)}`);
+    }
+    explain.push(`<b>② 下取価格と時価の比較</b>`);
+    if(fvMode==='none'){
+      explain.push(`　時価の記載なし → 下取価格 ${fmt(T)} を時価とみなす（値引きなし）`);
+    }else if(fvMode==='premium'){
+      explain.push(`　下取価格 ${fmt(T)} ＞ 時価 ${fmt(FV)} → 超過分 ${fmt(discount)} は<b>新車両の値引き</b>`);
+    }else{
+      explain.push(`　下取価格 ${fmt(T)} ＝ 時価 ${fmt(FV)} → 値引きなし（通常の売却処理）`);
+    }
+    explain.push(`<b>③ 旧車両の売却損益</b>　${fmt(FV)} − ${fmt(bv)} ＝ ${fmt(gainLoss)} → <b>売却${gainLoss>0?'益':'損'} ${fmt(Math.abs(gainLoss))}</b>`);
+    explain.push(`<b>④ 新車両の取得原価</b>　${fmt(P)}${discount>0?` − 値引き ${fmt(discount)} ＝ ${fmt(newCost)}`:'（定価どおり）'}`);
+    explain.push(`<b>⑤ 現金支払額</b>　定価 ${fmt(P)} − 下取価格 ${fmt(T)} ＝ ${fmt(cashPaid)}`);
+
+    // ===== 解答欄 =====
+    const fields=[];
+    if(m>0)fields.push({kind:'num',id:'f-mid',label:'期中減価償却費',exp:midDepr});
+    fields.push({kind:'choice',id:'f-side',label:'売却損益の別',options:['売却益','売却損'],exp:gainLoss>0?0:1});
+    fields.push({kind:'num',id:'f-gl',label:'売却損益の金額',exp:Math.abs(gainLoss)});
+    fields.push({kind:'num',id:'f-cost',label:'新車両の取得原価',exp:newCost});
+    fields.push({kind:'num',id:'f-cash',label:'現金支払額',exp:cashPaid});
+
+    const fvLabel={none:'時価の記載なし',premium:'下取価格＞時価',equal:'下取価格＝時価'}[fvMode];
+    return{
+      badges:['車両の買換え',fvLabel,m===0?'期首':'期中'],
+      givenHTML:g,fields,explain,
+    };
+  }
+  return null;
+}
+
+// ============ 描画・採点 ============
+function newQ(){
+  const q=genQ();
+  if(!q)return;
+  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();STATE.choices={};
+  document.getElementById('badge-area').innerHTML=
+    q.badges.map((b,i)=>`<span class="cat-badge ${i===1?'b2':''}">${b}</span>`).join('');
+  document.getElementById('given-area').innerHTML=q.givenHTML;
+  let h='<div class="ans-grid">';
+  for(const f of q.fields){
+    if(f.kind==='num'){
+      h+=`<span class="ans-label">${f.label}</span><div class="ans-cell"><input type="text" id="${f.id}" autocomplete="off"><span class="ans-ng-msg" id="ng-${f.id}"></span></div>`;
+    }else{
+      h+=`<span class="ans-label">${f.label}</span><div class="ans-cell">`+
+        f.options.map((o,i)=>`<button type="button" class="choice-chip" id="${f.id}-opt${i}" onclick="pickChoice('${f.id}',${i})">${o}</button>`).join('')+
+        `<span class="ans-ng-msg" id="ng-${f.id}"></span></div>`;
+    }
+  }
+  h+='</div>';
+  document.getElementById('answer-area').innerHTML=h;
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+function pickChoice(id,idx){
+  if(STATE.graded)return;
+  STATE.choices[id]=idx;
+  const f=STATE.q.fields.find(x=>x.id===id);
+  f.options.forEach((_,i)=>{
+    document.getElementById(`${id}-opt${i}`).classList.toggle('sel',i===idx);
+  });
+}
+
+function grade(){
+  if(!STATE.q||STATE.graded)return;
+  const q=STATE.q;
+  let ok=0,cnt=0;
+  for(const f of q.fields){
+    cnt++;
+    const ng=document.getElementById('ng-'+f.id);
+    if(f.kind==='num'){
+      const el=document.getElementById(f.id);
+      const correct=parseNum(el.value)===f.exp;
+      if(correct)ok++;
+      el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
+      if(!correct){ng.textContent='正:'+fmt(f.exp);ng.style.display='inline';}
+      else ng.style.display='none';
+    }else{
+      const sel=STATE.choices[f.id];
+      const correct=sel===f.exp;
+      if(correct)ok++;
+      f.options.forEach((_,i)=>{
+        const c=document.getElementById(`${f.id}-opt${i}`);
+        c.classList.remove('sel','ok','ng');
+        if(i===sel)c.classList.add(correct?'ok':'ng');
+        if(!correct&&i===f.exp)c.classList.add('ok');
+      });
+      if(!correct){ng.textContent='正:'+f.options[f.exp];ng.style.display='inline';}
+      else ng.style.display='none';
+    }
+  }
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===cnt;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+  const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(q.explain).join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 個（赤に正答を表示）'}</div>`+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='%'){
+    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
