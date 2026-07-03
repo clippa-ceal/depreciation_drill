@@ -63,6 +63,11 @@ table.j-tbl .amt{padding:2px 4px;width:20%}
 table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
 table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl tr.j-tot td{border:none;padding:2px 6px}
+table.j-tbl .j-tot-lbl{font-size:11px;color:var(--color-text2);font-weight:600;text-align:center;padding-top:6px}
+table.j-tbl .j-tot-val{font-size:15px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:var(--color-text)}
+table.j-tbl .j-tot-val.j-tot-ok{color:#3B6D11}
+table.j-tbl .j-tot-val.j-tot-ng{color:#A32D2D}
 /* 正解仕訳表示 */
 table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
 table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
@@ -271,9 +276,44 @@ function renderJournal(q){
       <td class="amt"><input type="text" inputmode="numeric" id="jc-v-${i}" autocomplete="off"></td>
     </tr>`;
   }
+  body+=`<tr class="j-tot">
+    <td colspan="2" class="j-tot-lbl">借方合計</td>
+    <td colspan="2" class="j-tot-lbl">貸方合計</td>
+  </tr>
+  <tr class="j-tot">
+    <td colspan="2" class="j-tot-val" id="jd-total">0</td>
+    <td colspan="2" class="j-tot-val" id="jc-total">0</td>
+  </tr>`;
   document.getElementById('journal-area').innerHTML=
     `<table class="j-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+  for(let i=0;i<rows;i++){
+    document.getElementById(`jd-v-${i}`).addEventListener('input',updateJournalTotals);
+    document.getElementById(`jc-v-${i}`).addEventListener('input',updateJournalTotals);
+  }
+  updateJournalTotals();
   return rows;
+}
+
+function updateJournalTotals(){
+  const rows=STATE.rows||0;
+  let dSum=0,cSum=0,dAny=false,cAny=false;
+  for(let i=0;i<rows;i++){
+    const dv=document.getElementById(`jd-v-${i}`).value;
+    const cv=document.getElementById(`jc-v-${i}`).value;
+    if(dv.trim()!==''){dAny=true;dSum+=parseNum(dv);}
+    if(cv.trim()!==''){cAny=true;cSum+=parseNum(cv);}
+  }
+  const dEl=document.getElementById('jd-total');
+  const cEl=document.getElementById('jc-total');
+  if(!dEl||!cEl)return;
+  dEl.textContent=fmt(dSum);
+  cEl.textContent=fmt(cSum);
+  const balanced=dAny&&cAny&&dSum===cSum;
+  const mismatched=dAny&&cAny&&dSum!==cSum;
+  dEl.classList.toggle('j-tot-ok',balanced);
+  cEl.classList.toggle('j-tot-ok',balanced);
+  dEl.classList.toggle('j-tot-ng',mismatched);
+  cEl.classList.toggle('j-tot-ng',mismatched);
 }
 
 function newQ(){
