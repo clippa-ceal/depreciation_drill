@@ -449,7 +449,48 @@ function grade(){
   }
   const boxNote=`<div class="hint" style="margin-top:2px">※仕入の期末商品は、棚卸減耗損・商品評価損を控除する前の「修正後帳簿棚卸高」。売上返品は、この金額に織り込んであり、ボックス内では二重表示しません。</div>`;
   const recon=`<div class="hint" style="margin-top:6px">${lines.join('<br>')}</div>`;
-  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxHtml+boxHtml2+boxHtml3+boxNote+recon;
+
+  // ===== 決算整理事項ごとの影響一覧（帳簿棚卸高・実地棚卸高・仕入） =====
+  // 与件の表示順（仕入返品→売上返品→評価損→見本品）に合わせる
+  const impacts=[];
+  if(g.returnAmt>0){
+    impacts.push({name:`仕入返品 ${fmt(g.returnAmt)}`,
+      book:`−${fmt(g.returnAmt)}`,phys:'―',cogs:`−${fmt(g.returnAmt)}`,
+      note:`返品した商品が帳簿に残ったままなので帳簿から控除。現物はすでに手許にない → 実地はそのまま。仕入は (借)買掛金 ${fmt(g.returnAmt)} / (貸)仕入 ${fmt(g.returnAmt)} で減少。`});
+  }
+  if(g.salesReturnType===1){
+    impacts.push({name:`売上返品 ${fmt(g.salesReturnCost)}（実地に含む）`,
+      book:`＋${fmt(g.salesReturnCost)}`,phys:'―',cogs:'―',
+      note:`商品有高帳が未記帳なので帳簿に加算。現物は倉庫に戻っていて実地に含まれている → 実地はそのまま。仕入への直接の加減はなし（期末商品が増えることで売上原価が自動的に減る）。`});
+  }
+  if(g.salesReturnType===2){
+    impacts.push({name:`売上返品 ${fmt(g.salesReturnCost)}（未着・当社所有）`,
+      book:`＋${fmt(g.salesReturnCost)}`,phys:`＋${fmt(g.salesReturnCost)}`,cogs:'―',
+      note:`商品有高帳が未記帳なので帳簿に加算。現物は未着だが当社所有なので実地にも加算（未着品）。仕入への直接の加減はなし。`});
+  }
+  if(g.valuationLoss>0){
+    impacts.push({name:`商品評価損 ${fmt(g.valuationLoss)}`,
+      book:'―',phys:'―',cogs:`＋${fmt(g.valuationLoss)}`,
+      note:`数量の問題ではなく評価の問題 → 帳簿・実地の棚卸高（数量×原価）は動かさない。繰越商品から控除し、(借)仕入 ${fmt(g.valuationLoss)} / (貸)商品評価損 ${fmt(g.valuationLoss)} で仕入に加算（売上原価に含める前提）。`});
+  }
+  if(g.sampleAmt>0){
+    impacts.push({name:`見本品 ${fmt(g.sampleAmt)}`,
+      book:`−${fmt(g.sampleAmt)}`,phys:'―',cogs:`−${fmt(g.sampleAmt)}`,
+      note:`見本として払い出した分が帳簿に残ったままなので帳簿から控除。現物はすでに手許にない → 実地はそのまま。仕入は (借)見本品費 ${fmt(g.sampleAmt)} / (貸)仕入 ${fmt(g.sampleAmt)} で減少。`});
+  }
+  let impactHtml='';
+  if(impacts.length>0){
+    let tbody='';
+    for(const it of impacts){
+      tbody+=`<tr><td class="bt-lbl">${it.name}</td><td class="bt-val">${it.book}</td><td class="bt-val">${it.phys}</td><td class="bt-val">${it.cogs}</td></tr>`;
+    }
+    const noteLines=impacts.map(it=>`<b>${it.name}</b>：${it.note}`).join('<br>');
+    impactHtml=`<div class="label" style="margin-top:10px">決算整理事項ごとの影響（＋/−、―は影響なし）</div>
+      <table class="box-t"><thead><tr><th class="bt-side">整理事項</th><th class="bt-side">帳簿棚卸高</th><th class="bt-side">実地棚卸高</th><th class="bt-side">仕入</th></tr></thead><tbody>${tbody}</tbody></table>
+      <div class="hint" style="margin-top:2px">${noteLines}</div>`;
+  }
+
+  document.getElementById('result-area').innerHTML=`<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+fields.length+' 個（赤セルに正答を表示）'}</div>`+boxHtml+boxHtml2+boxHtml3+boxNote+recon+impactHtml;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
