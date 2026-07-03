@@ -23,7 +23,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-#app{padding:1rem;max-width:520px;margin:0 auto}
+#app{padding:1rem;max-width:560px;margin:0 auto}
 h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
 .nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
 .nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
@@ -43,18 +43,32 @@ button:active{opacity:0.85}
 .stat .l{font-size:12px;color:var(--color-text2)}
 .cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
 .cat-badge.b2{background:#FAEEDA;color:#854F0B}
-/* 解答欄 */
-.ans-grid{display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center}
-.ans-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
-.ans-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.ans-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
-.ans-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
-.ans-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
-.choice-chip{width:auto;margin:0;padding:8px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:var(--color-card);font-size:13px;color:var(--color-text);font-weight:600;cursor:pointer}
-.choice-chip.sel{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
-.choice-chip.ok{border-color:#7FB04A;background:#F2F8EA}
-.choice-chip.ng{border-color:#D98A8A;background:#FCF0F0}
+/* 補助計算 */
+.aux-grid{display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
+.aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
+.aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 .ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+/* 仕訳テーブル */
+table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
+table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.j-tbl .acct{color:var(--color-text);width:30%}
+table.j-tbl .acct select{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none;color:var(--color-text);appearance:none;-webkit-appearance:none}
+table.j-tbl .acct select.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .acct select.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .amt{padding:2px 4px;width:20%}
+table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
+table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+/* 正解仕訳表示 */
+table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
+table.sol-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.sol-tbl td.a{width:30%}
+table.sol-tbl td.v{width:20%;text-align:right;font-variant-numeric:tabular-nums}
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
 .result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
 .calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
@@ -93,9 +107,14 @@ button:active{opacity:0.85}
   </div>
 
   <div class="card">
-    <div class="label">解答</div>
-    <div id="answer-area"></div>
-    <div class="hint">下取価格が<b>時価を上回る</b>とき、超過分は新車両の値引き（取得原価から控除）。売却損益は時価−簿価。<br>時価の記載がなければ下取価格を時価とみなす。現金支払額は常に「定価−下取価格」。</div>
+    <div class="label">補助計算</div>
+    <div class="aux-grid">
+      <span class="ans-label">旧車両の簿価<br><span style="font-size:11px;color:var(--color-text2)">（買換え時点）</span></span>
+      <div class="ans-cell"><input type="text" id="a-bv" autocomplete="off"><span class="ans-ng-msg" id="ng-a-bv"></span></div>
+    </div>
+    <div class="label">買換えの仕訳（科目と金額を入力。不要な行は空欄のまま）</div>
+    <div id="journal-area"></div>
+    <div class="hint">下取価格が<b>時価を上回る</b>とき、超過分は新車両の値引き（取得原価から控除）。売却損益は時価−簿価。<br>時価の記載がなければ下取価格を時価とみなす。現金支払額は「定価−下取価格」。<br>借方・貸方の中は<b>順不同</b>で採点します。</div>
   </div>
 
   <div id="result-area"></div>
@@ -130,7 +149,7 @@ button:active{opacity:0.85}
 </div>
 
 <script>
-let STATE={total:0,perfect:0,q:null,graded:false,startTime:0,choices:{}};
+let STATE={total:0,perfect:0,q:null,graded:false,startTime:0};
 function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function pick(arr){return arr[rand(0,arr.length-1)];}
@@ -141,53 +160,58 @@ function parseNum(v){
     .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
     .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
   if(s===''||s==='-')return 0;
-  if(s.includes('+')||s.replace(/^-/,'').includes('-')){
-    const tokens=s.match(/[+-]?\d+/g)||[];
-    return tokens.reduce((a,t)=>a+parseInt(t,10),0);
-  }
   const n=parseInt(s,10);return isNaN(n)?0:n;
 }
+
+// 科目プルダウンの選択肢
+const ACCTS=['','車両','車両減価償却累計額','減価償却費','固定資産売却損','固定資産売却益','現金','未収入金','未払金'];
 
 // ============ 問題生成 ============
 // パターン：時価の与え方（なし／下取価格>時価／下取価格=時価）× 買換え時期（期首／期中）
 function genQ(){
   for(let t=0;t<8000;t++){
-    const fvMode=pick(['none','premium','equal']);   // 時価：記載なし／下取>時価／下取=時価
-    const midYear=Math.random()<0.5;                  // 期中買換えか
-    const EL=pick([4,5,6,8]);                         // 耐用年数
-    // 取得原価：EL×12で割り切れる千円単位 → 月割償却が整数
-    const C0=EL*12*rand(30,90);                       // 1,440〜8,640
+    const fvMode=pick(['none','premium','equal']);
+    const midYear=Math.random()<0.5;
+    const EL=pick([4,5,6,8]);
+    const C0=EL*12*rand(30,90);           // EL×12の倍数 → 月割整数
     const annualDepr=C0/EL;
     const monthlyDepr=C0/(EL*12);
-    const y=rand(1,EL-2);                             // 経過年数（期首時点）
-    const accum=annualDepr*y;                         // 期首減価償却累計額
-    const m=midYear?rand(2,10):0;                     // 期首からの経過月数
-    const midDepr=monthlyDepr*m;                      // 期中償却費
-    const bv=C0-accum-midDepr;                        // 買換え時簿価
+    const y=rand(1,EL-2);
+    const accum=annualDepr*y;
+    const m=midYear?rand(2,10):0;
+    const midDepr=monthlyDepr*m;
+    const bv=C0-accum-midDepr;
     if(bv<=0)continue;
-    // 時価（売却損益の方向をランダムに）
     const gainSide=Math.random()<0.5;
-    const delta=rand(2,20)*10;                        // 損益額 20〜200
+    const delta=rand(2,20)*10;
     let FV=gainSide?bv+delta:bv-delta;
     FV=Math.round(FV/10)*10;
     if(FV<=0)continue;
-    const gainLoss=FV-bv;                             // 売却損益（+益/−損）
+    const gainLoss=FV-bv;
     if(gainLoss===0)continue;
-    // 下取価格
     let T,discount=0;
-    if(fvMode==='none'){T=FV;}                        // 時価は表示しない（下取価格=時価とみなす）
-    else if(fvMode==='premium'){discount=rand(5,30)*10;T=FV+discount;}  // 超過分=値引き
-    else{T=FV;}                                       // equal：時価を表示するが値引きゼロ
-    // 新車両の定価
+    if(fvMode==='none'){T=FV;}
+    else if(fvMode==='premium'){discount=rand(5,30)*10;T=FV+discount;}
+    else{T=FV;}
     const P=Math.round((C0+rand(0,150)*10)/10)*10;
     if(P<=T)continue;
-    const newCost=P-discount;                         // 新車両の取得原価
-    const cashPaid=P-T;                               // 現金支払額
-    // 整数チェック
+    const newCost=P-discount;
+    const cashPaid=P-T;
     let bad=false;
     for(const v of[midDepr,bv,FV,T,newCost,cashPaid,Math.abs(gainLoss)])
       if(!Number.isInteger(v)||v<0){bad=true;break;}
     if(bad)continue;
+
+    // ===== 仕訳（借方・貸方） =====
+    const debits=[{acct:'車両減価償却累計額',amt:accum}];
+    if(m>0)debits.push({acct:'減価償却費',amt:midDepr});
+    debits.push({acct:'車両',amt:newCost});
+    if(gainLoss<0)debits.push({acct:'固定資産売却損',amt:-gainLoss});
+    const credits=[{acct:'車両',amt:C0},{acct:'現金',amt:cashPaid}];
+    if(gainLoss>0)credits.push({acct:'固定資産売却益',amt:gainLoss});
+    // 貸借一致チェック
+    const dSum=debits.reduce((a,r)=>a+r.amt,0),cSum=credits.reduce((a,r)=>a+r.amt,0);
+    if(dSum!==cSum)continue;
 
     // ===== 与件 =====
     const tradeMonth=m===0?'期首（4月1日）':`${(3+m)%12+1}月1日（期首から${m}ヶ月経過）`;
@@ -221,98 +245,116 @@ function genQ(){
     }else{
       explain.push(`　下取価格 ${fmt(T)} ＝ 時価 ${fmt(FV)} → 値引きなし（通常の売却処理）`);
     }
-    explain.push(`<b>③ 旧車両の売却損益</b>　${fmt(FV)} − ${fmt(bv)} ＝ ${fmt(gainLoss)} → <b>売却${gainLoss>0?'益':'損'} ${fmt(Math.abs(gainLoss))}</b>`);
+    explain.push(`<b>③ 旧車両の売却損益</b>　${fmt(FV)} − ${fmt(bv)} ＝ ${fmt(gainLoss)} → 売却${gainLoss>0?'益':'損'} ${fmt(Math.abs(gainLoss))}`);
     explain.push(`<b>④ 新車両の取得原価</b>　${fmt(P)}${discount>0?` − 値引き ${fmt(discount)} ＝ ${fmt(newCost)}`:'（定価どおり）'}`);
     explain.push(`<b>⑤ 現金支払額</b>　定価 ${fmt(P)} − 下取価格 ${fmt(T)} ＝ ${fmt(cashPaid)}`);
-
-    // ===== 解答欄 =====
-    const fields=[];
-    if(m>0)fields.push({kind:'num',id:'f-mid',label:'期中減価償却費',exp:midDepr});
-    fields.push({kind:'choice',id:'f-side',label:'売却損益の別',options:['売却益','売却損'],exp:gainLoss>0?0:1});
-    fields.push({kind:'num',id:'f-gl',label:'売却損益の金額',exp:Math.abs(gainLoss)});
-    fields.push({kind:'num',id:'f-cost',label:'新車両の取得原価',exp:newCost});
-    fields.push({kind:'num',id:'f-cash',label:'現金支払額',exp:cashPaid});
 
     const fvLabel={none:'時価の記載なし',premium:'下取価格＞時価',equal:'下取価格＝時価'}[fvMode];
     return{
       badges:['車両の買換え',fvLabel,m===0?'期首':'期中'],
-      givenHTML:g,fields,explain,
+      givenHTML:g,debits,credits,bv,explain,
     };
   }
   return null;
 }
 
-// ============ 描画・採点 ============
+// ============ 描画 ============
+function renderJournal(q){
+  const rows=Math.max(q.debits.length,q.credits.length);
+  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
+  let body='';
+  for(let i=0;i<rows;i++){
+    body+=`<tr>
+      <td class="acct">${sel('jd-a-'+i)}</td>
+      <td class="amt"><input type="text" inputmode="numeric" id="jd-v-${i}" autocomplete="off"></td>
+      <td class="acct">${sel('jc-a-'+i)}</td>
+      <td class="amt"><input type="text" inputmode="numeric" id="jc-v-${i}" autocomplete="off"></td>
+    </tr>`;
+  }
+  document.getElementById('journal-area').innerHTML=
+    `<table class="j-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+  return rows;
+}
+
 function newQ(){
   const q=genQ();
   if(!q)return;
-  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();STATE.choices={};
+  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();
   document.getElementById('badge-area').innerHTML=
     q.badges.map((b,i)=>`<span class="cat-badge ${i===1?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
-  let h='<div class="ans-grid">';
-  for(const f of q.fields){
-    if(f.kind==='num'){
-      h+=`<span class="ans-label">${f.label}</span><div class="ans-cell"><input type="text" id="${f.id}" autocomplete="off"><span class="ans-ng-msg" id="ng-${f.id}"></span></div>`;
-    }else{
-      h+=`<span class="ans-label">${f.label}</span><div class="ans-cell">`+
-        f.options.map((o,i)=>`<button type="button" class="choice-chip" id="${f.id}-opt${i}" onclick="pickChoice('${f.id}',${i})">${o}</button>`).join('')+
-        `<span class="ans-ng-msg" id="ng-${f.id}"></span></div>`;
-    }
-  }
-  h+='</div>';
-  document.getElementById('answer-area').innerHTML=h;
+  STATE.rows=renderJournal(q);
+  const bvEl=document.getElementById('a-bv');
+  bvEl.value='';bvEl.classList.remove('cell-ok','cell-ng');
+  document.getElementById('ng-a-bv').style.display='none';
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
 }
 
-function pickChoice(id,idx){
-  if(STATE.graded)return;
-  STATE.choices[id]=idx;
-  const f=STATE.q.fields.find(x=>x.id===id);
-  f.options.forEach((_,i)=>{
-    document.getElementById(`${id}-opt${i}`).classList.toggle('sel',i===idx);
-  });
+// ============ 採点（借方・貸方それぞれ順不同マッチ） ============
+function gradeSide(prefix,expected,rows){
+  // 期待値を行数まで空欄で埋める
+  const exp=expected.map(e=>({acct:e.acct,amt:e.amt}));
+  while(exp.length<rows)exp.push({acct:'',amt:0});
+  const used=new Array(rows).fill(false);
+  let ok=0;
+  const marks=[];
+  for(let i=0;i<rows;i++){
+    const acct=document.getElementById(`${prefix}-a-${i}`).value;
+    const amt=parseNum(document.getElementById(`${prefix}-v-${i}`).value);
+    let hit=-1;
+    for(let k=0;k<exp.length;k++){
+      if(!used[k]&&exp[k].acct===acct&&exp[k].amt===amt){hit=k;break;}
+    }
+    if(hit>=0){used[hit]=true;ok++;marks.push(true);}
+    else marks.push(false);
+  }
+  // 表示
+  for(let i=0;i<rows;i++){
+    const a=document.getElementById(`${prefix}-a-${i}`);
+    const v=document.getElementById(`${prefix}-v-${i}`);
+    for(const el of[a,v]){el.classList.remove('cell-ok','cell-ng');el.classList.add(marks[i]?'cell-ok':'cell-ng');}
+  }
+  return ok;
 }
 
 function grade(){
   if(!STATE.q||STATE.graded)return;
   const q=STATE.q;
-  let ok=0,cnt=0;
-  for(const f of q.fields){
-    cnt++;
-    const ng=document.getElementById('ng-'+f.id);
-    if(f.kind==='num'){
-      const el=document.getElementById(f.id);
-      const correct=parseNum(el.value)===f.exp;
-      if(correct)ok++;
-      el.classList.remove('cell-ok','cell-ng');el.classList.add(correct?'cell-ok':'cell-ng');
-      if(!correct){ng.textContent='正:'+fmt(f.exp);ng.style.display='inline';}
-      else ng.style.display='none';
-    }else{
-      const sel=STATE.choices[f.id];
-      const correct=sel===f.exp;
-      if(correct)ok++;
-      f.options.forEach((_,i)=>{
-        const c=document.getElementById(`${f.id}-opt${i}`);
-        c.classList.remove('sel','ok','ng');
-        if(i===sel)c.classList.add(correct?'ok':'ng');
-        if(!correct&&i===f.exp)c.classList.add('ok');
-      });
-      if(!correct){ng.textContent='正:'+f.options[f.exp];ng.style.display='inline';}
-      else ng.style.display='none';
-    }
-  }
+  const rows=STATE.rows;
+  let ok=0;
+  // 簿価
+  const bvEl=document.getElementById('a-bv');
+  const bvOk=parseNum(bvEl.value)===q.bv;
+  if(bvOk)ok++;
+  bvEl.classList.remove('cell-ok','cell-ng');bvEl.classList.add(bvOk?'cell-ok':'cell-ng');
+  const bvNg=document.getElementById('ng-a-bv');
+  if(!bvOk){bvNg.textContent='正:'+fmt(q.bv);bvNg.style.display='inline';}
+  else bvNg.style.display='none';
+  // 仕訳
+  ok+=gradeSide('jd',q.debits,rows);
+  ok+=gradeSide('jc',q.credits,rows);
+  const cnt=1+rows*2;
+
   STATE.graded=true;STATE.total++;
   const allOk=ok===cnt;
   if(allOk)STATE.perfect++;
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-perfect').textContent=STATE.perfect;
   const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  // 正解仕訳の表示
+  let solBody='';
+  for(let i=0;i<rows;i++){
+    const d=q.debits[i],c=q.credits[i];
+    solBody+=`<tr><td class="a">${d?d.acct:''}</td><td class="v">${d?fmt(d.amt):''}</td><td class="a">${c?c.acct:''}</td><td class="v">${c?fmt(c.amt):''}</td></tr>`;
+  }
+  const sol=`<div class="label" style="margin-top:8px">正解の仕訳</div>
+    <table class="sol-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${solBody}</table>`;
   const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(q.explain).join('<br>')}</div>`;
   document.getElementById('result-area').innerHTML=
-    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 個（赤に正答を表示）'}</div>`+recon;
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'}</div>`+sol+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
