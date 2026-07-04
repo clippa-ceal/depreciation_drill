@@ -169,13 +169,14 @@ function parseNum(v){
 }
 
 // 科目プルダウンの選択肢
-const ACCTS=['','車両','車両減価償却累計額','減価償却費','固定資産売却損','固定資産売却益','現金','未収入金','未払金'];
+const ACCTS=['','車両','車両減価償却累計額','減価償却費','固定資産売却損','固定資産売却益','現金','仮払消費税','仮受消費税','未収入金','未払金'];
 
 // ============ 問題生成 ============
 // パターン：時価の与え方（なし／下取価格>時価／下取価格=時価）× 買換え時期（期首／期中）
 function genQ(){
   for(let t=0;t<8000;t++){
-    const fvMode=pick(['none','premium','equal']);
+    const taxMode=Math.random()<1/3;               // 消費税あり（税抜経理・10%）
+    const fvMode=taxMode?'none':pick(['none','premium','equal']);  // 消費税問題は時価論点と併用しない
     const midYear=Math.random()<0.5;
     const EL=pick([4,5,6,8]);
     const C0=EL*12*rand(30,90);           // EL×12の倍数 → 月割整数
@@ -201,9 +202,13 @@ function genQ(){
     const P=Math.round((C0+rand(0,150)*10)/10)*10;
     if(P<=T)continue;
     const newCost=P-discount;
-    const cashPaid=P-T;
+    // 消費税（税抜経理・10%）：仮払=新車定価×10%、仮受=下取価格×10%、現金は税込差額
+    const vatIn=taxMode?Math.round(P*0.1):0;
+    const vatOut=taxMode?Math.round(T*0.1):0;
+    if(taxMode&&(P*0.1!==vatIn||T*0.1!==vatOut))continue;
+    const cashPaid=(P-T)+(vatIn-vatOut);
     let bad=false;
-    for(const v of[midDepr,bv,FV,T,newCost,cashPaid,Math.abs(gainLoss)])
+    for(const v of[midDepr,bv,FV,T,newCost,cashPaid,vatIn,vatOut,Math.abs(gainLoss)])
       if(!Number.isInteger(v)||v<0){bad=true;break;}
     if(bad)continue;
 
@@ -211,8 +216,11 @@ function genQ(){
     const debits=[{acct:'車両減価償却累計額',amt:accum}];
     if(m>0)debits.push({acct:'減価償却費',amt:midDepr});
     debits.push({acct:'車両',amt:newCost});
+    if(taxMode)debits.push({acct:'仮払消費税',amt:vatIn});
     if(gainLoss<0)debits.push({acct:'固定資産売却損',amt:-gainLoss});
-    const credits=[{acct:'車両',amt:C0},{acct:'現金',amt:cashPaid}];
+    const credits=[{acct:'車両',amt:C0}];
+    if(taxMode)credits.push({acct:'仮受消費税',amt:vatOut});
+    credits.push({acct:'現金',amt:cashPaid});
     if(gainLoss>0)credits.push({acct:'固定資産売却益',amt:gainLoss});
     // 貸借一致チェック
     const dSum=debits.reduce((a,r)=>a+r.amt,0),cSum=credits.reduce((a,r)=>a+r.amt,0);
@@ -226,12 +234,15 @@ function genQ(){
     g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${EL}年・残存価額0（記帳は間接法）</span></div>`;
     g+=`<div class="g-head">買換え（会計期間：4月1日〜3月31日）</div>`;
     g+=`<div class="g-row"><span class="g-key">買換え日</span><span class="g-val" style="font-size:14px">${tradeMonth}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">新車両の購入価額（定価）</span><span class="g-val">${fmt(P)}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">旧車両の下取価格</span><span class="g-val">${fmt(T)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">新車両の購入価額（定価${taxMode?'・税抜':''}）</span><span class="g-val">${fmt(P)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">旧車両の下取価格${taxMode?'（税抜）':''}</span><span class="g-val">${fmt(T)}</span></div>`;
     if(fvMode!=='none'){
       g+=`<div class="g-row"><span class="g-key">旧車両の時価（適正売却価額）</span><span class="g-val">${fmt(FV)}</span></div>`;
     }
-    g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 下取価格は新車両の購入代金に充当し、残額を現金で支払う</span></div>`;
+    if(taxMode){
+      g+=`<div class="g-row"><span class="g-key">消費税</span><span class="g-val" style="font-size:13px">税率10%・税抜経理方式（下取りは課税売上）</span></div>`;
+    }
+    g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 下取価格は新車両の購入代金に充当し、残額${taxMode?'（税込）':''}を現金で支払う</span></div>`;
 
     // ===== 解説 =====
     const explain=[];
@@ -251,13 +262,23 @@ function genQ(){
       explain.push(`　下取価格 ${fmt(T)} ＝ 時価 ${fmt(FV)} → 値引きなし（通常の売却処理）`);
     }
     explain.push(`<b>③ 旧車両の売却損益</b>　${fmt(FV)} − ${fmt(bv)} ＝ ${fmt(gainLoss)} → 売却${gainLoss>0?'益':'損'} ${fmt(Math.abs(gainLoss))}`);
-    explain.push(`<b>④ 新車両の取得原価</b>　${fmt(P)}${discount>0?` − 値引き ${fmt(discount)} ＝ ${fmt(newCost)}`:'（定価どおり）'}`);
-    explain.push(`<b>⑤ 現金支払額</b>　定価 ${fmt(P)} − 下取価格 ${fmt(T)} ＝ ${fmt(cashPaid)}`);
+    explain.push(`<b>④ 新車両の取得原価</b>　${fmt(P)}${discount>0?` − 値引き ${fmt(discount)} ＝ ${fmt(newCost)}`:'（定価どおり）'}${taxMode?'（税抜で計上）':''}`);
+    if(taxMode){
+      explain.push(`<b>⑤ 消費税（税抜経理・10%）</b>`);
+      explain.push(`　仮払消費税 ＝ 新車定価 ${fmt(P)} × 10% ＝ ${fmt(vatIn)}（借方）`);
+      explain.push(`　仮受消費税 ＝ 下取価格 ${fmt(T)} × 10% ＝ ${fmt(vatOut)}（貸方・下取りは課税売上）`);
+      explain.push(`<b>⑥ 現金支払額（税込）</b>　（${fmt(P)}−${fmt(T)}）＋（${fmt(vatIn)}−${fmt(vatOut)}）＝ ${fmt(cashPaid)}`);
+    }else{
+      explain.push(`<b>⑤ 現金支払額</b>　定価 ${fmt(P)} − 下取価格 ${fmt(T)} ＝ ${fmt(cashPaid)}`);
+    }
 
     const fvLabel={none:'時価の記載なし',premium:'下取価格＞時価',equal:'下取価格＝時価'}[fvMode];
+    const badges=['車両の買換え',fvLabel,m===0?'期首':'期中'];
+    if(taxMode)badges.push('消費税10%');
     return{
-      badges:['車両の買換え',fvLabel,m===0?'期首':'期中'],
+      badges,
       givenHTML:g,debits,credits,bv,explain,
+      rowsFixed:taxMode?5:4,
     };
   }
   return null;
@@ -265,7 +286,7 @@ function genQ(){
 
 // ============ 描画 ============
 function renderJournal(q){
-  const rows=4;  // 常に4行固定（借方は最大4：累計額・償却費・車両・売却損。行数からヒントを与えない）
+  const rows=q.rowsFixed||4;  // 通常4行・消費税問題は5行固定（行数からヒントを与えない）
   const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
   let body='';
   for(let i=0;i<rows;i++){
