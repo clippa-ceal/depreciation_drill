@@ -265,7 +265,7 @@ function genQ(){
 
 // ============ 描画 ============
 function renderJournal(q){
-  const rows=Math.max(q.debits.length,q.credits.length);
+  const rows=4;  // 常に4行固定（借方は最大4：累計額・償却費・車両・売却損。行数からヒントを与えない）
   const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
   let body='';
   for(let i=0;i<rows;i++){
