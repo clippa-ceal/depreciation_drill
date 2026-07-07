@@ -62,6 +62,7 @@ svg.timeline{display:block;min-width:340px}
 .type-b{background:#EAF3DE;color:#3B6D11}
 .type-c{background:#FAEEDA;color:#854F0B}
 .type-d{background:#E3EEF7;color:#185FA5}
+.type-e{background:#F0EBF8;color:#6B4FA0}
 .type-inst{background:var(--color-bg-secondary);color:var(--color-text2)}
 .toggle-chips{display:flex;gap:6px;flex-wrap:wrap}
 .toggle-chip{width:auto;margin:0;padding:7px 14px;border:1px solid var(--color-border2);border-radius:999px;background:var(--color-bg-secondary);font-size:13px;color:var(--color-text2);font-weight:500;cursor:pointer}
@@ -418,13 +419,76 @@ function gen3(){
   return q;
 }
 
+// ============ タイプ④：決算整理（前払・前受） ============
+// 利息を先払いする契約 → 支払（受取）済みのうち翌期分を繰り延べる
+function gen4(){
+  const m=genMoney();
+  const y=rand(5,12);
+  const instKey=pick(['borrow','lend']);
+  const inst=INST[instKey];
+  const acct=inst.side==='pay'?'前払利息':'前受利息';
+  const q={type:4,instKey,y,...m};
+  const freq=pick([1,2]);
+  q.freq=freq;
+  const span=12/freq;             // 1回あたりの月数
+  const cur=Math.random()<0.5;    // 当期中の借入か
+  let fs,marks;                   // fs=直近の先払日（月初）
+  if(cur){
+    let fb;
+    if(freq===1){
+      fb=rand(1,11);fs=fb;marks=[];
+    }else{
+      fb=pick([1,2,3,4,5,7,8,9,10]);
+      if(fb<=5){fs=fb+6;marks=[fs];}   // 2回目の先払いが当期中にある
+      else{fs=fb;marks=[];}
+    }
+    q.startF=fb;q.startText=`${dStr(y,fb)}1日`;
+  }else{
+    if(freq===1){fs=rand(1,11);marks=[fs];}
+    else{fs=rand(7,11);marks=[fs-6,fs];}
+    const k=rand(1,4);
+    q.startText=`X${y-k}年${cm(freq===1?fs:fs-6)}月1日`;
+    q.startF=null;
+  }
+  const fe=fs+span-1;             // 支払済みのカバー終了月
+  q.n=fe-11;                      // 翌期に属する月数
+  q.covS=fs;q.covE=fe;
+  q.spanS=12;q.spanE=fe;
+  // タイムラインの表示範囲：最初のマークの前月〜カバー終了月＋1（常に13〜14か月）
+  q.winS=Math.max(0,(q.startF!=null?q.startF:(freq===2?fs-6:fs))-1);
+  q.winE=fe+1;
+  q.payMarks=marks;q.payAtStart=true;
+  q.ans=q.monthly*q.n;
+  const payMonthsCal=freq===1?[cm(fs)]:[cm(fs-6),cm(fs)].sort((a,b)=>a-b);
+  const doVerb=inst.side==='pay'?'先に支払う':'先に受け取る';
+  const doneVerb=inst.side==='pay'?'支払済み':'受取済み';
+  const spanLabel=freq===1?'1年分':'6か月分';
+  q.payText=`毎年${payMonthsCal.map(mm=>mm+'月1日').join('・')}に向こう${spanLabel}を${doVerb}（年${freq}回・先払い）`;
+  if(cur)q.payText+=`　※${inst.dateLabel}に初回分を${doneVerb}`;
+  q.rows=commonRows(q,inst)
+    +`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">決算日（X${y+1}年3月31日）に計上する${acct}</span></div>`;
+  q.askLabel=`${acct}の額（円）`;
+  const kind=inst.side==='pay'
+    ?`${inst.pl}のうち翌期分を${acct}（資産）に振り替える（費用の繰延べ）`
+    :`${inst.pl}のうち翌期分を${acct}（負債）に振り替える（収益の繰延べ）`;
+  q.exp=`<div class="step">① ${doneVerb}の期間</div>`
+    +`直近の先払日は <strong>${dStr(y,fs)}1日</strong>。ここで${dStr(y,fs)}〜${dStr(y,fe)}の${span}か月分を${doneVerb}。`
+    +`<div class="step">② 翌期に属する分（繰延べ）</div>`
+    +`翌期（X${y+1}年4月1日以降）の分：${monthsList(12,fe)} ＝ <strong>${q.n}か月</strong><br>`
+    +formulaStep(q)
+    +`<br>※ ${kind}。`;
+  q.badge=`<span class="type-badge type-e">決算整理（前払・前受）</span><span class="type-badge type-inst">${inst.name}</span>`;
+  return q;
+}
+
 // ============ 出題範囲トグル ============
 const CATS=[
   {key:'accr',label:'決算整理（未収・未払）',gen:gen1},
+  {key:'defer',label:'決算整理（前払・前受）',gen:gen4},
   {key:'pay',label:'利払額',gen:gen2},
   {key:'pl',label:'当期の損益計上額',gen:gen3},
 ];
-const enabled={accr:true,pay:true,pl:true};
+const enabled={accr:true,defer:true,pay:true,pl:true};
 function renderToggles(){
   document.getElementById('cat-toggles').innerHTML=CATS.map(c=>
     `<button type="button" class="toggle-chip ${enabled[c.key]?'on':''}" onclick="toggleCat('${c.key}')">${c.label}</button>`
@@ -449,12 +513,14 @@ function genQ(){
 // ============ タイムライン ============
 function drawTimeline(q,reveal){
   const svg=document.getElementById('tl');
+  // 表示範囲（会計月インデックス）。前払タイプは借入日の前月〜カバー終了月＋1にシフト
+  const winS=q.winS||0,winE=q.winE||12,winM=winE-winS;
   const W=380,H=92,padL=14,padR=14,y0=42;
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
   svg.setAttribute('width','100%');
   svg.innerHTML='';
   const usable=W-padL-padR;
-  const xOf=f=>padL+Math.max(0,Math.min(12,f))/12*usable;
+  const xOf=f=>padL+(Math.max(winS,Math.min(winE,f))-winS)/winM*usable;
   const ac='#D8D5CC',tc='#6B6B64',blue='#185FA5',green='#0F6E56',red='#A32D2D';
   function mk(tag,attrs,txt){
     const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
@@ -463,20 +529,26 @@ function drawTimeline(q,reveal){
     svg.appendChild(el);return el;
   }
   if(reveal){
+    if(q.covS!=null){
+      // 支払済み（受取済み）のカバー期間（薄い青）
+      mk('rect',{x:xOf(q.covS),y:y0-8,width:xOf(q.covE+1)-xOf(q.covS),height:16,fill:blue,opacity:'0.10',rx:3});
+    }
     const x1=xOf(q.spanS),x2=xOf(q.spanE+1);
     mk('rect',{x:x1,y:y0-8,width:x2-x1,height:16,fill:green,opacity:'0.18',rx:3});
     mk('text',{x:(x1+x2)/2,y:y0+31,'text-anchor':'middle','font-size':'10',fill:green,'font-weight':'600'},`${q.n}か月`);
   }
   mk('line',{x1:padL,x2:W-padR,y1:y0,y2:y0,stroke:ac,'stroke-width':'1'});
-  for(let f=0;f<=12;f++){
+  for(let f=winS;f<=winE;f++){
     mk('line',{x1:xOf(f),x2:xOf(f),y1:y0-5,y2:y0+5,stroke:ac,'stroke-width':'1'});
-    if(f<12)mk('text',{x:(xOf(f)+xOf(f+1))/2,y:y0+17,'text-anchor':'middle','font-size':'8.5',fill:tc},cm(f));
+    if(f<winE)mk('text',{x:(xOf(f)+xOf(f+1))/2,y:y0+17,'text-anchor':'middle','font-size':'8.5',fill:tc},cm(f));
   }
   mk('line',{x1:xOf(12),x2:xOf(12),y1:y0-10,y2:y0+10,stroke:red,'stroke-width':'1.5'});
   mk('text',{x:xOf(12)-2,y:y0-27,'text-anchor':'end','font-size':'9',fill:red,'font-weight':'500'},'決算 3/31');
+  if(winE>12)mk('text',{x:xOf(12)+4,y:y0-27,'text-anchor':'start','font-size':'9',fill:tc},'翌期');
   (q.payMarks||[]).forEach(f=>{
-    mk('circle',{cx:xOf(f+1),cy:y0,r:'4',fill:blue});
-    mk('text',{x:xOf(f+1),y:y0-13,'text-anchor':'middle','font-size':'9',fill:blue,'font-weight':'500'},'利払');
+    const x=q.payAtStart?xOf(f):xOf(f+1);   // 先払いは月初、後払いは月末
+    mk('circle',{cx:x,cy:y0,r:'4',fill:blue});
+    mk('text',{x:x,y:y0-13,'text-anchor':'middle','font-size':'9',fill:blue,'font-weight':'500'},q.payAtStart?'先払':'利払');
   });
   if(q.startF!=null){
     mk('circle',{cx:xOf(q.startF),cy:y0,r:'4.5',fill:green});
