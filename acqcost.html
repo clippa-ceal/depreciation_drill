@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>付随費用ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:480px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+input[type=text]{width:100%;margin-bottom:8px;font-size:16px;padding:12px;border:1px solid var(--color-border2);border-radius:var(--radius-md);background:var(--color-card)}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.judge-btn{background:var(--color-card);color:var(--color-text);border:1px solid var(--color-border2)}
+.judge-btn:active{opacity:0.7}
+.q-row{display:flex;gap:8px;margin-bottom:8px;align-items:baseline}
+.q-key{font-size:13px;color:var(--color-text2);min-width:100px;flex-shrink:0}
+.q-val{font-size:15px;font-weight:500;color:var(--color-text)}
+.q-ask{font-size:15px;font-weight:500;color:var(--color-info)}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.step{font-weight:500;color:var(--color-text);font-size:13px;margin-top:6px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+.calc-btn-pull{background:#0F6E56;color:#fff;font-size:13px}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px}
+.type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;margin-right:4px}
+.type-b{background:#EAF3DE;color:#3B6D11}
+.type-c{background:#FAEEDA;color:#854F0B}
+.type-d{background:#E3EEF7;color:#185FA5}
+.type-e{background:#F0EBF8;color:#6B4FA0}
+.type-f{background:#FBEAF1;color:#A0326E}
+.toggle-chips{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-chip{width:auto;margin:0;padding:7px 14px;border:1px solid var(--color-border2);border-radius:999px;background:var(--color-bg-secondary);font-size:13px;color:var(--color-text2);font-weight:500;cursor:pointer}
+.toggle-chip.on{background:var(--color-text);color:#fff;border-color:var(--color-text)}
+details.basics{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:0.85rem 1.25rem;margin-bottom:1rem}
+details.basics summary{font-size:13px;font-weight:500;color:var(--color-text2);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.basics summary::after{content:'＋';font-size:15px;color:var(--color-text2)}
+details.basics[open] summary::after{content:'−'}
+details.basics summary::-webkit-details-marker{display:none}
+.basics-body{margin-top:10px;font-size:13px;color:var(--color-text2);line-height:1.9}
+.basics-body h3{font-size:13px;color:var(--color-text);margin:10px 0 2px;font-weight:600}
+.k-wrap{overflow-x:auto}
+.k-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+.k-tbl th,.k-tbl td{border:1px solid var(--color-border2);padding:5px 7px;text-align:center}
+.k-tbl th{background:var(--color-bg-secondary);font-weight:600;color:var(--color-text2);font-size:11px}
+.k-tbl td:first-child{text-align:left;font-weight:500;color:var(--color-text)}
+.k-tbl .inc{color:#3B6D11;font-weight:600}
+.k-tbl .exc{color:#A32D2D;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>付随費用ドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a>
+    <a href="interest.html">利息</a>
+    <a href="stockoption.html">ストックオプション</a>
+    <a href="fxsec.html">外貨有価証券</a>
+    <a href="acqcost.html" class="nav-on">付随費用</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-correct">0</span><span class="l">正解</span></div>
+  </div>
+
+  <details class="basics">
+    <summary>基礎知識まとめ</summary>
+    <div class="basics-body">
+      <h3>大法則：「モノは原価、カネは費用」</h3>
+      資産（モノ）を買う付随費用は<strong>取得原価に含める</strong>のが原則。株主との取引（資本取引）や資金調達（カネ）がらみの手数料は<strong>含めずに費用</strong>にする。
+      <h3>一覧</h3>
+      <div class="k-wrap">
+      <table class="k-tbl">
+        <tr><th>項目</th><th>付随費用の例</th><th>含める？</th></tr>
+        <tr><td>仕入（商品）</td><td>引取運賃・関税・購入手数料</td><td class="inc">含める</td></tr>
+        <tr><td>固定資産</td><td>仲介手数料・据付費・試運転費</td><td class="inc">含める</td></tr>
+        <tr><td>有価証券（各分類）</td><td>購入手数料</td><td class="inc">含める</td></tr>
+        <tr><td>子会社株式（個別）</td><td>購入手数料・調査費用</td><td class="inc">含める</td></tr>
+        <tr><td>企業結合（連結上）</td><td>FA報酬・デューデリ費用</td><td class="exc">含めない（発生時費用）</td></tr>
+        <tr><td>自己株式</td><td>取得・処分の手数料</td><td class="exc">含めない（支払手数料）</td></tr>
+        <tr><td>新株発行</td><td>株式交付費</td><td class="exc">資本金に含めない</td></tr>
+        <tr><td>社債発行</td><td>社債発行費</td><td class="exc">発行価額に含めない</td></tr>
+      </table>
+      </div>
+      <h3>含めない側の理由</h3>
+      自己株式・新株・社債は「資産の購入」ではなく<strong>資本取引・資金調達</strong>。そのコストは資産の価値を構成しないので損益（または繰延資産）へ。
+      <h3>企業結合のねじれ（頻出）</h3>
+      子会社株式の取得手数料は、<strong>個別F/Sでは取得原価に含める</strong>が、<strong>連結上（のれんの計算）では含めず発生時の費用</strong>にする。のれん＝取得の対価（費用を含めない）−子会社純資産×取得割合。個別の帳簿価額（対価＋手数料）につられないこと。
+      <h3>そのほかの注意</h3>
+      先方負担の諸掛の立替は含めない（立替金）／購入資金の借入利息は含めない（財務費用）／値引・割戻は取得原価から控除。
+    </div>
+  </details>
+
+  <div class="card">
+    <div class="label">出題範囲</div>
+    <div class="toggle-chips" id="cat-toggles"></div>
+  </div>
+
+  <div class="card">
+    <div id="type-badge-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" style="margin-top:8px"></div>
+  </div>
+
+  <div id="answer-area">
+    <div id="num-area">
+      <div class="label" id="ans-label">答え（円）</div>
+      <input type="text" id="ans-input" placeholder="例: 650000（マイナスは -12000）" inputmode="text">
+      <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
+    </div>
+    <div id="judge-area" style="display:none">
+      <button class="judge-btn" onclick="judgeAnswer(true)">含める（取得原価などに算入）</button>
+      <button class="judge-btn" onclick="judgeAnswer(false)">含めない（費用などで処理）</button>
+    </div>
+  </div>
+  <div id="result-area"></div>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-pull calc-btn-wide" onclick="calcFromQ()">↓ 問題から引用</button>
+      <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state={total:0,correct:0,q:null};
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){return n.toLocaleString('ja-JP');}
+function fmtS(n){return (n>0?'＋':n<0?'−':'')+fmt(Math.abs(n));}
+
+function askRow(text){
+  return `<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">${text}</span></div>`;
+}
+function row(k,v){
+  return `<div class="q-row"><span class="q-key">${k}</span><span class="q-val">${v}</span></div>`;
+}
+const RULE='<br>※法則：「モノは原価、カネ（資本取引・資金調達）は費用」';
+
+// ============ タイプ①：判定（含める？含めない？） ============
+// grp: combi=企業結合系, treasury=自己株式・資本系（厚めに出題）
+const JUDGE=[
+ {t:'商品の仕入に伴う引取運賃（当社負担）',inc:true,why:'商品を仕入れるための外部副費 → 仕入原価に加算する。'},
+ {t:'商品の購入手数料',inc:true,why:'商品の付随費用 → 仕入原価に含める。'},
+ {t:'商品の輸入に伴う関税',inc:true,why:'商品を手に入れるために必要な支出 → 仕入原価に含める。'},
+ {t:'仕入先負担の発送費を当社が立替払いしたもの',inc:false,why:'当社の費用ではない → 立替金（または買掛金と相殺）。仕入原価に含めない。'},
+ {t:'機械装置の据付費',inc:true,why:'使える状態にするための支出 → 固定資産の取得原価に含める。'},
+ {t:'機械装置の試運転費',inc:true,why:'使える状態にするための支出 → 取得原価に含める。'},
+ {t:'建物購入の仲介手数料',inc:true,why:'固定資産の付随費用 → 取得原価に含める。'},
+ {t:'固定資産の購入資金にあてた借入金の支払利息',inc:false,why:'財務費用（カネのコスト）→ 原則、取得原価に含めず支払利息として費用処理。'},
+ {t:'売買目的有価証券の購入手数料',inc:true,why:'有価証券の付随費用 → 取得原価に含める。'},
+ {t:'満期保有目的債券の購入手数料',inc:true,why:'有価証券の付随費用 → 取得原価に含める。'},
+ {t:'ソフトウェア導入に伴う設定作業費用',inc:true,why:'使える状態にするための支出 → ソフトウェアの取得原価に含める。'},
+ {t:'リース資産の付随費用（借手）',inc:true,why:'リース資産の取得原価に含める。'},
+ {t:'子会社株式の購入手数料（個別財務諸表）',inc:true,why:'個別上は他の有価証券と同じ → 子会社株式の取得原価に含める。',grp:'combi'},
+ {t:'子会社株式取得のデューデリジェンス費用（連結上・のれんの計算）',inc:false,why:'連結上の取得関連費用は発生時の費用 → のれんの計算に含めない。個別では含めるのと対比。',grp:'combi'},
+ {t:'企業結合のフィナンシャル・アドバイザー報酬（連結上）',inc:false,why:'連結上の取得関連費用は発生時の費用として処理する。',grp:'combi'},
+ {t:'企業結合の対価として交付する自社株式の発行費用（連結上）',inc:false,why:'取得原価に含めず、株式交付費として処理（資金調達コスト）。',grp:'combi'},
+ {t:'自己株式の取得に係る証券会社手数料',inc:false,why:'自己株式の取得は資本取引 → 手数料は支払手数料（営業外費用）。取得原価に含めない。',grp:'treasury'},
+ {t:'自己株式の処分に係る手数料',inc:false,why:'処分差額（その他資本剰余金）に混ぜず、費用として処理する。',grp:'treasury'},
+ {t:'新株発行のための株式交付費',inc:false,why:'資金調達コスト → 資本金に含めず、費用（または繰延資産・3年償却）。',grp:'treasury'},
+ {t:'社債発行費',inc:false,why:'資金調達コスト → 社債の帳簿価額に含めず、費用（または繰延資産・償還期間で償却）。',grp:'treasury'},
+];
+function gen1(){
+  // 企業結合・資本系を厚めに（50%）
+  const heavy=Math.random()<0.5;
+  const pool=heavy?JUDGE.filter(x=>x.grp):JUDGE;
+  const item=pick(pool);
+  const q={type:1,mode:'judge',inc:item.inc,pullVal:null};
+  q.rows=row('支出の内容',item.t)
+    +askRow('この支出は、取得原価（発行価額・のれん等）に含める？含めない？');
+  q.exp=`<div class="step">正解：${item.inc?'含める':'含めない'}</div>${item.why}${RULE}`;
+  q.badge=`<span class="type-badge type-b">判定</span>`;
+  return q;
+}
+
+// ============ タイプ②：仕入 ============
+function gen2(){
+  const P=rand(50,500)*1000;
+  const a=rand(2,20)*500;                       // 引取運賃（当社負担）
+  const hasTax=Math.random()<0.4;
+  const b=hasTax?rand(2,20)*500:0;              // 関税
+  const hasTatekae=Math.random()<0.6;
+  const c=hasTatekae?rand(2,10)*500:0;          // 先方負担の立替
+  const ans=P+a+b;
+  const q={type:2,mode:'num',ans,pullVal:P,signed:false};
+  q.rows=row('購入代価',fmt(P)+'円')
+    +row('引取運賃',fmt(a)+'円（当社負担）')
+    +(hasTax?row('関税',fmt(b)+'円'):'')
+    +(hasTatekae?row('立替払い',fmt(c)+'円（仕入先負担の発送費を当社が立替）'):'')
+    +askRow('仕入（取得原価）に計上される額');
+  q.askLabel='仕入原価（円）';
+  q.exp=`<div class="step">① 含めるもの（当社負担の外部副費）</div>`
+    +`購入代価 ${fmt(P)} ＋ 引取運賃 ${fmt(a)}${hasTax?` ＋ 関税 ${fmt(b)}`:''} ＝ <strong>${fmt(ans)}円</strong>`
+    +(hasTatekae?`<div class="step">② 含めないもの</div>先方負担の発送費 ${fmt(c)}円 は当社の費用ではない → <strong>立替金</strong>（または買掛金と相殺）。仕入に含めたら誤り。`:'')
+    +RULE;
+  q.badge=`<span class="type-badge type-c">仕入</span>`;
+  return q;
+}
+
+// ============ タイプ③：固定資産 ============
+function gen3(){
+  for(let t=0;t<500;t++){
+    const n=pick([5,8,10]);                     // 耐用年数
+    const m=rand(4,80)*500;                     // 月あたり償却費
+    const total=n*12*m;                         // 取得原価（月割で割り切れる）
+    const h=rand(2,30)*1000;                    // 仲介手数料
+    const s=rand(2,30)*1000;                    // 据付費
+    const hasTest=Math.random()<0.5;
+    const tt=hasTest?rand(2,20)*1000:0;         // 試運転費
+    const hasDisc=Math.random()<0.3;
+    const v=hasDisc?rand(2,20)*1000:0;          // 値引
+    const hasInt=Math.random()<0.4;
+    const iv=hasInt?rand(2,20)*1000:0;          // 借入利息（ひっかけ）
+    const P=total-h-s-tt+v;                     // 購入代価（逆算）
+    if(P<=0)continue;
+    const askDep=Math.random()<0.3;
+    const f0=rand(0,11);                        // 取得・事業供用月（月初）
+    const dep=m*(12-f0);
+    const q={type:3,mode:'num',ans:askDep?dep:total,pullVal:P,signed:false};
+    q.rows=row('購入代価',fmt(P)+'円')
+      +row('仲介手数料',fmt(h)+'円')
+      +row('据付費',fmt(s)+'円')
+      +(hasTest?row('試運転費',fmt(tt)+'円'):'')
+      +(hasDisc?row('値引き',fmt(v)+'円（代金から控除された）'):'')
+      +(hasInt?row('借入金の利息',fmt(iv)+'円（購入資金の借入に係る当期分）'):'')
+      +(askDep?row('償却方法',`定額法・耐用年数${n}年・残存価額ゼロ・月割`)
+        +row('事業供用日',`当期の${CAL[f0]}月1日（決算日は3月31日）`):'')
+      +askRow(askDep?'当期の減価償却費':'この固定資産の取得原価');
+    q.askLabel=askDep?'減価償却費（円）':'取得原価（円）';
+    q.exp=`<div class="step">① 取得原価に含めるもの</div>`
+      +`購入代価 ${fmt(P)} ＋ 仲介手数料 ${fmt(h)} ＋ 据付費 ${fmt(s)}${hasTest?` ＋ 試運転費 ${fmt(tt)}`:''}${hasDisc?` − 値引き ${fmt(v)}`:''} ＝ <strong>${fmt(total)}円</strong>`
+      +(hasInt?`<div class="step">② 含めないもの</div>借入金の利息 ${fmt(iv)}円 は財務費用 → 支払利息として費用処理（取得原価に含めない）。`:'')
+      +(askDep?`<div class="step">③ 減価償却費（月割）</div>${fmt(total)} ÷ ${n}年 × ${12-f0}/12 ＝ <strong>${fmt(dep)}円</strong>（${CAL[f0]}月〜3月の${12-f0}か月分）`:'')
+      +RULE;
+    q.badge=`<span class="type-badge type-d">固定資産</span>`;
+    return q;
+  }
+  return null;
+}
+const CAL=[4,5,6,7,8,9,10,11,12,1,2,3];
+
+// ============ タイプ④：自己株式 ============
+function gen4(){
+  const shares=rand(1,50)*100;                  // 株数
+  const p=rand(5,50)*100;                       // 取得単価
+  const f=rand(2,20)*1000;                      // 手数料
+  const sub=pick(['acq','disp','disp']);
+  if(sub==='acq'){
+    const q={type:4,mode:'num',ans:shares*p,pullVal:shares*p,signed:false};
+    q.rows=row('取引',`自己株式 ${fmt(shares)}株 を1株 ${fmt(p)}円 で取得`)
+      +row('手数料',fmt(f)+'円（証券会社に支払い）')
+      +askRow('純資産の部に計上される自己株式の額（控除額）');
+    q.askLabel='自己株式の額（円）';
+    q.exp=`<div class="step">① 自己株式の取得原価（手数料を含めない！）</div>`
+      +`${fmt(shares)}株 × ${fmt(p)}円 ＝ <strong>${fmt(shares*p)}円</strong>（純資産の部で控除表示）`
+      +`<div class="step">② 手数料の処理</div>`
+      +`自己株式の取得は<strong>資本取引</strong>（株主への払い戻し）→ 手数料 ${fmt(f)}円 は<strong>支払手数料（営業外費用）</strong>。`
+      +`<br>※有価証券なら含めるのに自己株式は含めない、が最大のひっかけ。`+RULE;
+    q.badge=`<span class="type-badge type-e">自己株式</span>`;
+    return q;
+  }
+  // 処分：処分差額に手数料を混ぜない
+  for(let t=0;t<100;t++){
+    const p2=rand(5,50)*100;
+    if(p2===p)continue;
+    const diff=(p2-p)*shares;
+    const q={type:4,mode:'num',ans:diff,pullVal:shares*p,signed:true};
+    q.rows=row('帳簿価額',`自己株式 ${fmt(shares)}株（1株 ${fmt(p)}円 で取得済み）`)
+      +row('処分',`全株を1株 ${fmt(p2)}円 で処分（募集株式の発行等の手続）`)
+      +row('手数料',fmt(f)+'円（処分に係る手数料）')
+      +askRow('その他資本剰余金の増減額（自己株式処分差損益。差損はマイナスで解答）');
+    q.askLabel='処分差損益（円）※差損はマイナス';
+    q.exp=`<div class="step">① 処分差額（手数料を混ぜない！）</div>`
+      +`（処分単価 ${fmt(p2)} − 帳簿単価 ${fmt(p)}）× ${fmt(shares)}株 ＝ <strong>${fmtS(diff)}円</strong>`
+      +`<br>→ ${diff>0?'自己株式処分差益':'自己株式処分差損'}として<strong>その他資本剰余金</strong>を${diff>0?'増加':'減少'}させる（P/Lに出ない）。`
+      +`<div class="step">② 手数料の処理</div>`
+      +`手数料 ${fmt(f)}円 は処分差額に含めず<strong>費用処理</strong>（支払手数料）。`+RULE;
+    q.badge=`<span class="type-badge type-e">自己株式</span>`;
+    return q;
+  }
+  return null;
+}
+
+// ============ タイプ⑤：企業結合（厚め） ============
+function gen5(){
+  const N=rand(100,900)*10000;                  // S社の識別可能純資産（時価）
+  const rT=pick([6,7,8,10]);                    // 取得割合（10分率・整数演算でFP誤差回避）
+  const share=N/10*rT;                          // 純資産×取得割合
+  const negGw=Math.random()<0.15;               // 15%は負ののれん
+  const gw=negGw?-rand(5,50)*10000:rand(5,100)*10000;
+  const A=share+gw;                             // 株式の取得対価
+  if(A<=0)return null;
+  const f=rand(5,50)*10000;                     // 取得関連費用
+  const sub=pick(['indiv','gw','gw','gw','fee']);
+  const rPct=rT*10;
+  const base=row('取引',`P社はS社株式の${rPct}%を取得し子会社とした`)
+    +row('取得の対価',`現金 ${fmt(A)}円（S社株式の対価として支払い）`)
+    +row('取得関連費用',`${fmt(f)}円（FA報酬・デューデリジェンス費用等）`)
+    +row('S社の純資産',`${fmt(N)}円（識別可能資産・負債の時価評価後）`);
+  if(sub==='indiv'){
+    const q={type:5,mode:'num',ans:A+f,pullVal:A,signed:false};
+    q.rows=base+askRow('P社の個別財務諸表における子会社株式（S社株式）の取得原価');
+    q.askLabel='子会社株式の取得原価（円）';
+    q.exp=`<div class="step">① 個別F/Sでは付随費用を含める</div>`
+      +`対価 ${fmt(A)} ＋ 取得関連費用 ${fmt(f)} ＝ <strong>${fmt(A+f)}円</strong>`
+      +`<div class="step">② 対比：連結上は</div>`
+      +`連結でのれんを計算するときは取得関連費用を<strong>含めず</strong>、発生時の費用にする。個別＝含める／連結＝含めない、のねじれに注意。`+RULE;
+    q.badge=`<span class="type-badge type-f">企業結合（個別）</span>`;
+    return q;
+  }
+  if(sub==='fee'){
+    const q={type:5,mode:'num',ans:f,pullVal:f,signed:false};
+    q.rows=base+askRow('連結損益計算書で当期の費用として処理される取得関連費用の額');
+    q.askLabel='費用処理される額（円）';
+    q.exp=`<div class="step">① 連結上の取得関連費用</div>`
+      +`FA報酬・デューデリ費用等 ${fmt(f)}円 は<strong>全額、発生時の事業年度の費用</strong>。のれんにも子会社株式（連結上の投資額）にも含めない。`
+      +`<div class="step">② 対比</div>`
+      +`個別F/S上の子会社株式は ${fmt(A)}＋${fmt(f)}＝${fmt(A+f)}円 → 連結修正で費用に振り替えるイメージ。`+RULE;
+    q.badge=`<span class="type-badge type-f">企業結合（連結・費用）</span>`;
+    return q;
+  }
+  // のれん
+  const nci=N-share;
+  const q={type:5,mode:'num',ans:gw,pullVal:A,signed:true};
+  q.rows=base+askRow('のれんの額（負ののれんとなる場合はマイナスで解答）');
+  q.askLabel='のれん（円）※負ののれんはマイナス';
+  q.exp=`<div class="step">① 連結上の取得原価（＝対価のみ）</div>`
+    +`${fmt(A)}円。取得関連費用 ${fmt(f)}円 は<strong>含めない</strong>（発生時費用）。`
+    +`<div class="step">② 純資産の持分</div>`
+    +`${fmt(N)} × ${rPct}% ＝ ${fmt(share)}円`
+    +(rT<10?`（残り${100-rPct}%分 ${fmt(nci)}円 は非支配株主持分へ）`:'')
+    +`<div class="step">③ のれん</div>`
+    +`${fmt(A)} − ${fmt(share)} ＝ <strong>${fmtS(gw)}円</strong>`
+    +(negGw?`<br>マイナス → <strong>負ののれん発生益</strong>（特別利益）として当期の利益に計上（B/Sに資産計上しない）。`:'')
+    +`<br>※（対価＋手数料）− 持分 ＝ ${fmt(A+f-share)}円 としたら誤り。個別の簿価につられない。`+RULE;
+  q.badge=`<span class="type-badge type-f">企業結合（のれん）</span>`;
+  return q;
+}
+
+// ============ 出題範囲トグル（企業結合は重み付けで厚めに） ============
+const CATS=[
+  {key:'judge',label:'判定（含める？）',gen:gen1,w:2},
+  {key:'purchase',label:'仕入',gen:gen2,w:1},
+  {key:'fixed',label:'固定資産',gen:gen3,w:1},
+  {key:'treasury',label:'自己株式',gen:gen4,w:2},
+  {key:'combi',label:'企業結合',gen:gen5,w:3},
+];
+const enabled={judge:true,purchase:true,fixed:true,treasury:true,combi:true};
+function renderToggles(){
+  document.getElementById('cat-toggles').innerHTML=CATS.map(c=>
+    `<button type="button" class="toggle-chip ${enabled[c.key]?'on':''}" onclick="toggleCat('${c.key}')">${c.label}</button>`
+  ).join('');
+}
+function toggleCat(key){
+  const onCount=Object.values(enabled).filter(Boolean).length;
+  if(enabled[key]&&onCount===1)return;
+  enabled[key]=!enabled[key];
+  renderToggles();
+}
+function genQ(){
+  const pool=[];
+  for(const c of CATS)if(enabled[c.key])for(let i=0;i<c.w;i++)pool.push(c);
+  for(let i=0;i<50;i++){
+    const q=pick(pool).gen();
+    if(q)return q;
+  }
+  return null;
+}
+
+// ============ 出題・採点 ============
+function newQ(){
+  const q=genQ();
+  if(!q)return;
+  state.q=q;
+  document.getElementById('ans-input').value='';
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('type-badge-wrap').innerHTML=q.badge;
+  document.getElementById('q-body').innerHTML=q.rows;
+  if(q.mode==='judge'){
+    document.getElementById('num-area').style.display='none';
+    document.getElementById('judge-area').style.display='block';
+  }else{
+    document.getElementById('num-area').style.display='block';
+    document.getElementById('judge-area').style.display='none';
+    document.getElementById('btn-check').style.display='block';
+    document.getElementById('ans-label').textContent=q.askLabel;
+  }
+}
+
+function finishQ(ok,correctStr,exp){
+  state.total++;
+  if(ok)state.correct++;
+  document.getElementById('s-total').textContent=state.total;
+  document.getElementById('s-correct').textContent=state.correct;
+  document.getElementById('result-area').innerHTML=`
+    <div class="${ok?'result-ok':'result-ng'}">${ok?'✓ 正解！':'✗ 不正解　正解：'+correctStr}</div>
+    <div class="explain">${exp}</div>
+  `;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('judge-area').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function judgeAnswer(choice){
+  const q=state.q;
+  if(!q||q.mode!=='judge')return;
+  finishQ(choice===q.inc,q.inc?'含める':'含めない',q.exp);
+}
+
+function checkAnswer(){
+  const q=state.q;
+  const raw=document.getElementById('ans-input').value
+    .replace(/[,，\s円]/g,'').replace(/[−－▲△]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  const userAns=parseInt(raw,10);
+  if(isNaN(userAns)){
+    document.getElementById('result-area').innerHTML='<div class="result-ng">数字を入力してください</div>';
+    return;
+  }
+  const correctStr=q.signed?fmtS(q.ans)+'円':fmt(q.ans)+'円';
+  finishQ(userAns===q.ans,correctStr,q.exp);
+}
+
+function nextQ(){
+  newQ();
+}
+
+renderToggles();
+newQ();
+document.getElementById('ans-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+
+// ============ 電卓 ============
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.'; }
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='%'){
+    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtDisp(s.disp);
+}
+function calcFromQ(){
+  const q=state.q;if(!q||q.pullVal==null)return;
+  cs.disp=String(q.pullVal);cs.fresh=true;cs.prev=null;cs.op=null;
+  document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
+}
+function calcToAns(){
+  const n=parseFloat(cs.disp);
+  if(!isNaN(n))document.getElementById('ans-input').value=String(Math.round(n));
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtDisp(s){const neg=s.startsWith('-');const body=neg?s.slice(1):s;const[i,d]=body.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return (neg?'-':'')+(d!==undefined?f+'.'+d:f);}
+
+// PWA: service worker 登録
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
