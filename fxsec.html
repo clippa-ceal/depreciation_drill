@@ -527,11 +527,8 @@ function nextQ(){
 
 renderToggles();
 newQ();
-let lastAnsInput='a-yen';
 for(const f of FIELDS){
-  const el=document.getElementById('a-'+f.id);
-  el.addEventListener('focus',()=>{lastAnsInput='a-'+f.id;});
-  el.addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+  document.getElementById('a-'+f.id).addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
 }
 
 // ============ 電卓 ============
@@ -560,10 +557,23 @@ function calcFromQ(){
   cs.disp=String(q.pullVal);cs.fresh=true;cs.prev=null;cs.op=null;
   document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
 }
+// 数字が入っている最後の欄の「次の欄」へ反映（すべて空なら先頭へ。
+// 末尾まで埋まっていたら残っている空欄の先頭へ）
 function calcToAns(){
   const n=parseFloat(cs.disp);
-  const el=document.getElementById(lastAnsInput);
-  if(!isNaN(n)&&el&&!el.disabled)el.value=String(Math.round(n));
+  if(isNaN(n))return;
+  let lastFilled=-1;
+  FIELDS.forEach((f,i)=>{
+    if(document.getElementById('a-'+f.id).value.trim()!=='')lastFilled=i;
+  });
+  let idx=lastFilled+1;
+  if(idx>=FIELDS.length){
+    idx=FIELDS.findIndex(f=>document.getElementById('a-'+f.id).value.trim()==='');
+    if(idx<0)return;   // 全欄埋まっている
+  }
+  const el=document.getElementById('a-'+FIELDS[idx].id);
+  if(el.disabled)return;
+  el.value=String(Math.round(n));
 }
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}
