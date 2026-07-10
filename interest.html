@@ -116,7 +116,7 @@ svg.timeline{display:block;min-width:340px}
       <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
-      <button class="calc-btn calc-btn-fn" onclick="calcIn('%')">%</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
       <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
       <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
       <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
@@ -607,13 +607,13 @@ const cs={disp:'0',prev:null,op:null,fresh:true};
 function calcIn(v){
   const s=cs;
   if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
-  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
   else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.'; }
   else if('0123456789'.includes(v)){
     if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
     else s.disp=s.disp==='0'?v:s.disp+v;
-  }else if(v==='%'){
-    s.disp=String(parseFloat(s.disp)/100);s.fresh=true;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
   }else if(['+','-','×','÷'].includes(v)){
     if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
     else{s.prev=parseFloat(s.disp);}
