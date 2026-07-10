@@ -306,7 +306,7 @@ function gen3(){
     const diffAmt=d*M;                          // 額面と取得原価の差
     const F=rand(80,400)*100;                   // 外貨額面
     if(diffAmt>F*0.2)continue;                  // 金利調整差額として現実的な範囲に
-    const discount=Math.random()<0.75;          // 75%は割引取得（額面＞取得原価）
+    const discount=Math.random()<0.95;          // 95%は割引取得（オーバーパーは5%のレア枠）
     const C=discount?F-diffAmt:F+diffAmt;       // 外貨取得原価
     const dir=discount?1:-1;
     const f0=rand(0,11);                        // 当期の取得月（月初）
