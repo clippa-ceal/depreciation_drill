@@ -31,6 +31,14 @@ h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:
 .card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
 .label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
 input[type=text]{width:100%;margin-bottom:8px;font-size:16px;padding:12px;border:1px solid var(--color-border2);border-radius:var(--radius-md);background:var(--color-card)}
+.ans-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:7px}
+.ans-row label{flex:1;font-size:12.5px;color:var(--color-text2);line-height:1.45;padding-top:9px}
+.ans-row label .sub{font-size:10.5px;color:var(--color-text2);opacity:0.8}
+.ans-cell{width:46%;flex-shrink:0}
+.ans-cell input{width:100%;margin-bottom:0;font-size:15px;padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums}
+.ans-cell input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.ans-cell input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-cell .corr{font-size:11px;color:var(--color-text2);text-align:right;margin-top:2px;display:none}
 button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
 button:active{opacity:0.85}
 .q-row{display:flex;gap:8px;margin-bottom:8px;align-items:baseline}
@@ -139,8 +147,19 @@ details.basics summary::-webkit-details-marker{display:none}
   </div>
 
   <div id="answer-area">
-    <div class="label" id="ans-label">答え（円）</div>
-    <input type="text" id="ans-input" placeholder="例: 650000（マイナスは -12000）" inputmode="text">
+    <div class="label">解答欄（該当がない項目は空欄のままでOK）</div>
+    <div class="ans-row"><label>期末B/S計上額（外貨）</label>
+      <div class="ans-cell"><input type="text" id="a-usd" inputmode="text" placeholder="ドル"><div class="corr" id="c-usd"></div></div></div>
+    <div class="ans-row"><label>期末B/S計上額（円）</label>
+      <div class="ans-cell"><input type="text" id="a-yen" inputmode="text" placeholder="円"><div class="corr" id="c-yen"></div></div></div>
+    <div class="ans-row"><label>有価証券利息（償却額）<br><span class="sub">減額はマイナス</span></label>
+      <div class="ans-cell"><input type="text" id="a-int" inputmode="text" placeholder="円"><div class="corr" id="c-int"></div></div></div>
+    <div class="ans-row"><label>有価証券評価損益<br><span class="sub">損はマイナス</span></label>
+      <div class="ans-cell"><input type="text" id="a-pl" inputmode="text" placeholder="円"><div class="corr" id="c-pl"></div></div></div>
+    <div class="ans-row"><label>その他有価証券評価差額金<br><span class="sub">借方はマイナス</span></label>
+      <div class="ans-cell"><input type="text" id="a-oci" inputmode="text" placeholder="円"><div class="corr" id="c-oci"></div></div></div>
+    <div class="ans-row"><label>為替差損益<br><span class="sub">差損はマイナス</span></label>
+      <div class="ans-cell"><input type="text" id="a-fx" inputmode="text" placeholder="円"><div class="corr" id="c-fx"></div></div></div>
     <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
   </div>
   <div id="result-area"></div>
@@ -206,6 +225,10 @@ function rateRows(q){
 function askRow(text){
   return `<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">${text}</span></div>`;
 }
+const ASK_ALL='期末評価について、下の解答欄をすべて埋める（該当がない項目は空欄）';
+const FIELDS=[
+  {id:'usd'},{id:'yen'},{id:'int'},{id:'pl'},{id:'oci'},{id:'fx'},
+];
 function periodRow(y){
   return `<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${y}年4月1日〜X${y+1}年3月31日</span></div>`;
 }
@@ -220,15 +243,14 @@ function gen1(){
     if(mv<=0)continue;
     const book=cost*HR,bs=mv*CR,diff=bs-book;
     if(diff===0)continue;
-    const askBS=Math.random()<0.5;
-    const q={type:1,y,HR,CR,AR:null,ans:askBS?bs:diff,pullVal:mv,signed:!askBS};
+    const q={type:1,y,HR,CR,AR:null,pullVal:mv,
+      answers:{usd:mv,yen:bs,int:0,pl:diff,oci:0,fx:0}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">A社株式（売買目的有価証券）</span></div>`
       +`<div class="q-row"><span class="q-key">取得</span><span class="q-val">当期中に ${fmtD(cost)} で取得</span></div>`
       +`<div class="q-row"><span class="q-key">期末時価</span><span class="q-val">${fmtD(mv)}</span></div>`
       +rateRows(q)
-      +askRow(askBS?'期末のB/S計上額':'当期の有価証券評価損益（損はマイナスで解答）');
-    q.askLabel=askBS?'B/S計上額（円）':'有価証券評価損益（円）※損はマイナス';
+      +askRow(ASK_ALL);
     q.exp=`<div class="step">① 円建ての帳簿価額（取得時）</div>`
       +`${fmtD(cost)} × HR ${HR}円 ＝ ${fmt(book)}円`
       +`<div class="step">② 期末の評価額（売買目的 → 外貨の時価 × CR）</div>`
@@ -251,16 +273,15 @@ function gen2(){
     if(mv<=0)continue;
     const book=cost*HR,bs=mv*CR,diff=bs-book;
     if(diff===0)continue;
-    const askBS=Math.random()<0.5;
-    const q={type:2,y,HR,CR,AR:null,ans:askBS?bs:diff,pullVal:mv,signed:!askBS};
+    const q={type:2,y,HR,CR,AR:null,pullVal:mv,
+      answers:{usd:mv,yen:bs,int:0,pl:0,oci:diff,fx:0}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">B社株式（その他有価証券）</span></div>`
       +`<div class="q-row"><span class="q-key">取得</span><span class="q-val">当期中に ${fmtD(cost)} で取得</span></div>`
       +`<div class="q-row"><span class="q-key">期末時価</span><span class="q-val">${fmtD(mv)}</span></div>`
       +`<div class="q-row"><span class="q-key">処理方法</span><span class="q-val">全部純資産直入法（税効果は考慮しない）</span></div>`
       +rateRows(q)
-      +askRow(askBS?'期末のB/S計上額':'その他有価証券評価差額金（借方差額はマイナスで解答）');
-    q.askLabel=askBS?'B/S計上額（円）':'評価差額金（円）※借方差額はマイナス';
+      +askRow(ASK_ALL);
     q.exp=`<div class="step">① 円建ての帳簿価額（取得時）</div>`
       +`${fmtD(cost)} × HR ${HR}円 ＝ ${fmt(book)}円`
       +`<div class="step">② 期末の評価額（その他有価証券も 外貨の時価 × CR）</div>`
@@ -295,11 +316,8 @@ function gen3(){
     const endBook=C+dir*am;                     // 期末の外貨償却原価
     const bs=endBook*CR;
     const fx=bs-(C*HR+dir*amortYen);            // 為替差損益
-    const sub=pick(['amort','bs','fx']);
-    if(sub==='fx'&&fx===0)continue;
-    const q={type:3,y,HR,CR,AR,f0,n,pullVal:C,
-      ans:sub==='amort'?amortYen:sub==='bs'?bs:fx,
-      signed:sub==='fx',tl:true,spanS:f0,spanE:11};
+    const q={type:3,y,HR,CR,AR,f0,n,pullVal:C,tl:true,spanS:f0,spanE:11,
+      answers:{usd:endBook,yen:bs,int:dir*amortYen,pl:0,oci:0,fx:fx}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">C社社債（満期保有目的）</span></div>`
       +`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">${dStr(y,f0)}1日（満期：${dStr(y,f0+M-1)}末日・${M}か月後）</span></div>`
@@ -307,10 +325,7 @@ function gen3(){
       +`<div class="q-row"><span class="q-key">外貨取得原価</span><span class="q-val">${fmtD(C)}</span></div>`
       +`<div class="q-row"><span class="q-key">処理方法</span><span class="q-val">償却原価法（定額法・月割）。差額は金利調整差額。クーポン利息は考慮しない</span></div>`
       +rateRows(q)
-      +askRow(sub==='amort'?'当期の償却額（有価証券利息に計上する額）'
-             :sub==='bs'?'期末のB/S計上額'
-             :'当期の為替差損益（差損はマイナスで解答）');
-    q.askLabel=sub==='amort'?'償却額（円）':sub==='bs'?'B/S計上額（円）':'為替差損益（円）※差損はマイナス';
+      +askRow(ASK_ALL);
     q.exp=`<div class="step">① 外貨ベースの当期償却額（ここが月割）</div>`
       +`（額面${fmtD(F)} − 取得原価${fmtD(C)}）÷ ${M}か月 ＝ 月${discount?'':'△'}${fmtD(d)}<br>`
       +`当期は取得日（${cm(f0)}月1日）〜期末で <strong>${n}か月</strong> → ${discount?'':'△'}${fmtD(am)}`
@@ -337,14 +352,14 @@ function gen4(){
   const sub=pick(['keep','keep','imp']);
   if(sub==='keep'){
     // 原価のまま（CRはひっかけ）
-    const q={type:4,y,HR,CR,AR:null,ans:cost*HR,pullVal:cost,signed:false};
+    const q={type:4,y,HR,CR,AR:null,pullVal:cost,
+      answers:{usd:cost,yen:cost*HR,int:0,pl:0,oci:0,fx:0}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">D社株式（${name}株式）</span></div>`
       +`<div class="q-row"><span class="q-key">取得</span><span class="q-val">当期中に ${fmtD(cost)} で取得</span></div>`
       +`<div class="q-row"><span class="q-key">期末時価</span><span class="q-val">${fmtD(cost+(rand(0,1)?1:-1)*rand(1,Math.floor(cost/400))*100)}（著しい下落ではない）</span></div>`
       +rateRows(q)
-      +askRow('期末のB/S計上額');
-    q.askLabel='B/S計上額（円）';
+      +askRow(ASK_ALL);
     q.exp=`<div class="step">① ${name}株式の期末評価</div>`
       +`${name}株式は<strong>取得原価のまま</strong>据え置き、換算替えもしない（HRのまま）。<br>`
       +`<div class="step">② B/S計上額</div>`
@@ -359,21 +374,20 @@ function gen4(){
   const mv=Math.round(cost*rate);
   const book=cost*HR,bs=mv*CR;
   const loss=book-bs;
-  const askBS=Math.random()<0.5;
-  const q={type:4,y,HR,CR,AR:null,ans:askBS?bs:loss,pullVal:mv,signed:false};
+  const q={type:4,y,HR,CR,AR:null,pullVal:mv,
+    answers:{usd:mv,yen:bs,int:0,pl:bs-book,oci:0,fx:0}};
   q.rows=periodRow(y)
     +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">${holder}</span></div>`
     +`<div class="q-row"><span class="q-key">取得</span><span class="q-val">当期中に ${fmtD(cost)} で取得</span></div>`
     +`<div class="q-row"><span class="q-key">期末時価</span><span class="q-val">${fmtD(mv)}（著しく下落・回復見込み不明）</span></div>`
     +rateRows(q)
-    +askRow(askBS?'期末のB/S計上額':'当期に計上する有価証券評価損');
-  q.askLabel=askBS?'B/S計上額（円）':'有価証券評価損（円）';
+    +askRow(ASK_ALL);
   q.exp=`<div class="step">① 減損の判定</div>`
     +`外貨ベースで時価 ${fmtD(mv)} ÷ 原価 ${fmtD(cost)} ＝ ${Math.round(rate*100)}% → 50%以上の下落 → <strong>強制評価減</strong>`
     +`<div class="step">② 期末評価（保有目的によらず 時価 × CR）</div>`
     +`${fmtD(mv)} × CR ${CR}円 ＝ <strong>${fmt(bs)}円</strong>（B/S計上額）`
     +`<div class="step">③ 評価損（P/L・切放し）</div>`
-    +`${fmt(book)} − ${fmt(bs)} ＝ <strong>${fmt(loss)}円</strong>（有価証券評価損）`;
+    +`${fmt(book)} − ${fmt(bs)} ＝ <strong>${fmt(loss)}円</strong>（有価証券評価損。解答欄の「有価証券評価損益」には −${fmt(loss)} と記入）`;
   q.badge=`<span class="type-badge type-e">減損（強制評価減）</span>`;
   return q;
 }
@@ -446,34 +460,59 @@ function newQ(){
   const q=genQ();
   if(!q)return;
   state.q=q;
-  document.getElementById('ans-input').value='';
+  for(const f of FIELDS){
+    const inp=document.getElementById('a-'+f.id);
+    inp.value='';inp.disabled=false;
+    inp.classList.remove('cell-ok','cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='none';c.textContent='';
+  }
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-next').style.display='none';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('type-badge-wrap').innerHTML=q.badge;
   document.getElementById('q-body').innerHTML=q.rows;
-  document.getElementById('ans-label').textContent=q.askLabel;
   drawTimeline(q,false);
+}
+
+// 空欄は 0（該当なし）として扱う
+function parseCell(id){
+  const raw=document.getElementById('a-'+id).value
+    .replace(/[,，\s円]/g,'').replace(/ドル|＄|\$/g,'').replace(/[−－▲△]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(raw===''||raw==='-')return 0;
+  const n=parseInt(raw,10);
+  return isNaN(n)?null:n;
+}
+function corrStr(id,v){
+  if(v===0)return '正解: 0（該当なし）';
+  const unit=id==='usd'?'ドル':'円';
+  const s=(id==='usd'||id==='yen')?fmt(v):fmtS(v);
+  return '正解: '+s+unit;
 }
 
 function checkAnswer(){
   const q=state.q;
-  const raw=document.getElementById('ans-input').value
-    .replace(/[,，\s円]/g,'').replace(/[−－▲△]/g,'-')
-    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
-  const userAns=parseInt(raw,10);
-  if(isNaN(userAns)){
-    document.getElementById('result-area').innerHTML='<div class="result-ng">数字を入力してください</div>';
-    return;
+  let allOk=true;
+  for(const f of FIELDS){
+    const correct=q.answers[f.id];
+    const user=parseCell(f.id);
+    const ok=user===correct;
+    if(!ok)allOk=false;
+    const inp=document.getElementById('a-'+f.id);
+    inp.disabled=true;
+    inp.classList.remove('cell-ok','cell-ng');
+    inp.classList.add(ok?'cell-ok':'cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='block';
+    c.textContent=corrStr(f.id,correct);
   }
   state.total++;
-  const ok=userAns===q.ans;
-  if(ok)state.correct++;
+  if(allOk)state.correct++;
   document.getElementById('s-total').textContent=state.total;
   document.getElementById('s-correct').textContent=state.correct;
-  const correctStr=q.signed?fmtS(q.ans)+'円':fmt(q.ans)+'円';
   document.getElementById('result-area').innerHTML=`
-    <div class="${ok?'result-ok':'result-ng'}">${ok?'✓ 正解！':'✗ 不正解　正解：'+correctStr}</div>
+    <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全欄正解！':'✗ 赤い欄が不正解（各欄の下に正解を表示）'}</div>
     <div class="explain">${q.exp}</div>
   `;
   drawTimeline(q,true);
@@ -488,7 +527,12 @@ function nextQ(){
 
 renderToggles();
 newQ();
-document.getElementById('ans-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+let lastAnsInput='a-yen';
+for(const f of FIELDS){
+  const el=document.getElementById('a-'+f.id);
+  el.addEventListener('focus',()=>{lastAnsInput='a-'+f.id;});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+}
 
 // ============ 電卓 ============
 const cs={disp:'0',prev:null,op:null,fresh:true};
@@ -518,7 +562,8 @@ function calcFromQ(){
 }
 function calcToAns(){
   const n=parseFloat(cs.disp);
-  if(!isNaN(n))document.getElementById('ans-input').value=String(Math.round(n));
+  const el=document.getElementById(lastAnsInput);
+  if(!isNaN(n)&&el&&!el.disabled)el.value=String(Math.round(n));
 }
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}
