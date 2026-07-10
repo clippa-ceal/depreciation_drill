@@ -64,6 +64,8 @@ button:active{opacity:0.85}
 .type-d{background:#E3EEF7;color:#185FA5}
 .type-e{background:#F0EBF8;color:#6B4FA0}
 .type-f{background:#FBEAF1;color:#A0326E}
+.type-g{background:#E0F2EE;color:#0F6E56}
+.type-h{background:#EEF0DF;color:#5F6B1A}
 .toggle-chips{display:flex;gap:6px;flex-wrap:wrap}
 .toggle-chip{width:auto;margin:0;padding:7px 14px;border:1px solid var(--color-border2);border-radius:999px;background:var(--color-bg-secondary);font-size:13px;color:var(--color-text2);font-weight:500;cursor:pointer}
 .toggle-chip.on{background:var(--color-text);color:#fff;border-color:var(--color-text)}
@@ -109,15 +111,18 @@ details.basics summary::-webkit-details-marker{display:none}
     <summary>基礎知識まとめ</summary>
     <div class="basics-body">
       <h3>大法則：「モノは原価、カネは費用」</h3>
-      資産（モノ）を買う付随費用は<strong>取得原価に含める</strong>のが原則。株主との取引（資本取引）や資金調達（カネ）がらみの手数料は<strong>含めずに費用</strong>にする。
+      資産（モノ）を買う付随費用は<strong>取得原価に含める</strong>のが原則。株主との取引（資本取引）や資金調達（カネ）がらみの手数料は<strong>含めずに費用</strong>にする。<br>
+      ここでいう「カネ」は<strong>自社の</strong>株式・社債を出す／買い戻す取引のこと。<strong>他社の</strong>株式・社債を買うのは金融資産という「モノ」の購入なので、手数料は取得原価に含める（例：他社社債の購入手数料→含める／自社の社債発行費→含めない）。
       <h3>一覧</h3>
       <div class="k-wrap">
       <table class="k-tbl">
         <tr><th>項目</th><th>付随費用の例</th><th>含める？</th></tr>
         <tr><td>仕入（商品）</td><td>引取運賃・関税・購入手数料</td><td class="inc">含める</td></tr>
         <tr><td>固定資産</td><td>仲介手数料・据付費・試運転費</td><td class="inc">含める</td></tr>
-        <tr><td>有価証券（各分類）</td><td>購入手数料</td><td class="inc">含める</td></tr>
+        <tr><td>有価証券（他社の株・債券）</td><td>購入手数料</td><td class="inc">含める</td></tr>
         <tr><td>子会社株式（個別）</td><td>購入手数料・調査費用</td><td class="inc">含める</td></tr>
+        <tr><td>ソフトウェア（自社利用）</td><td>導入設定費・カスタマイズ費</td><td class="inc">含める</td></tr>
+        <tr><td>ソフトウェア（自社利用）</td><td>トレーニング費・データ移行費</td><td class="exc">含めない（費用）</td></tr>
         <tr><td>企業結合（連結上）</td><td>FA報酬・デューデリ費用</td><td class="exc">含めない（発生時費用）</td></tr>
         <tr><td>自己株式</td><td>取得・処分の手数料</td><td class="exc">含めない（支払手数料）</td></tr>
         <tr><td>新株発行</td><td>株式交付費</td><td class="exc">資本金に含めない</td></tr>
@@ -200,7 +205,7 @@ function askRow(text){
 function row(k,v){
   return `<div class="q-row"><span class="q-key">${k}</span><span class="q-val">${v}</span></div>`;
 }
-const RULE='<br>※法則：「モノは原価、カネ（資本取引・資金調達）は費用」';
+const RULE='<br>※法則：「モノは原価、カネは費用」。カネ＝<strong>自社の</strong>株式・社債を出す／買い戻す取引（資本取引・資金調達）。<strong>他社の</strong>株式・社債を買うのは「モノ」なので含める。';
 
 // ============ タイプ①：判定（含める？含めない？） ============
 // grp: combi=企業結合系, treasury=自己株式・資本系（厚めに出題）
@@ -213,9 +218,18 @@ const JUDGE=[
  {t:'機械装置の試運転費',inc:true,why:'使える状態にするための支出 → 取得原価に含める。'},
  {t:'建物購入の仲介手数料',inc:true,why:'固定資産の付随費用 → 取得原価に含める。'},
  {t:'固定資産の購入資金にあてた借入金の支払利息',inc:false,why:'財務費用（カネのコスト）→ 原則、取得原価に含めず支払利息として費用処理。'},
- {t:'売買目的有価証券の購入手数料',inc:true,why:'有価証券の付随費用 → 取得原価に含める。'},
- {t:'満期保有目的債券の購入手数料',inc:true,why:'有価証券の付随費用 → 取得原価に含める。'},
- {t:'ソフトウェア導入に伴う設定作業費用',inc:true,why:'使える状態にするための支出 → ソフトウェアの取得原価に含める。'},
+ {t:'売買目的有価証券の購入手数料',inc:true,why:'他社の株式を買う＝「モノ」の取得 → 取得原価に含める。',grp:'sec'},
+ {t:'その他有価証券の購入手数料',inc:true,why:'他社の株式を買う＝「モノ」の取得 → 取得原価に含める。',grp:'sec'},
+ {t:'関連会社株式の購入手数料（個別財務諸表）',inc:true,why:'他社の株式を買う＝「モノ」の取得 → 取得原価に含める。',grp:'sec'},
+ {t:'他社が発行した社債（満期保有目的）の購入手数料',inc:true,why:'他社の債券を買う＝「モノ」の取得 → 含める。自社の社債発行費（含めない）との対比が重要。',grp:'sec'},
+ {t:'ソフトウェア導入に伴う設定作業費用',inc:true,why:'使える状態にするための支出 → ソフトウェアの取得原価に含める。',grp:'soft'},
+ {t:'自社利用ソフトウェアを自社仕様に合わせる修正（カスタマイズ）費用',inc:true,why:'使える状態にするために必要な支出 → 取得原価に含める。',grp:'soft'},
+ {t:'ソフトウェア操作の従業員トレーニング費用',inc:false,why:'ソフトウェア自体の価値を構成しない（人への支出）→ 発生時の費用。',grp:'soft'},
+ {t:'旧システムからのデータ移行（コンバート）費用',inc:false,why:'原則、発生時の費用として処理する。',grp:'soft'},
+ {t:'ソフトウェアの機能維持のための費用',inc:false,why:'資産価値を高めない維持コスト → 費用処理。',grp:'soft'},
+ {t:'研究開発目的で取得したソフトウェアの購入費',inc:false,why:'研究開発費として発生時に費用処理（資産計上しない）。',grp:'soft'},
+ {t:'市場販売目的ソフトウェア：製品マスター完成までの制作費',inc:false,why:'研究開発費として費用処理。製品マスター完成後の制作費から資産計上する。',grp:'soft'},
+ {t:'市場販売目的ソフトウェア：製品マスター完成後の通常の機能改良費用',inc:true,why:'製品マスター（無形固定資産）の取得原価に算入する。',grp:'soft'},
  {t:'リース資産の付随費用（借手）',inc:true,why:'リース資産の取得原価に含める。'},
  {t:'子会社株式の購入手数料（個別財務諸表）',inc:true,why:'個別上は他の有価証券と同じ → 子会社株式の取得原価に含める。',grp:'combi'},
  {t:'子会社株式取得のデューデリジェンス費用（連結上・のれんの計算）',inc:false,why:'連結上の取得関連費用は発生時の費用 → のれんの計算に含めない。個別では含めるのと対比。',grp:'combi'},
@@ -403,6 +417,81 @@ function gen5(){
   return q;
 }
 
+// ============ タイプ⑥：有価証券×自己株式（手数料の対比） ============
+function gen6(){
+  const contrast=Math.random()<0.5;
+  if(contrast){
+    // 他社株式（含める）と自己株式（含めない）を同時に出す対比問題
+    const Pa=rand(50,500)*1000,fa=rand(2,20)*1000;
+    const Pb=rand(50,500)*1000,fb=rand(2,20)*1000;
+    const kind=pick(['売買目的有価証券','その他有価証券']);
+    const sub=pick(['sec','treasury','fee']);
+    const ans=sub==='sec'?Pa+fa:sub==='treasury'?Pb:fb;
+    const q={type:6,mode:'num',ans,pullVal:sub==='sec'?Pa:Pb,signed:false};
+    q.rows=row('取引①',`A社株式（${kind}）を ${fmt(Pa)}円 で購入。購入手数料 ${fmt(fa)}円`)
+      +row('取引②',`自己株式を ${fmt(Pb)}円 で取得。手数料 ${fmt(fb)}円`)
+      +askRow(sub==='sec'?`A社株式（${kind}）の取得原価`
+             :sub==='treasury'?'自己株式のB/S計上額（純資産の控除額）'
+             :'支払手数料として費用処理される額');
+    q.askLabel=sub==='sec'?'取得原価（円）':sub==='treasury'?'自己株式の額（円）':'支払手数料（円）';
+    q.exp=`<div class="step">① A社株式（他社の株＝「モノ」）</div>`
+      +`取得原価 ＝ ${fmt(Pa)} ＋ 手数料 ${fmt(fa)} ＝ <strong>${fmt(Pa+fa)}円</strong>（手数料を含める）`
+      +`<div class="step">② 自己株式（自社の株＝「カネ」・資本取引）</div>`
+      +`B/S計上額 ＝ <strong>${fmt(Pb)}円</strong>（手数料を含めない）`
+      +`<div class="step">③ 費用処理される手数料</div>`
+      +`自己株式の分 ${fmt(fb)}円 のみ支払手数料（営業外費用）。A社株式の分 ${fmt(fa)}円 は取得原価に入っている。`+RULE;
+    q.badge=`<span class="type-badge type-g">有価証券×自己株式</span>`;
+    return q;
+  }
+  // 満期保有社債：額面につられないか＋手数料を含めるか
+  const F=rand(100,500)*10000;                  // 額面
+  const P=F-rand(2,20)*10000;                   // 購入価額（割引）
+  const f=rand(2,20)*1000;                      // 購入手数料
+  const q={type:6,mode:'num',ans:P+f,pullVal:P,signed:false};
+  q.rows=row('取引',`B社発行の社債（満期保有目的）を購入`)
+    +row('額面金額',fmt(F)+'円')
+    +row('購入価額',fmt(P)+'円')
+    +row('購入手数料',fmt(f)+'円')
+    +askRow('この社債の取得原価');
+  q.askLabel='取得原価（円）';
+  q.exp=`<div class="step">① 取得原価（額面ではない！）</div>`
+    +`購入価額 ${fmt(P)} ＋ 手数料 ${fmt(f)} ＝ <strong>${fmt(P+f)}円</strong>`
+    +`<div class="step">② ポイント</div>`
+    +`他社の債券を買うのは「モノ」の取得 → 手数料は含める（自社の社債発行費は含めない、と対比）。<br>`
+    +`額面 ${fmt(F)}円 との差は、満期までの償却原価法で調整していく。`+RULE;
+  q.badge=`<span class="type-badge type-g">有価証券（社債）</span>`;
+  return q;
+}
+
+// ============ タイプ⑦：ソフトウェア ============
+function gen7(){
+  const P=rand(100,900)*1000;                   // 購入代価
+  const s=rand(5,50)*1000;                      // 導入設定作業費（含める）
+  const hasCust=Math.random()<0.5;
+  const c=hasCust?rand(10,80)*1000:0;           // カスタマイズ費（含める）
+  const t=rand(5,40)*1000;                      // トレーニング費（含めない）
+  const hasData=Math.random()<0.5;
+  const dm=hasData?rand(5,40)*1000:0;           // データ移行費（含めない）
+  const asset=P+s+c,expense=t+dm;
+  const askAsset=Math.random()<0.6;
+  const q={type:7,mode:'num',ans:askAsset?asset:expense,pullVal:P,signed:false};
+  q.rows=row('取引',`自社利用目的のソフトウェアを導入（将来の費用削減効果は確実）`)
+    +row('購入代価',fmt(P)+'円')
+    +row('導入設定作業費',fmt(s)+'円')
+    +(hasCust?row('カスタマイズ費',fmt(c)+'円（自社仕様に合わせる修正）'):'')
+    +row('トレーニング費',fmt(t)+'円（操作研修）')
+    +(hasData?row('データ移行費',fmt(dm)+'円（旧システムからのコンバート）'):'')
+    +askRow(askAsset?'ソフトウェアとして無形固定資産に計上される額':'発生時に費用処理される額の合計');
+  q.askLabel=askAsset?'ソフトウェア計上額（円）':'費用処理される額（円）';
+  q.exp=`<div class="step">① 資産に含めるもの（使える状態にするための直接支出）</div>`
+    +`購入代価 ${fmt(P)} ＋ 設定作業費 ${fmt(s)}${hasCust?` ＋ カスタマイズ費 ${fmt(c)}`:''} ＝ <strong>${fmt(asset)}円</strong>`
+    +`<div class="step">② 含めないもの（発生時費用）</div>`
+    +`トレーニング費 ${fmt(t)}円（ソフトではなく人への支出）${hasData?` ＋ データ移行費 ${fmt(dm)}円（原則費用処理）`:''} ＝ <strong>${fmt(expense)}円</strong>`
+    +`<br>※研究開発目的での取得なら全額が研究開発費（費用）になる点にも注意。`+RULE;
+  q.badge=`<span class="type-badge type-h">ソフトウェア</span>`;
+  return q;
+}
+
 // ============ 出題範囲トグル（企業結合は重み付けで厚めに） ============
 const CATS=[
   {key:'judge',label:'判定（含める？）',gen:gen1,w:2},
@@ -410,8 +499,10 @@ const CATS=[
   {key:'fixed',label:'固定資産',gen:gen3,w:1},
   {key:'treasury',label:'自己株式',gen:gen4,w:2},
   {key:'combi',label:'企業結合',gen:gen5,w:3},
+  {key:'sec',label:'有価証券×自己株式',gen:gen6,w:2},
+  {key:'soft',label:'ソフトウェア',gen:gen7,w:2},
 ];
-const enabled={judge:true,purchase:true,fixed:true,treasury:true,combi:true};
+const enabled={judge:true,purchase:true,fixed:true,treasury:true,combi:true,sec:true,soft:true};
 function renderToggles(){
   document.getElementById('cat-toggles').innerHTML=CATS.map(c=>
     `<button type="button" class="toggle-chip ${enabled[c.key]?'on':''}" onclick="toggleCat('${c.key}')">${c.label}</button>`
