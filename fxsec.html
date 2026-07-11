@@ -394,10 +394,10 @@ function gen4(){
 
 // ============ 出題範囲トグル ============
 const CATS=[
-  {key:'trading',label:'売買目的',gen:gen1},
-  {key:'other',label:'その他有価証券',gen:gen2},
-  {key:'htm',label:'満期保有（償却原価法）',gen:gen3},
-  {key:'subsid',label:'子会社・関連／減損',gen:gen4},
+  {key:'trading',label:'売買目的',gen:gen1,w:1},
+  {key:'other',label:'その他有価証券',gen:gen2,w:4},
+  {key:'htm',label:'満期保有（償却原価法）',gen:gen3,w:4},
+  {key:'subsid',label:'子会社・関連／減損',gen:gen4,w:1},
 ];
 const enabled={trading:true,other:true,htm:true,subsid:true};
 function renderToggles(){
@@ -412,7 +412,8 @@ function toggleCat(key){
   renderToggles();
 }
 function genQ(){
-  const pool=CATS.filter(c=>enabled[c.key]);
+  const pool=[];
+  for(const c of CATS)if(enabled[c.key])for(let i=0;i<c.w;i++)pool.push(c);
   for(let i=0;i<50;i++){
     const q=pick(pool).gen();
     if(q)return q;
