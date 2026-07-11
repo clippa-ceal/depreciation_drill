@@ -120,6 +120,7 @@ details.basics summary::-webkit-details-marker{display:none}
         <tr><td>満期保有（償却原価法）</td><td>償却原価</td><td>CR<br>（償却額はAR）</td><td>償却額→有価証券利息<br>残り→為替差損益（P/L）</td></tr>
         <tr><td>子会社・関連会社</td><td>取得原価</td><td>HR</td><td>換算しない</td></tr>
         <tr><td>その他有価証券</td><td>時価</td><td>CR</td><td>その他有価証券評価差額金（純資産）</td></tr>
+        <tr><td>その他（債券・金利調整差額あり）</td><td>時価<br>（償却原価法も適用）</td><td>CR<br>（償却額はAR）</td><td>原則：差額すべて評価差額金<br>容認：為替変動分は為替差損益</td></tr>
       </table>
       </div>
       HR＝取得時レート／AR＝期中平均レート／CR＝決算時レート
@@ -128,7 +129,10 @@ details.basics summary::-webkit-details-marker{display:none}
       ② 原価のまま据え置く子会社・関連会社株式だけHR、それ以外は<strong>CRで換算</strong><br>
       ③ 円建て帳簿価額との差額を、上の表の行き先へ
       <h3>満期保有（償却原価法）の手順</h3>
-      外貨の償却額（額面と取得原価の差×当期月数÷全月数）を<strong>ARで換算して有価証券利息</strong>に。期末B/Sは外貨償却原価×CR。B/Sと（帳簿価額＋償却額）の差が<strong>為替差損益</strong>。
+      外貨の償却額（額面と取得原価の差×当期月数÷全月数）を<strong>ARで換算して有価証券利息</strong>に。期末B/Sは外貨償却原価×CR。B/Sと（帳簿価額＋償却額）の差が<strong>為替差損益</strong>。<br>
+      <strong>2年目以降</strong>は、期首の円帳簿価額＝前期末の外貨償却原価×<strong>前期末CR</strong>（＝前期末B/S）。取得時のHRはもう使わない。
+      <h3>その他有価証券の債券（金利調整差額あり）</h3>
+      償却原価法を適用したうえで時価評価するハイブリッド。①償却額×AR→有価証券利息 ②期末B/S＝外貨時価×CR ③B/Sと償却原価の円換算額との差額は、<strong>原則</strong>すべて評価差額金、<strong>容認</strong>なら（外貨時価−外貨償却原価）×CR分だけ評価差額金にして残りを為替差損益にする。
       <h3>減損（強制評価減）</h3>
       時価が著しく下落（おおむね50%以上）し回復見込み不明なら、保有目的によらず<strong>時価×CR</strong>まで切り下げ、評価損はP/L（切放し）。
     </div>
@@ -263,8 +267,11 @@ function gen1(){
   return null;
 }
 
-// ============ タイプ②：その他有価証券 ============
+// ============ タイプ②：その他有価証券（株式50%／債券・償却原価法50%） ============
 function gen2(){
+  return Math.random()<0.5?gen2Stock():gen2Bond();
+}
+function gen2Stock(){
   for(let t=0;t<500;t++){
     const y=rand(5,12);
     const{HR,CR}=genRates(false);
@@ -273,7 +280,7 @@ function gen2(){
     if(mv<=0)continue;
     const book=cost*HR,bs=mv*CR,diff=bs-book;
     if(diff===0)continue;
-    const q={type:2,y,HR,CR,AR:null,pullVal:mv,
+    const q={type:2,sub:'stock',y,HR,CR,AR:null,pullVal:mv,
       answers:{usd:mv,yen:bs,int:0,pl:0,oci:diff,fx:0}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">B社株式（その他有価証券）</span></div>`
@@ -295,8 +302,69 @@ function gen2(){
   return null;
 }
 
-// ============ タイプ③：満期保有目的債券（償却原価法×月割） ============
+// その他有価証券×債券（償却原価法）：原則＝差額すべて評価差額金／容認＝為替変動分は為替差損益
+function gen2Bond(){
+  for(let t=0;t<500;t++){
+    const y=rand(5,12);
+    const{HR,CR,AR}=genRates(true);
+    const years=pick([2,3,4,5]);
+    const M=years*12;
+    const d=rand(1,40)*5;
+    const diffAmt=d*M;
+    const F=rand(80,400)*100;
+    if(diffAmt>F*0.2)continue;
+    const discount=Math.random()<0.95;
+    const C=discount?F-diffAmt:F+diffAmt;
+    const dir=discount?1:-1;
+    const f0=rand(0,11);
+    const n=12-f0;
+    const am=d*n;
+    const amortYen=am*AR;
+    const endBook=C+dir*am;                     // 期末の外貨償却原価
+    const mv=endBook+(rand(0,1)?1:-1)*rand(1,Math.max(1,Math.floor(endBook/200)))*10;  // 外貨時価
+    if(mv<=0||mv===endBook)continue;
+    const bookYen=C*HR+dir*amortYen;            // 償却原価の円換算額（帳簿）
+    const bs=mv*CR;
+    if(bs===bookYen)continue;
+    const split=Math.random()<0.5;              // 容認（為替分を為替差損益）か
+    const oci=split?(mv-endBook)*CR:bs-bookYen;
+    const fx=split?endBook*CR-bookYen:0;
+    const q={type:2,sub:split?'bondS':'bondG',y,HR,CR,AR,f0,n,pullVal:C,tl:true,spanS:f0,spanE:11,
+      answers:{usd:mv,yen:bs,int:dir*amortYen,pl:0,oci,fx}};
+    q.rows=periodRow(y)
+      +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">D社社債（その他有価証券）</span></div>`
+      +`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">${dStr(y,f0)}1日（満期：${dStr(y,f0+M-1)}末日・${M}か月後）</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨額面</span><span class="q-val">${fmtD(F)}</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨取得原価</span><span class="q-val">${fmtD(C)}</span></div>`
+      +`<div class="q-row"><span class="q-key">期末時価</span><span class="q-val">${fmtD(mv)}</span></div>`
+      +`<div class="q-row"><span class="q-key">処理方法</span><span class="q-val">償却原価法（定額法・月割）を適用し時価評価。全部純資産直入法（税効果・クーポン利息は考慮しない）</span></div>`
+      +`<div class="q-row"><span class="q-key">評価差額</span><span class="q-val">${split?'外貨時価の変動分は評価差額金、為替変動分は為替差損益とする方法（容認）':'すべてその他有価証券評価差額金とする（原則）'}</span></div>`
+      +rateRows(q)
+      +askRow(ASK_ALL);
+    q.exp=`<div class="step">① 外貨ベースの当期償却額（月割）</div>`
+      +`（額面${fmtD(F)} − 取得原価${fmtD(C)}）÷ ${M}か月 ＝ 月${discount?'':'△'}${fmtD(d)} × ${n}か月 ＝ ${discount?'':'△'}${fmtD(am)}<br>`
+      +`${fmtD(am)} × AR ${AR}円 ＝ <strong>${fmt(amortYen)}円</strong>（有価証券利息を${discount?'増額':'減額'}）`
+      +`<div class="step">② 償却原価の円換算額（帳簿側）</div>`
+      +`取得 ${fmt(C*HR)}円 ${discount?'＋':'−'} 償却 ${fmt(amortYen)}円 ＝ ${fmt(bookYen)}円（外貨では ${fmtD(endBook)}）`
+      +`<div class="step">③ 期末B/S（その他有価証券 → 外貨の時価 × CR）</div>`
+      +`${fmtD(mv)} × CR ${CR}円 ＝ <strong>${fmt(bs)}円</strong>`
+      +`<div class="step">④ 差額 ${fmt(bs)} − ${fmt(bookYen)} ＝ ${fmtS(bs-bookYen)}円 の行き先</div>`
+      +(split
+        ?`<strong>容認処理：2つに分解する</strong><br>`
+         +`・時価変動分（評価差額金）：（${fmtD(mv)} − ${fmtD(endBook)}）× CR ${CR}円 ＝ <strong>${fmtS(oci)}円</strong><br>`
+         +`・為替変動分（為替差損益）：${fmtD(endBook)} × CR ${CR}円 − ${fmt(bookYen)} ＝ <strong>${fmtS(fx)}円</strong>`
+        :`<strong>原則処理：全額をその他有価証券評価差額金へ</strong> ＝ <strong>${fmtS(oci)}円</strong>（為替差損益は出さない）`);
+    q.badge=`<span class="type-badge type-c">その他有価証券（債券・償却原価法${split?'・容認':'・原則'}）</span>`;
+    return q;
+  }
+  return null;
+}
+
+// ============ タイプ③：満期保有目的債券（取得年度50%／2年目以降50%） ============
 function gen3(){
+  return Math.random()<0.5?gen3Y1():gen3Y2();
+}
+function gen3Y1(){
   for(let t=0;t<500;t++){
     const y=rand(5,12);
     const{HR,CR,AR}=genRates(true);
@@ -316,7 +384,7 @@ function gen3(){
     const endBook=C+dir*am;                     // 期末の外貨償却原価
     const bs=endBook*CR;
     const fx=bs-(C*HR+dir*amortYen);            // 為替差損益
-    const q={type:3,y,HR,CR,AR,f0,n,pullVal:C,tl:true,spanS:f0,spanE:11,
+    const q={type:3,sub:'y1',y,HR,CR,AR,f0,n,pullVal:C,tl:true,spanS:f0,spanE:11,
       answers:{usd:endBook,yen:bs,int:dir*amortYen,pl:0,oci:0,fx:fx}};
     q.rows=periodRow(y)
       +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">C社社債（満期保有目的）</span></div>`
@@ -338,6 +406,60 @@ function gen3(){
       +`帳簿側：取得 ${fmt(C*HR)}円 ${discount?'＋':'−'} 償却 ${fmt(amortYen)}円 ＝ ${fmt(C*HR+dir*amortYen)}円<br>`
       +`${fmt(bs)} − ${fmt(C*HR+dir*amortYen)} ＝ <strong>${fmtS(fx)}円</strong>（${fx>0?'為替差益':'為替差損'}）`;
     q.badge=`<span class="type-badge type-d">満期保有（償却原価法）</span>`;
+    return q;
+  }
+  return null;
+}
+
+// 満期保有・2年目以降：期首の円簿価は「前期末の外貨償却原価×前期末CR」（取得時HRはもう使わない）
+function gen3Y2(){
+  for(let t=0;t<2000;t++){
+    const y=rand(5,12);
+    const HR=rand(90,150);
+    const prevCR=HR+(rand(0,1)?1:-1)*rand(2,12);   // 前期末レート
+    const CR=prevCR+(rand(0,1)?1:-1)*rand(2,12);   // 当期末レート
+    const AR=prevCR+Math.round((CR-prevCR)*rand(3,7)/10);
+    const M=pick([24,36,48,60]);
+    const d=rand(1,40)*5;
+    const F=rand(80,400)*100;
+    if(d*M>F*0.2)continue;
+    const C=F-d*M;                                 // 割引取得のみ
+    const k=rand(1,4);                             // 何年前の取得か
+    const f0=rand(1,11);                           // 取得月（月初）
+    const e=12*k-f0;                               // 取得日から当期首までの経過月数
+    if(e<1||e+12>M-1)continue;                     // 当期中に満期が来ないように
+    const B0=C+d*e;                                // 期首の外貨償却原価
+    const prevYen=B0*prevCR;                       // 期首の円帳簿価額（＝前期末B/S）
+    const amortYen=12*d*AR;                        // 当期償却（まる12か月分）
+    const endBook=C+d*(e+12);
+    const bs=endBook*CR;
+    const fx=bs-(prevYen+amortYen);
+    const q={type:3,sub:'y2',y,HR,CR,AR,pullVal:prevYen,
+      answers:{usd:endBook,yen:bs,int:amortYen,pl:0,oci:0,fx:fx}};
+    q.rows=periodRow(y)
+      +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">C社社債（満期保有目的）</span></div>`
+      +`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">${dStr(y-k,f0)}1日（満期：${dStr(y-k,f0+M-1)}末日・${M}か月後）</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨額面</span><span class="q-val">${fmtD(F)}</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨取得原価</span><span class="q-val">${fmtD(C)}</span></div>`
+      +`<div class="q-row"><span class="q-key">処理方法</span><span class="q-val">償却原価法（定額法・月割）。差額は金利調整差額。クーポン利息は考慮しない</span></div>`
+      +`<div class="q-row"><span class="q-key">取得時レート</span><span class="q-val">1ドル ${HR}円（HR）</span></div>`
+      +`<div class="q-row"><span class="q-key">前期末レート</span><span class="q-val">1ドル ${prevCR}円</span></div>`
+      +`<div class="q-row"><span class="q-key">期中平均レート</span><span class="q-val">1ドル ${AR}円（当期AR）</span></div>`
+      +`<div class="q-row"><span class="q-key">決算時レート</span><span class="q-val">1ドル ${CR}円（当期末CR）</span></div>`
+      +askRow(ASK_ALL);
+    q.exp=`<div class="step">① 取得日から当期首までの経過月数（月割カウント）</div>`
+      +`${dStr(y-k,f0)}1日 〜 X${y}年4月1日 ＝ <strong>${e}か月</strong>`
+      +`<div class="step">② 期首の外貨償却原価と円帳簿価額</div>`
+      +`外貨：${fmtD(C)} ＋ 月${fmtD(d)} × ${e}か月 ＝ ${fmtD(B0)}<br>`
+      +`円：${fmtD(B0)} × 前期末CR ${prevCR}円 ＝ ${fmt(prevYen)}円（＝前期末B/S。<strong>取得時HR ${HR}円はもう使わない</strong>）`
+      +`<div class="step">③ 当期の償却（まる12か月分）</div>`
+      +`月${fmtD(d)} × 12か月 × AR ${AR}円 ＝ <strong>${fmt(amortYen)}円</strong>（有価証券利息）`
+      +`<div class="step">④ 期末の外貨償却原価とB/S計上額</div>`
+      +`${fmtD(C)} ＋ 月${fmtD(d)} × ${e+12}か月 ＝ ${fmtD(endBook)}<br>`
+      +`${fmtD(endBook)} × CR ${CR}円 ＝ <strong>${fmt(bs)}円</strong>`
+      +`<div class="step">⑤ 為替差損益（差額で求める）</div>`
+      +`${fmt(bs)} −（期首 ${fmt(prevYen)} ＋ 償却 ${fmt(amortYen)}）＝ <strong>${fmtS(fx)}円</strong>（${fx>0?'為替差益':fx<0?'為替差損':'差損益なし'}）`;
+    q.badge=`<span class="type-badge type-d">満期保有（2年目以降）</span>`;
     return q;
   }
   return null;
