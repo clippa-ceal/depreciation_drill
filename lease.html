@@ -301,6 +301,7 @@ function genCapital(){
     g+=`<div class="g-head">年利率 ${ratePct}% の現価係数</div>`;
     let th='',td='';
     for(let k=1;k<=n;k++){th+=`<th>${k}年</th>`;td+=`<td class="rv">${coef[k-1].toFixed(2)}</td>`;}
+    th+=`<th>合計</th>`;td+=`<td class="rv">${S.toFixed(2)}</td>`;
     g+=`<table class="rate-tbl"><tr>${th}</tr><tr>${td}</tr></table>`;
     g+=`<div class="g-head">条件</div>`;
     g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　・減価償却：定額法（移転→残存10%・耐用年数／移転外→残存0・リース期間）</span></div>`;
