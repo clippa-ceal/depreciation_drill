@@ -114,7 +114,8 @@ svg.timeline{display:block;min-width:340px}
 </div>
 
 <script>
-let state={total:0,correct:0,q:null};
+let state={total:0,correct:0,q:null,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 
 function genBase(residual){
@@ -221,6 +222,7 @@ function newQ(){
   const q=genQ();
   if(!q) return;
   state.q=q;
+  state.startTime=Date.now();
   document.getElementById('ans-input').value='';
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-next').style.display='none';
@@ -311,7 +313,7 @@ function checkAnswer(){
 
   document.getElementById('result-area').innerHTML=`
     <div class="${ok?'result-ok':'result-ng'}">${ok?'✓ 正解！':'✗ 不正解　正解：'+correct.toLocaleString()+'円'}</div>
-    <div class="explain">${exp}</div>
+    <div class="explain">所要時間：${fmtElapsed(Date.now()-state.startTime)}<br>${exp}</div>
   `;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';

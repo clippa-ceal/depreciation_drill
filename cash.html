@@ -301,7 +301,8 @@ const CONCEPTS = [
 ];
 
 // === 状態 ===
-const STATE = {total:0,correct:0,q:null,history:[],graded:false};
+const STATE = {total:0,correct:0,q:null,history:[],graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 const SEL = {dr:null,cr:null,next:'dr',bankSide:null};
 
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
@@ -410,6 +411,7 @@ function newQ(){
   STATE.q={concept:c,wording};
   STATE.history.push(c.id);
   STATE.graded=false;
+  STATE.startTime=Date.now();
   SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.bankSide=null;
 
   const qNum=CONCEPTS.indexOf(c)+1;
@@ -480,7 +482,7 @@ function grade(){
   setChipsDisabled(true);
   document.getElementById('result-area').innerHTML=`
     <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 正解！':'✗ 不正解'}</div>
-    <div class="explain"><div class="ans-line">正解：${ansText}</div>${c.explain}</div>
+    <div class="explain"><div class="ans-line">正解：${ansText}</div>所要時間：${fmtElapsed(Date.now()-STATE.startTime)}<br>${c.explain}</div>
   `;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';

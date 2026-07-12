@@ -199,7 +199,8 @@ details.basics summary::-webkit-details-marker{display:none}
 </div>
 
 <script>
-let state={total:0,correct:0,q:null};
+let state={total:0,correct:0,q:null,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function pick(arr){return arr[rand(0,arr.length-1)];}
 function fmt(n){return n.toLocaleString('ja-JP');}
@@ -583,6 +584,7 @@ function newQ(){
   const q=genQ();
   if(!q)return;
   state.q=q;
+  state.startTime=Date.now();
   for(const f of FIELDS){
     const inp=document.getElementById('a-'+f.id);
     inp.value='';inp.disabled=false;
@@ -636,7 +638,7 @@ function checkAnswer(){
   document.getElementById('s-correct').textContent=state.correct;
   document.getElementById('result-area').innerHTML=`
     <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全欄正解！':'✗ 赤い欄が不正解（各欄の下に正解を表示）'}</div>
-    <div class="explain">${q.exp}</div>
+    <div class="explain">所要時間：${fmtElapsed(Date.now()-state.startTime)}<br>${q.exp}</div>
   `;
   drawTimeline(q,true);
   document.getElementById('btn-check').style.display='none';
