@@ -175,7 +175,7 @@ const ACCTS=['','車両','車両減価償却累計額','減価償却費','固定
 // パターン：時価の与え方（なし／下取価格>時価／下取価格=時価）× 買換え時期（期首／期中）
 function genQ(){
   for(let t=0;t<8000;t++){
-    const taxMode=Math.random()<1/3;               // 消費税あり（税抜経理・10%）
+    const taxMode=Math.random()<1/4;               // 消費税あり（税抜経理・10%）
     const fvMode=taxMode?'none':pick(['none','premium','equal']);  // 消費税問題は時価論点と併用しない
     const midYear=Math.random()<0.5;
     const EL=pick([4,5,6,8]);
