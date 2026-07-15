@@ -48,14 +48,19 @@ table.t-acct{width:100%;border-collapse:collapse;font-size:13px;min-width:260px}
 table.t-acct th,table.t-acct td{border:1px solid #ccc;padding:5px 8px}
 table.t-acct .t-name{text-align:center;font-weight:600;background:#E8E6DE;font-size:13px;letter-spacing:2px;padding:6px}
 table.t-acct .t-side{text-align:center;font-size:11px;color:var(--color-text2);font-weight:600;background:#F4F3EF;padding:4px}
-table.t-acct .t-lbl{color:var(--color-text2);white-space:nowrap;width:38%}
+table.t-acct .t-lbl{color:var(--color-text2);white-space:nowrap;width:1%;padding-right:14px}
 table.t-acct .t-val{text-align:right;white-space:nowrap;font-weight:500}
-table.t-acct .t-input{padding:3px 5px;width:38%}
-table.t-acct .t-input input{width:100%;font-size:13px;padding:5px 7px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card)}
+table.t-acct .t-input{padding:4px 6px}
+table.t-acct .t-input input{width:100%;font-size:15px;padding:7px 9px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card)}
 table.t-acct .t-input input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 table.t-acct .t-input input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.t-acct .t-apply{width:1%;white-space:nowrap;padding:4px 6px}
+.apply-btn{width:auto;margin:0;font-size:12px;padding:8px 10px;border:none;border-radius:6px;background:#185FA5;color:#fff;font-weight:500;cursor:pointer;line-height:1;white-space:nowrap}
+.apply-btn:active{opacity:0.75}
 .t-ng{font-size:10px;color:#A32D2D;font-weight:600;display:none;margin-top:2px;white-space:nowrap}
 table.t-acct tr.t-total td{border-top:2px solid #888;font-weight:600;text-align:right;font-size:12px;background:#F9F8F6}
+table.t-acct tr.t-total td:first-child{text-align:left;color:var(--color-text2);white-space:nowrap}
+table.t-acct tr.t-total+tr.t-total td{border-top:1px solid #ccc}
 table.t-acct tr.t-total td.t-total-right{color:var(--color-info)}
 /* 結果 */
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
@@ -99,24 +104,35 @@ table.t-acct tr.t-total td.t-total-right{color:var(--color-info)}
     <div class="t-wrap">
       <table class="t-acct">
         <thead>
-          <tr><th colspan="4" class="t-name">材　料　費</th></tr>
-          <tr><th colspan="2" class="t-side">借　方</th><th colspan="2" class="t-side">貸　方</th></tr>
+          <tr><th colspan="3" class="t-name">材　料　費</th></tr>
         </thead>
         <tbody>
+          <tr><td colspan="3" class="t-side">借　方（与件）</td></tr>
           <tr>
             <td class="t-lbl">期首仕掛品</td>
-            <td class="t-val" id="gv-beg-mat"></td>
-            <td class="t-lbl">完成品</td>
-            <td class="t-input"><input type="text" id="a-comp-mat" autocomplete="off"><div class="t-ng" id="ng-comp-mat"></div></td>
+            <td colspan="2" class="t-val" id="gv-beg-mat"></td>
           </tr>
           <tr>
             <td class="t-lbl">当期投入</td>
-            <td class="t-val" id="gv-curr-mat"></td>
+            <td colspan="2" class="t-val" id="gv-curr-mat"></td>
+          </tr>
+          <tr><td colspan="3" class="t-side">貸　方（解答欄）</td></tr>
+          <tr>
+            <td class="t-lbl">完成品</td>
+            <td class="t-input"><input type="text" id="a-comp-mat" autocomplete="off"><div class="t-ng" id="ng-comp-mat"></div></td>
+            <td class="t-apply"><button type="button" class="apply-btn" onclick="calcApply('a-comp-mat')">電卓反映</button></td>
+          </tr>
+          <tr>
             <td class="t-lbl">期末仕掛品</td>
             <td class="t-input"><input type="text" id="a-end-mat" autocomplete="off"><div class="t-ng" id="ng-end-mat"></div></td>
+            <td class="t-apply"><button type="button" class="apply-btn" onclick="calcApply('a-end-mat')">電卓反映</button></td>
           </tr>
           <tr class="t-total">
+            <td>借方合計</td>
             <td colspan="2" id="tot-left-mat"></td>
+          </tr>
+          <tr class="t-total">
+            <td>貸方合計</td>
             <td colspan="2" class="t-total-right" id="tot-right-mat">?</td>
           </tr>
         </tbody>
@@ -129,24 +145,35 @@ table.t-acct tr.t-total td.t-total-right{color:var(--color-info)}
     <div class="t-wrap">
       <table class="t-acct">
         <thead>
-          <tr><th colspan="4" class="t-name">加　工　費</th></tr>
-          <tr><th colspan="2" class="t-side">借　方</th><th colspan="2" class="t-side">貸　方</th></tr>
+          <tr><th colspan="3" class="t-name">加　工　費</th></tr>
         </thead>
         <tbody>
+          <tr><td colspan="3" class="t-side">借　方（与件）</td></tr>
           <tr>
             <td class="t-lbl">期首仕掛品</td>
-            <td class="t-val" id="gv-beg-conv"></td>
-            <td class="t-lbl">完成品</td>
-            <td class="t-input"><input type="text" id="a-comp-conv" autocomplete="off"><div class="t-ng" id="ng-comp-conv"></div></td>
+            <td colspan="2" class="t-val" id="gv-beg-conv"></td>
           </tr>
           <tr>
             <td class="t-lbl">当期投入</td>
-            <td class="t-val" id="gv-curr-conv"></td>
+            <td colspan="2" class="t-val" id="gv-curr-conv"></td>
+          </tr>
+          <tr><td colspan="3" class="t-side">貸　方（解答欄）</td></tr>
+          <tr>
+            <td class="t-lbl">完成品</td>
+            <td class="t-input"><input type="text" id="a-comp-conv" autocomplete="off"><div class="t-ng" id="ng-comp-conv"></div></td>
+            <td class="t-apply"><button type="button" class="apply-btn" onclick="calcApply('a-comp-conv')">電卓反映</button></td>
+          </tr>
+          <tr>
             <td class="t-lbl">期末仕掛品</td>
             <td class="t-input"><input type="text" id="a-end-conv" autocomplete="off"><div class="t-ng" id="ng-end-conv"></div></td>
+            <td class="t-apply"><button type="button" class="apply-btn" onclick="calcApply('a-end-conv')">電卓反映</button></td>
           </tr>
           <tr class="t-total">
+            <td>借方合計</td>
             <td colspan="2" id="tot-left-conv"></td>
+          </tr>
+          <tr class="t-total">
+            <td>貸方合計</td>
             <td colspan="2" class="t-total-right" id="tot-right-conv">?</td>
           </tr>
         </tbody>
@@ -438,6 +465,15 @@ function grade(){
 
 function nextQ(){newQ();}
 newQ();
+
+// 電卓の表示値をボタンの解答欄へ反映
+function calcApply(id){
+  if(STATE.graded)return;
+  const n=parseFloat(cs.disp);
+  if(isNaN(n))return;
+  const el=document.getElementById(id);
+  if(el)el.value=fmt(Math.round(n));
+}
 
 const cs={disp:'0',prev:null,op:null,fresh:true};
 function calcIn(v){
