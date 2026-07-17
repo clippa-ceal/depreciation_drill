@@ -14,6 +14,7 @@ const ASSETS = [
   './fxsec.html',
   './acqcost.html',
   './compress.html',
+  './tokushu.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
