@@ -168,6 +168,10 @@ function parseNum(v){
 
 // 科目プルダウンの選択肢
 const ACCTS=['','現金預金','機械','機械減価償却累計額','減価償却費','国庫補助金受贈益','固定資産圧縮損','圧縮積立金','繰越利益剰余金','繰延税金負債','繰延税金資産','法人税等調整額'];
+// 略語（プルダウンは略語のみ、正解表は「略語（正式名称）」併記、解説は正式名称）
+const ABBR={'現金預金':'と','国庫補助金受贈益':'じゅ益','固定資産圧縮損':'圧そん','圧縮積立金':'圧つみ','繰越利益剰余金':'REBF'};
+function abbr(a){return ABBR[a]||a;}
+function abbrFull(a){return ABBR[a]?`${ABBR[a]}（${a}）`:a;}
 
 // 経過月数 m（取得月〜3月）→ 取得月とその暦年ラベル
 // m=12→4月(X5)、m=4→12月(X5)、m=3→1月(X6)、m=2→2月(X6)
@@ -345,7 +349,7 @@ function genQ(){
 // ============ 描画 ============
 function renderJournal(q){
   const rows=q.rowsFixed;
-  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
+  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a?abbr(a):'―'}</option>`).join('')}</select>`;
   let body='';
   for(let i=0;i<rows;i++){
     body+=`<tr>
@@ -432,7 +436,7 @@ function grade(){
   // 正解仕訳の表示
   let solBody='';
   for(const e of q.entries){
-    solBody+=`<tr><td class="a">${e.d}</td><td class="a">${e.c}</td><td class="v">${fmt(e.amt)}</td></tr>`;
+    solBody+=`<tr><td class="a">${abbrFull(e.d)}</td><td class="a">${abbrFull(e.c)}</td><td class="v">${fmt(e.amt)}</td></tr>`;
   }
   const sol=`<div class="label" style="margin-top:8px">正解の仕訳</div>
     <table class="sol-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${solBody}</table>`;
