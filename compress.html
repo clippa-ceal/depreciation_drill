@@ -51,7 +51,7 @@ button:active{opacity:0.85}
 .aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 .aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 .ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
-/* 仕訳テーブル（1行＝1仕訳：借方科目・貸方科目・金額） */
+/* 仕訳テーブル（借方科目・貸方科目・金額。伝票式＝片側だけの行もOK） */
 table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
 table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
@@ -63,12 +63,18 @@ table.j-tbl .amt{padding:2px 4px;width:32%}
 table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
 table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl tr.j-tot td{border:none;padding:2px 6px}
+table.j-tbl .j-tot-lbl{font-size:11px;color:var(--color-text2);font-weight:600;text-align:center;padding-top:6px}
+table.j-tbl .j-tot-val{font-size:15px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:var(--color-text)}
+table.j-tbl .j-tot-val.j-tot-ok{color:#3B6D11}
+table.j-tbl .j-tot-val.j-tot-ng{color:#A32D2D}
 /* 正解仕訳表示 */
 table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
 table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
 table.sol-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
 table.sol-tbl td.a{width:34%}
 table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
+table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
 .result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
 .calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
@@ -114,11 +120,11 @@ table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
     </div>
     <div class="label" id="journal-label"></div>
     <div id="journal-area"></div>
-    <div class="hint">1行＝1つの仕訳（借方・貸方とも1科目・同額なので金額は1つだけ入力）。行の<b>順序は問わず</b>採点。不要な行は空欄のまま。<br>
-    借方または貸方が複数科目になる複合仕訳は、1対1に<b>分解して複数行</b>に入力（例：売却なら「累計額/機械」「現金預金/機械」「現金預金/売却益」の3行）。<br>
+    <div class="hint">金額は各行1つ。<b>1行1仕訳</b>（借方と貸方を同じ行に）でも、<b>伝票式</b>（借方だけの行・貸方だけの行に分けて記入）でもOK。<br>
+    行の順序は問わず、<b>科目ごとの借方合計・貸方合計</b>が合っていれば正解。不要な行は空欄のまま。<br>
     <b>直接減額方式</b>：圧縮後の帳簿価額を基礎に減価償却。<br>
     <b>積立金方式</b>：減価償却は取得原価を基礎。積立額＝圧縮額×(1−実効税率)。税効果を適用しない場合は圧縮額の全額を積み立てる。<br>
-    取崩額は減価償却に対応させて月割（積立額 ÷ 耐用年数 × 経過月数/12）。積立と取崩は<b>相殺せず別々の行</b>に入力。<br>
+    取崩額は減価償却に対応させて月割（積立額 ÷ 耐用年数 × 経過月数/12）。積立と取崩は<b>相殺せず両建て</b>で記入。<br>
     資産を<b>売却</b>したときは、圧縮積立金・繰延税金負債の残高を<b>全額</b>取り崩す。</div>
   </div>
 
@@ -184,7 +190,8 @@ function acqDateOf(m,yearIn,yearNext){
 }
 
 // ============ 問題生成 ============
-// 仕訳は1行＝1仕訳 {d:借方科目, c:貸方科目, amt:金額}
+// 仕訳は groups の配列。各 group ＝ 1つの仕訳 {ds:[[借方科目,金額],...], cs:[[貸方科目,金額],...]}
+// 採点は科目ごとの借方合計・貸方合計で行うため、1行1仕訳でも伝票式でも入力できる
 // 1: 直接減額方式（補助金受領〜取得年度の決算）
 // 2: 積立金方式・税効果なし（補助金受領〜取得年度の決算）
 // 3: 積立金方式・税効果あり（補助金受領〜取得年度の決算）
@@ -193,6 +200,7 @@ function acqDateOf(m,yearIn,yearNext){
 // 6: 土地収用（売却益・直接減額方式）
 // 7: 機械の売却（積立金方式・圧縮積立金の全額取崩）
 function genQ(){
+  const S1=(d,c,amt)=>({ds:[[d,amt]],cs:[[c,amt]]});
   for(let t=0;t<4000;t++){
     const r=Math.random();
     const type=r<0.12?1:r<0.24?2:r<0.48?3:r<0.62?4:r<0.76?5:r<0.84?6:7;
@@ -213,11 +221,11 @@ function genQ(){
       const D=(P-G)/n*m/12;
       if(!Number.isInteger(D)||D<=0)continue;
       const acq=acqDateOf(m,'X5','X6');
-      const entries=[
-        {d:'現金預金',c:'国庫補助金受贈益',amt:G},
-        {d:'機械',c:'現金預金',amt:P},
-        {d:'固定資産圧縮損',c:'機械',amt:G},
-        {d:'減価償却費',c:'機械減価償却累計額',amt:D},
+      const groups=[
+        S1('現金預金','国庫補助金受贈益',G),
+        S1('機械','現金預金',P),
+        S1('固定資産圧縮損','機械',G),
+        S1('減価償却費','機械減価償却累計額',D),
       ];
       let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">国庫補助金の受領額</span><span class="g-val">${fmt(G)}</span></div>`;
@@ -226,17 +234,15 @@ function genQ(){
       g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法・月割計算</span></div>`;
       g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">直接減額方式（補助金相当額の全額を圧縮）</span></div>`;
       const explain=[
-        `<b>① 補助金受領・機械取得</b>`,
-        `　現金預金／国庫補助金受贈益 ${fmt(G)}、機械／現金預金 ${fmt(P)}`,
-        `<b>② 圧縮記帳（直接減額方式）</b>`,
+        `<b>① 圧縮記帳（直接減額方式）</b>`,
         `　圧縮損 ${fmt(G)} を計上し、機械の帳簿価額を直接減額`,
         `　圧縮後の帳簿価額 ＝ ${fmt(P)} − ${fmt(G)} ＝ ${fmt(P-G)}`,
-        `<b>③ 減価償却（圧縮後の帳簿価額を基礎）</b>`,
+        `<b>② 減価償却（圧縮後の帳簿価額を基礎）</b>`,
         `　${fmt(P-G)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(D)}`,
-        `<b>④ ポイント</b>　受贈益（特別利益）と圧縮損（特別損失）が相殺され、課税が繰り延べられる`,
+        `<b>③ ポイント</b>　受贈益（特別利益）と圧縮損（特別損失）が相殺され、課税が繰り延べられる`,
       ];
       q={type,badges:['直接減額方式','補助金受領〜取得年度の決算'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'当期の減価償却費',auxVal:D,
         journalLabel:'①補助金受領 ②機械の取得 ③圧縮記帳 ④決算日（X6年3月31日）の減価償却 の仕訳',
         explain,rowsFixed:5};
@@ -253,15 +259,15 @@ function genQ(){
       let bad=false;
       for(const v of[tsumi,tk,tkTax,dtl,net])if(!Number.isInteger(v)||v<0){bad=true;break;}
       if(bad)continue;
-      const entries=[
-        {d:'現金預金',c:'国庫補助金受贈益',amt:G},
-        {d:'機械',c:'現金預金',amt:P},
-        {d:'減価償却費',c:'機械減価償却累計額',amt:D},
+      const groups=[
+        S1('現金預金','国庫補助金受贈益',G),
+        S1('機械','現金預金',P),
+        S1('減価償却費','機械減価償却累計額',D),
       ];
-      if(tax)entries.push({d:'法人税等調整額',c:'繰延税金負債',amt:dtl});
-      entries.push({d:'繰越利益剰余金',c:'圧縮積立金',amt:tsumi});
-      entries.push({d:'圧縮積立金',c:'繰越利益剰余金',amt:tk});
-      if(tax)entries.push({d:'繰延税金負債',c:'法人税等調整額',amt:tkTax});
+      if(tax)groups.push(S1('法人税等調整額','繰延税金負債',dtl));
+      groups.push(S1('繰越利益剰余金','圧縮積立金',tsumi));
+      groups.push(S1('圧縮積立金','繰越利益剰余金',tk));
+      if(tax)groups.push(S1('繰延税金負債','法人税等調整額',tkTax));
       let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">国庫補助金の受領額</span><span class="g-val">${fmt(G)}</span></div>`;
       g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}（全額現金預金で支払い）</span></div>`;
@@ -291,10 +297,10 @@ function genQ(){
         explain.push(`　${fmt(tsumi)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(tk)}`);
       }
       q={type,badges:['積立金方式',tax?`税効果あり（${taxRate}%）`:'税効果なし','補助金受領〜取得年度の決算'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'圧縮積立金の積立額',auxVal:tsumi,
         journalLabel:'①補助金受領 ②機械の取得 ③決算時（X6年3月31日）の仕訳をすべて入力',
-        explain,rowsFixed:tax?7:6};
+        explain,rowsFixed:tax?8:6};
     }else if(type===4){
       // ---- 積立金方式・税効果あり・翌年度の決算 ----
       const m0=rand(4,10);                   // 前期の経過月数
@@ -309,10 +315,10 @@ function genQ(){
       for(const v of[D,accum0,tk0,tsumi0,dtl0,tk,tkTax])if(!Number.isInteger(v)||v<=0){bad=true;break;}
       if(bad)continue;
       const acq=acqDateOf(m0,'X4','X5');
-      const entries=[
-        {d:'減価償却費',c:'機械減価償却累計額',amt:D},
-        {d:'圧縮積立金',c:'繰越利益剰余金',amt:tk},
-        {d:'繰延税金負債',c:'法人税等調整額',amt:tkTax},
+      const groups=[
+        S1('減価償却費','機械減価償却累計額',D),
+        S1('圧縮積立金','繰越利益剰余金',tk),
+        S1('繰延税金負債','法人税等調整額',tkTax),
       ];
       let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}</span></div>`;
@@ -336,7 +342,7 @@ function genQ(){
         `<b>検算</b>　期首積立金残高 ${fmt(tsumi0)} ＝ 積立額 ${fmt(net)} − 前期取崩 ${fmt(net)}×${m0}/12÷${n}年（${fmt(tk0)}）`,
       ];
       q={type,badges:['積立金方式',`税効果あり（${taxRate}%）`,'翌年度の決算（取崩）'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'圧縮積立金の当期取崩額',auxVal:tk,
         journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:4};
@@ -357,14 +363,12 @@ function genQ(){
       for(const v of[D1,accum0,BV,delta,I])if(!Number.isInteger(v)||v<=0){bad=true;break;}
       if(bad||P2<=delta)continue;
       const mo=3+mm,moL=mo>12?mo-12:mo,yL=moL>=4?'X5':'X6';
-      const entries=[
-        {d:'減価償却費',c:'建物減価償却累計額',amt:D1},
-        {d:'建物減価償却累計額',c:'建物',amt:accum0+D1},
-        {d:'火災未決算',c:'建物',amt:BV},
-        {d:'現金預金',c:'火災未決算',amt:BV},
-        {d:'現金預金',c:'保険差益',amt:delta},
-        {d:'建物',c:'現金預金',amt:P2},
-        {d:'固定資産圧縮損',c:'建物',amt:delta},
+      const groups=[
+        S1('減価償却費','建物減価償却累計額',D1),
+        {ds:[['建物減価償却累計額',accum0+D1],['火災未決算',BV]],cs:[['建物',C1]]},
+        {ds:[['現金預金',I]],cs:[['火災未決算',BV],['保険差益',delta]]},
+        S1('建物','現金預金',P2),
+        S1('固定資産圧縮損','建物',delta),
       ];
       let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">建物の取得原価</span><span class="g-val">${fmt(C1)}</span></div>`;
@@ -388,21 +392,20 @@ function genQ(){
         `<b>⑤ ポイント</b>　保険差益と圧縮損が相殺され、課税が繰り延べられる`,
       ];
       q={type,badges:['火災（保険差益）','直接減額方式'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'保険差益（＝圧縮額）',auxVal:delta,
-        journalLabel:'①焼失時（償却・帳簿価額の振替） ②保険金確定 ③代替建物の取得 ④圧縮記帳 の仕訳',
-        explain,rowsFixed:8};
+        journalLabel:'①焼失時（償却・未決算への振替） ②保険金確定 ③代替建物の取得 ④圧縮記帳 の仕訳',
+        explain,rowsFixed:10};
     }else if(type===6){
       // ---- 土地収用（売却益・直接減額方式） ----
       const BV0=rand(100,800)*10000;   // 旧土地の帳簿価額
       const delta=rand(50,400)*10000;  // 売却益＝圧縮額
       const comp=BV0+delta;            // 収用補償金
       const P2=delta+rand(20,200)*10000; // 代替土地の取得原価
-      const entries=[
-        {d:'現金預金',c:'土地',amt:BV0},
-        {d:'現金預金',c:'固定資産売却益',amt:delta},
-        {d:'土地',c:'現金預金',amt:P2},
-        {d:'固定資産圧縮損',c:'土地',amt:delta},
+      const groups=[
+        {ds:[['現金預金',comp]],cs:[['土地',BV0],['固定資産売却益',delta]]},
+        S1('土地','現金預金',P2),
+        S1('固定資産圧縮損','土地',delta),
       ];
       let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">土地の帳簿価額</span><span class="g-val">${fmt(BV0)}</span></div>`;
@@ -419,10 +422,10 @@ function genQ(){
         `<b>④ ポイント</b>　土地は減価償却しないため、圧縮の効果は売却まで続く`,
       ];
       q={type,badges:['土地収用','直接減額方式'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'土地売却益（＝圧縮額）',auxVal:delta,
         journalLabel:'①補償金の受領（売却処理） ②代替土地の取得 ③圧縮記帳 の仕訳',
-        explain,rowsFixed:5};
+        explain,rowsFixed:6};
     }else{
       // ---- 機械の売却（積立金方式・税効果あり・圧縮積立金の全額取崩） ----
       const m0=rand(4,10);             // 前期の経過月数
@@ -442,19 +445,15 @@ function genQ(){
       if(bad)continue;
       const acq=acqDateOf(m0,'X4','X5');
       const mo=4+mm,moL=mo>12?mo-12:mo,yL=moL>=4?'X5':'X6';
-      const entries=[
-        {d:'減価償却費',c:'機械減価償却累計額',amt:dM},
-        {d:'機械減価償却累計額',c:'機械',amt:A},
+      const saleGrp=gain
+        ?{ds:[['機械減価償却累計額',A],['現金預金',S]],cs:[['機械',P],['固定資産売却益',delta]]}
+        :{ds:[['機械減価償却累計額',A],['現金預金',S],['固定資産売却損',delta]],cs:[['機械',P]]};
+      const groups=[
+        S1('減価償却費','機械減価償却累計額',dM),
+        saleGrp,
+        S1('圧縮積立金','繰越利益剰余金',tsumi0),
+        S1('繰延税金負債','法人税等調整額',dtl0),
       ];
-      if(gain){
-        entries.push({d:'現金預金',c:'機械',amt:BV});
-        entries.push({d:'現金預金',c:'固定資産売却益',amt:delta});
-      }else{
-        entries.push({d:'現金預金',c:'機械',amt:S});
-        entries.push({d:'固定資産売却損',c:'機械',amt:delta});
-      }
-      entries.push({d:'圧縮積立金',c:'繰越利益剰余金',amt:tsumi0});
-      entries.push({d:'繰延税金負債',c:'法人税等調整額',amt:dtl0});
       let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
       g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}</span></div>`;
       g+=`<div class="g-row"><span class="g-key">取得日・事業供用日</span><span class="g-val" style="font-size:14px">${acq}（前期）</span></div>`;
@@ -482,19 +481,39 @@ function genQ(){
         `<b>検算</b>　積立額 ${fmt(net)}（＝${fmt(G)}×(1−${taxRate}%)）− 前期取崩 ${fmt(tk0)} ＝ ${fmt(tsumi0)}`,
       ];
       q={type,badges:['機械の売却','積立金方式・税効果あり','圧つみ全額取崩'],
-        givenHTML:g,entries,
+        givenHTML:g,groups,
         auxLabel:'圧縮積立金の取崩額',auxVal:tsumi0,
         journalLabel:'①売却時までの償却 ②機械の売却 ③圧縮積立金・繰延税金負債の取崩 の仕訳',
-        explain,rowsFixed:7};
+        explain,rowsFixed:8};
     }
     if(!q)continue;
-    // 金額チェック
+    // 各仕訳の貸借一致・金額チェック
     let bad=false;
-    for(const e of q.entries)if(!Number.isInteger(e.amt)||e.amt<=0){bad=true;break;}
-    if(bad||q.entries.length>q.rowsFixed)continue;
+    for(const gr of q.groups){
+      let ds=0,cs=0;
+      for(const[a,amt]of gr.ds){if(!Number.isInteger(amt)||amt<=0||!ACCTS.includes(a))bad=true;ds+=amt;}
+      for(const[a,amt]of gr.cs){if(!Number.isInteger(amt)||amt<=0||!ACCTS.includes(a))bad=true;cs+=amt;}
+      if(ds!==cs)bad=true;
+    }
+    if(bad||solLines(q.groups).length>q.rowsFixed)continue;
     return q;
   }
   return null;
+}
+
+// 正解表示用の行（単一仕訳は1行、複合仕訳は伝票式に借方行→貸方行）
+function solLines(groups){
+  const out=[];
+  for(const gr of groups){
+    if(gr.ds.length===1&&gr.cs.length===1){
+      out.push({d:gr.ds[0][0],c:gr.cs[0][0],amt:gr.ds[0][1],grp:true});
+    }else{
+      let first=true;
+      for(const[a,amt]of gr.ds){out.push({d:a,c:'',amt,grp:first});first=false;}
+      for(const[a,amt]of gr.cs){out.push({d:'',c:a,amt,grp:false});}
+    }
+  }
+  return out;
 }
 
 // ============ 描画 ============
@@ -509,10 +528,53 @@ function renderJournal(q){
       <td class="amt"><input type="text" inputmode="numeric" id="j-v-${i}" autocomplete="off"></td>
     </tr>`;
   }
+  body+=`<tr class="j-tot">
+    <td class="j-tot-lbl">借方合計</td>
+    <td class="j-tot-lbl">貸方合計</td>
+    <td></td>
+  </tr>
+  <tr class="j-tot">
+    <td class="j-tot-val" id="jd-total">0</td>
+    <td class="j-tot-val" id="jc-total">0</td>
+    <td></td>
+  </tr>`;
   document.getElementById('journal-area').innerHTML=
     `<table class="j-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
   STATE.rows=rows;
+  for(let i=0;i<rows;i++){
+    document.getElementById(`j-v-${i}`).addEventListener('input',updateJournalTotals);
+    document.getElementById(`j-d-${i}`).addEventListener('change',updateJournalTotals);
+    document.getElementById(`j-c-${i}`).addEventListener('change',updateJournalTotals);
+  }
+  updateJournalTotals();
   return rows;
+}
+
+function updateJournalTotals(){
+  const rows=STATE.rows||0;
+  let dSum=0,cSum=0;
+  for(let i=0;i<rows;i++){
+    const dEl=document.getElementById(`j-d-${i}`);
+    if(!dEl)return;
+    const d=dEl.value;
+    const c=document.getElementById(`j-c-${i}`).value;
+    const amt=parseNum(document.getElementById(`j-v-${i}`).value);
+    if(amt>0){
+      if(d)dSum+=amt;
+      if(c)cSum+=amt;
+    }
+  }
+  const dT=document.getElementById('jd-total');
+  const cT=document.getElementById('jc-total');
+  if(!dT||!cT)return;
+  dT.textContent=fmt(dSum);
+  cT.textContent=fmt(cSum);
+  const balanced=dSum>0&&cSum>0&&dSum===cSum;
+  const mismatched=dSum>0&&cSum>0&&dSum!==cSum;
+  dT.classList.toggle('j-tot-ok',balanced);
+  cT.classList.toggle('j-tot-ok',balanced);
+  dT.classList.toggle('j-tot-ng',mismatched);
+  cT.classList.toggle('j-tot-ng',mismatched);
 }
 
 function newQ(){
@@ -523,7 +585,7 @@ function newQ(){
     q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
   document.getElementById('aux-label').textContent=q.auxLabel;
-  document.getElementById('journal-label').textContent=q.journalLabel+'（1行＝1仕訳）';
+  document.getElementById('journal-label').textContent=q.journalLabel+'（伝票式の記入もOK）';
   STATE.rows=renderJournal(q);
   const auxEl=document.getElementById('a-aux');
   auxEl.value='';auxEl.classList.remove('cell-ok','cell-ng');
@@ -533,67 +595,87 @@ function newQ(){
   document.getElementById('btn-next').style.display='none';
 }
 
-// ============ 採点（行の順不同マッチ：借方科目・貸方科目・金額の3点セット） ============
-function gradeRows(expected,rows){
-  const exp=expected.map(e=>({d:e.d,c:e.c,amt:e.amt}));
-  while(exp.length<rows)exp.push({d:'',c:'',amt:0});
-  const used=new Array(rows).fill(false);
-  let ok=0;
-  const marks=[];
+// ============ 採点（科目ごとの借方合計・貸方合計の一致） ============
+function gradeJournal(q,rows){
+  const expD={},expC={};
+  for(const gr of q.groups){
+    for(const[a,amt]of gr.ds)expD[a]=(expD[a]||0)+amt;
+    for(const[a,amt]of gr.cs)expC[a]=(expC[a]||0)+amt;
+  }
+  const dAgg={},cAgg={};
+  const rowsIn=[];
   for(let i=0;i<rows;i++){
     const d=document.getElementById(`j-d-${i}`).value;
     const c=document.getElementById(`j-c-${i}`).value;
-    const amt=parseNum(document.getElementById(`j-v-${i}`).value);
-    let hit=-1;
-    for(let k=0;k<exp.length;k++){
-      if(!used[k]&&exp[k].d===d&&exp[k].c===c&&exp[k].amt===amt){hit=k;break;}
+    const raw=document.getElementById(`j-v-${i}`).value;
+    const amt=parseNum(raw);
+    rowsIn.push({d,c,amt,raw});
+    if(amt>0){
+      if(d)dAgg[d]=(dAgg[d]||0)+amt;
+      if(c)cAgg[c]=(cAgg[c]||0)+amt;
     }
-    if(hit>=0){used[hit]=true;ok++;marks.push(true);}
-    else marks.push(false);
   }
+  let matched=0;
+  const totalExp=Object.keys(expD).length+Object.keys(expC).length;
+  for(const k in expD)if(dAgg[k]===expD[k])matched++;
+  for(const k in expC)if(cAgg[k]===expC[k])matched++;
+  let spurious=0;
+  for(const k in dAgg)if(!(k in expD))spurious++;
+  for(const k in cAgg)if(!(k in expC))spurious++;
+  let rowErr=false;
   for(let i=0;i<rows;i++){
-    const d=document.getElementById(`j-d-${i}`);
-    const c=document.getElementById(`j-c-${i}`);
-    const v=document.getElementById(`j-v-${i}`);
-    for(const el of[d,c,v]){el.classList.remove('cell-ok','cell-ng');el.classList.add(marks[i]?'cell-ok':'cell-ng');}
+    const r=rowsIn[i];
+    const dEl=document.getElementById(`j-d-${i}`);
+    const cEl=document.getElementById(`j-c-${i}`);
+    const vEl=document.getElementById(`j-v-${i}`);
+    for(const el of[dEl,cEl,vEl])el.classList.remove('cell-ok','cell-ng');
+    const empty=!r.d&&!r.c&&r.raw.trim()==='';
+    if(empty){for(const el of[dEl,cEl,vEl])el.classList.add('cell-ok');continue;}
+    const invalid=(!r.d&&!r.c)||r.amt<=0;
+    if(invalid){rowErr=true;for(const el of[dEl,cEl,vEl])el.classList.add('cell-ng');continue;}
+    const dOk=!r.d||((r.d in expD)&&dAgg[r.d]===expD[r.d]);
+    const cOk=!r.c||((r.c in expC)&&cAgg[r.c]===expC[r.c]);
+    dEl.classList.add(!r.d||dOk?'cell-ok':'cell-ng');
+    cEl.classList.add(!r.c||cOk?'cell-ok':'cell-ng');
+    vEl.classList.add(dOk&&cOk?'cell-ok':'cell-ng');
   }
-  return ok;
+  return{matched,totalExp,spurious,rowErr};
 }
 
 function grade(){
   if(!STATE.q||STATE.graded)return;
   const q=STATE.q;
   const rows=STATE.rows;
-  let ok=0;
   // 補助計算
   const auxEl=document.getElementById('a-aux');
   const auxOk=parseNum(auxEl.value)===q.auxVal;
-  if(auxOk)ok++;
   auxEl.classList.remove('cell-ok','cell-ng');auxEl.classList.add(auxOk?'cell-ok':'cell-ng');
   const auxNg=document.getElementById('ng-a-aux');
   if(!auxOk){auxNg.textContent='正:'+fmt(q.auxVal);auxNg.style.display='inline';}
   else auxNg.style.display='none';
-  // 仕訳
-  ok+=gradeRows(q.entries,rows);
-  const cnt=1+rows;
+  // 仕訳（科目ごとの借方合計・貸方合計）
+  const res=gradeJournal(q,rows);
+  const cnt=1+res.totalExp;
+  const ok=(auxOk?1:0)+res.matched;
+  const allOk=auxOk&&res.matched===res.totalExp&&res.spurious===0&&!res.rowErr;
 
   STATE.graded=true;STATE.total++;
-  const allOk=ok===cnt;
   if(allOk)STATE.perfect++;
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-perfect').textContent=STATE.perfect;
   const elapsed=fmtElapsed(Date.now()-STATE.startTime);
 
-  // 正解仕訳の表示
+  // 正解仕訳の表示（複合仕訳は伝票式）
   let solBody='';
-  for(const e of q.entries){
-    solBody+=`<tr><td class="a">${abbrFull(e.d)}</td><td class="a">${abbrFull(e.c)}</td><td class="v">${fmt(e.amt)}</td></tr>`;
+  for(const l of solLines(q.groups)){
+    solBody+=`<tr${l.grp?' class="grp"':''}><td class="a">${l.d?abbrFull(l.d):''}</td><td class="a">${l.c?abbrFull(l.c):''}</td><td class="v">${fmt(l.amt)}</td></tr>`;
   }
-  const sol=`<div class="label" style="margin-top:8px">正解の仕訳</div>
+  const sol=`<div class="label" style="margin-top:8px">正解の仕訳（太線＝仕訳の区切り。1行1仕訳に分解して書いてもOK）</div>
     <table class="sol-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${solBody}</table>`;
+  const spuriousNote=res.spurious>0?'　※不要な科目があります':'';
   const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(q.explain).join('<br>')}</div>`;
   document.getElementById('result-area').innerHTML=
-    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'}</div>`+sol+recon;
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'+spuriousNote}</div>`+sol+recon;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
 }
