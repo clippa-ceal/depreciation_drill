@@ -26,6 +26,7 @@ h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center}
 .hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
 .badge{display:inline-block;font-size:12px;font-weight:600;color:#fff;background:var(--color-info);border-radius:999px;padding:3px 12px;margin-bottom:8px}
 .badge.b2{background:#0F6E56}
+.badge.b3{background:#7A4FA3}
 button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
 button:active{opacity:0.85}
 .stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
@@ -168,7 +169,7 @@ function fxAcct(){return '為替差損益';}
 
 function genQ(){
   for(let tries=0;tries<6000;tries++){
-    const pattern=Math.random()<0.5?'独立':(Math.random()<1/3?'同時':'事後');
+    const pattern=pick(['独立','予定','同時','事後']);
     const type=pick(['AR','AP']);
     const FC=rand(1,9)*10;
     const T=rand(4,12);
@@ -222,6 +223,21 @@ function genQ(){
         {acct:defAcct(defMove),amt:defAmort2},
         {acct:fxAcct(),amt:-defAmort2},
       ]);
+    } else if(pattern==='予定'){
+      const fwdVal=type==='AR'?FC*(FR0-FR_b):FC*(FR_b-FR0);
+      if(fwdVal===0)continue;
+      const tax=fwdVal*3/10;
+      E('予約日',[]);
+      E('決算日（時価評価・税効果）',[
+        {acct:'為替予約',amt:+fwdVal},
+        {acct:fwdVal>0?'繰延税金負債':'繰延税金資産',amt:-tax},
+        {acct:'繰延ヘッジ損益',amt:-(fwdVal-tax)},
+      ]);
+      E('翌期首（振戻し）',[
+        {acct:'為替予約',amt:-fwdVal},
+        {acct:fwdVal>0?'繰延税金負債':'繰延税金資産',amt:+tax},
+        {acct:'繰延ヘッジ損益',amt:+(fwdVal-tax)},
+      ]);
     } else {
       const sAcct=type==='AR'?'売掛金':'買掛金';
       const sgnM=type==='AR'?1:-1;
@@ -254,7 +270,7 @@ function genQ(){
     let bad=false;
     for(const e of entries){let s=0;for(const r of e.rows){if(!Number.isInteger(r.amt))bad=true;s+=r.amt;}if(Math.abs(s)>1e-6)bad=true;}
     if(bad)continue;
-    if(entries.some(e=>e.rows.length===0&&!/決算/.test(e.title)))continue;
+    if(entries.some(e=>e.rows.length===0&&!/決算|予約日/.test(e.title)))continue;
 
     return{pattern,type,FC,T,a,b,SR0,SR_a:SRa,SR_b,SR_T,FR0,FR_a:FRa,FR_b,up,lockRate:FRa,entries};
   }
@@ -272,14 +288,19 @@ function getDates(g){
   return{trade:mds(tm,1),book:mds(bm,1),close:'3月31日',pay:mds(pm,lastDay(pm))};
 }
 function renderGiven(g){
-  const dir=g.type==='AR'?'輸出取引（売掛金）':'輸入取引（買掛金）';
-  const pname={'同時':'振当処理（取引時予約）','事後':'振当処理（取引後予約）','独立':'独立処理'}[g.pattern];
-  const badgeClass=g.pattern==='独立'?'b2':'';
+  const isPlan=g.pattern==='予定';
+  const dir=isPlan
+    ?(g.type==='AR'?'輸出の予定取引（外貨売り予約でヘッジ）':'輸入の予定取引（外貨買い予約でヘッジ）')
+    :(g.type==='AR'?'輸出取引（売掛金）':'輸入取引（買掛金）');
+  const pname={'同時':'振当処理（取引時予約）','事後':'振当処理（取引後予約）','独立':'独立処理','予定':'予定取引（繰延ヘッジ）'}[g.pattern];
+  const badgeClass=g.pattern==='独立'?'b2':isPlan?'b3':'';
   const d=getDates(g);
   let h=`<span class="badge ${badgeClass}">${pname}</span>`;
   h+=`<table class="g-table">
     <tr><td class="g-key">取引</td><td class="g-val">${dir}</td></tr>
     <tr><td class="g-key">外貨建金額</td><td class="g-val">${fmt(g.FC)} 通貨単位（FC）</td></tr>
+    ${isPlan?`<tr><td class="g-key">実行予定</td><td class="g-val">翌期（決済日 ${d.pay}）</td></tr>
+    <tr><td class="g-key">実効税率</td><td class="g-val">30%</td></tr>`:''}
   </table>`;
   let rows='';
   if(g.pattern==='同時'){
@@ -291,6 +312,9 @@ function renderGiven(g){
           <tr><td>${d.book}（予約日）</td><td class="rv">${fmtRate(g.SR_a)}</td><td class="rv">${fmtRate(g.FR_a)}</td></tr>
           <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
           <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
+  }else if(isPlan){
+    rows=`<tr><td>${d.trade}（予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
+          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>`;
   }else{
     rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
           <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
@@ -301,6 +325,8 @@ function renderGiven(g){
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)} で債権債務を固定。直先差額を取引日〜決済日の期間で配分（決算日 3月31日まで当期分）。</div>`;
   }else if(g.pattern==='事後'){
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR_a)}。直直差額は当期の損益。直先差額は予約日〜決済日の期間で配分（決算日 3月31日まで当期分）。</div>`;
+  }else if(isPlan){
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。予定取引のヘッジなので予約日は仕訳なし。決算日に為替予約を時価評価し、評価差額は税効果（30%）適用後の純額を繰延ヘッジ損益（純資産）として繰り延べる。翌期首に振り戻す。</div>`;
   }else{
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。債権債務は直物で換算替えし、為替予約はデリバティブとして時価評価（ともに当期損益）。</div>`;
   }
@@ -330,7 +356,7 @@ function renderJournal(g){
   document.getElementById('journal-area').innerHTML=html;
 }
 
-const ACCTS=['','売掛金','売上','仕入','買掛金','現金預金','為替差損益','前払費用','前受収益','為替予約'];
+const ACCTS=['','売掛金','売上','仕入','買掛金','現金預金','為替差損益','前払費用','前受収益','為替予約','繰延ヘッジ損益','繰延税金資産','繰延税金負債'];
 function acctSelect(id){
   const opts=ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('');
   return `<select id="${id}">${opts}</select>`;
@@ -407,6 +433,15 @@ function grade(){
     lines.push(`　　　　　　直先差額 ${FCf}×|${fmtRate(g.FR_a)}−${fmtRate(g.SR_a)}| ＝ ${fmt(D)}（繰延 → ${g.T-g.a}ヶ月で配分）`);
     lines.push(`決算日：直先差額の当期配分 ${fmt(Math.round(D*(g.b-g.a)/(g.T-g.a)))}（${g.b-g.a}/${g.T-g.a}）`);
     lines.push(`決済日：予約相場 ${fmtRate(g.FR_a)} で決済（${fmt(g.FC*g.FR_a)}）＋ 残りの直先差額を配分`);
+  }else if(g.pattern==='予定'){
+    const fwdVal=g.type==='AR'?g.FC*(g.FR0-g.FR_b):g.FC*(g.FR_b-g.FR0);
+    const fv=Math.abs(fwdVal),tax=fv*3/10;
+    lines.push(`<b>予定取引（繰延ヘッジ）</b>`);
+    lines.push(`予約日：為替予約を締結しただけ（ヘッジ対象の予定取引は未発生）→ 仕訳なし`);
+    lines.push(`決算日：為替予約の時価評価 ${FCf}×|${fmtRate(g.FR0)}−${fmtRate(g.FR_b)}| ＝ ${fmt(fv)}（評価${fwdVal>0?'益':'損'}）`);
+    lines.push(`税効果：${fmt(fv)}×30% ＝ ${fmt(tax)} → ${fwdVal>0?'繰延税金負債':'繰延税金資産'}`);
+    lines.push(`純額 ${fmt(fv-tax)} を繰延ヘッジ損益として純資産に繰延（P/Lには計上しない）`);
+    lines.push(`翌期首：振戻し（逆仕訳）。ヘッジ損益は予定取引の実行時に認識される。`);
   }else{
     const monL=g.FC*Math.abs(g.SR_b-g.SR0);
     const fwdL=g.FC*Math.abs((g.type==='AR'?(g.FR0-g.FR_b):(g.FR_b-g.FR0)));
