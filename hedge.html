@@ -78,6 +78,9 @@ table.j-tbl .none{background:#FAF9F6}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px;grid-column:span 4}
+.kb-toggle{width:auto;margin:0;font-size:11px;padding:4px 10px;border-radius:999px;background:var(--color-bg-secondary);color:var(--color-text2);font-weight:600;border:0.5px solid var(--color-border2)}
+.kb-toggle.kb-on{background:#185FA5;color:#fff;border-color:#185FA5}
 </style>
 </head>
 <body>
@@ -111,9 +114,13 @@ table.j-tbl .none{background:#FAF9F6}
   <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
 
   <div class="card" style="margin-top:0.25rem">
-    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="label" style="margin-bottom:0">電卓</div>
+      <button type="button" id="kb-toggle" class="kb-toggle" onclick="toggleKb()"></button>
+    </div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映（選択中の欄へ）</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
@@ -368,10 +375,39 @@ function cell(mv,ei,side,i){
   return `<td class="acct">${acctSelect(id+'_acct')}<div class="j-ng" id="ng-${id}_acct"></div></td><td class="amt"><input type="text" inputmode="numeric" id="${id}" autocomplete="off"><button type="button" class="xvl-btn" onclick="mulFC('${id}')">xvl</button><div class="j-ng j-ng-amt" id="ng-${id}"></div></td>`;
 }
 
+// --- ソフトキーボード対策 ---
+// ボタン押下で入力欄のフォーカスを奪わない（キーボードの出入りによる画面のバウンド防止）
+document.addEventListener('mousedown',e=>{
+  if(e.target&&e.target.closest&&e.target.closest('button'))e.preventDefault();
+},true);
+// 直近にフォーカスした金額欄を覚えておく（電卓からの反映先）
+let lastAmt=null;
+document.addEventListener('focusin',e=>{
+  if(e.target&&e.target.matches&&e.target.matches('.amt input'))lastAmt=e.target;
+});
+// キーボードOFF（既定）：金額欄をタップしてもOSキーボードを出さず、電卓＋反映で入力する
+let kbOff=localStorage.getItem('hedgeKbOff')!=='0';
+function applyKb(){
+  document.querySelectorAll('.amt input').forEach(el=>el.setAttribute('inputmode',kbOff?'none':'numeric'));
+  const t=document.getElementById('kb-toggle');
+  if(t){t.textContent=kbOff?'⌨ キーボード OFF':'⌨ キーボード ON';t.classList.toggle('kb-on',!kbOff);}
+}
+function toggleKb(){kbOff=!kbOff;localStorage.setItem('hedgeKbOff',kbOff?'1':'0');applyKb();}
+// 電卓の値を、選択中（直近フォーカス）の金額欄へ反映。未選択なら最初の空欄へ
+function calcToAns(){
+  if(!STATE.g||STATE.graded)return;
+  const n=parseFloat(cs.disp);
+  if(isNaN(n))return;
+  let el=(lastAmt&&document.contains(lastAmt))?lastAmt:null;
+  if(!el)el=[...document.querySelectorAll('.amt input')].find(i=>i.value.trim()==='');
+  if(el){el.value=String(Math.round(n));el.focus();lastAmt=el;}
+}
+
 function newQ(){
   const g=genQ();if(!g)return;
   STATE.g=g;STATE.graded=false;STATE.startTime=Date.now();
-  renderGiven(g);renderJournal(g);
+  lastAmt=null;
+  renderGiven(g);renderJournal(g);applyKb();
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
