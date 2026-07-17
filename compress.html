@@ -115,9 +115,11 @@ table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
     <div class="label" id="journal-label"></div>
     <div id="journal-area"></div>
     <div class="hint">1行＝1つの仕訳（借方・貸方とも1科目・同額なので金額は1つだけ入力）。行の<b>順序は問わず</b>採点。不要な行は空欄のまま。<br>
+    借方または貸方が複数科目になる複合仕訳は、1対1に<b>分解して複数行</b>に入力（例：売却なら「累計額/機械」「現金預金/機械」「現金預金/売却益」の3行）。<br>
     <b>直接減額方式</b>：圧縮後の帳簿価額を基礎に減価償却。<br>
     <b>積立金方式</b>：減価償却は取得原価を基礎。積立額＝圧縮額×(1−実効税率)。税効果を適用しない場合は圧縮額の全額を積み立てる。<br>
-    取崩額は減価償却に対応させて月割（積立額 ÷ 耐用年数 × 経過月数/12）。積立と取崩は<b>相殺せず別々の行</b>に入力。</div>
+    取崩額は減価償却に対応させて月割（積立額 ÷ 耐用年数 × 経過月数/12）。積立と取崩は<b>相殺せず別々の行</b>に入力。<br>
+    資産を<b>売却</b>したときは、圧縮積立金・繰延税金負債の残高を<b>全額</b>取り崩す。</div>
   </div>
 
   <div id="result-area"></div>
@@ -167,9 +169,9 @@ function parseNum(v){
 }
 
 // 科目プルダウンの選択肢
-const ACCTS=['','現金預金','機械','機械減価償却累計額','減価償却費','国庫補助金受贈益','固定資産圧縮損','圧縮積立金','繰越利益剰余金','繰延税金負債','繰延税金資産','法人税等調整額'];
+const ACCTS=['','現金預金','機械','建物','土地','機械減価償却累計額','建物減価償却累計額','減価償却費','国庫補助金受贈益','保険差益','火災未決算','固定資産売却益','固定資産売却損','固定資産圧縮損','圧縮積立金','繰越利益剰余金','繰延税金負債','繰延税金資産','法人税等調整額'];
 // 略語（プルダウンは略語のみ、正解表は「略語（正式名称）」併記、解説は正式名称）
-const ABBR={'現金預金':'と','国庫補助金受贈益':'じゅ益','固定資産圧縮損':'圧そん','圧縮積立金':'圧つみ','繰越利益剰余金':'REBF','減価償却費':'Dep','機械減価償却累計額':'Dep∫','繰延税金資産':'DTA','繰延税金負債':'DTL'};
+const ABBR={'現金預金':'と','国庫補助金受贈益':'じゅ益','固定資産圧縮損':'圧そん','圧縮積立金':'圧つみ','繰越利益剰余金':'REBF','減価償却費':'Dep','機械減価償却累計額':'Dep∫','建物減価償却累計額':'建物Dep∫','繰延税金資産':'DTA','繰延税金負債':'DTL'};
 function abbr(a){return ABBR[a]||a;}
 function abbrFull(a){return ABBR[a]?`${ABBR[a]}（${a}）`:a;}
 
@@ -187,10 +189,13 @@ function acqDateOf(m,yearIn,yearNext){
 // 2: 積立金方式・税効果なし（補助金受領〜取得年度の決算）
 // 3: 積立金方式・税効果あり（補助金受領〜取得年度の決算）
 // 4: 積立金方式・税効果あり（翌年度の決算＝取崩のみ）
+// 5: 火災（保険差益・直接減額方式）
+// 6: 土地収用（売却益・直接減額方式）
+// 7: 機械の売却（積立金方式・圧縮積立金の全額取崩）
 function genQ(){
   for(let t=0;t<4000;t++){
     const r=Math.random();
-    const type=r<0.2?1:r<0.4?2:r<0.75?3:4;
+    const type=r<0.12?1:r<0.24?2:r<0.48?3:r<0.62?4:r<0.76?5:r<0.84?6:7;
     const n=pick([4,5,6,8,10]);
     const base=n*12000;
     const k1=rand(5,25);
@@ -290,7 +295,7 @@ function genQ(){
         auxLabel:'圧縮積立金の積立額',auxVal:tsumi,
         journalLabel:'①補助金受領 ②機械の取得 ③決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:tax?7:6};
-    }else{
+    }else if(type===4){
       // ---- 積立金方式・税効果あり・翌年度の決算 ----
       const m0=rand(4,10);                   // 前期の経過月数
       const D=P/n;                           // 当期はまる1年
@@ -335,6 +340,152 @@ function genQ(){
         auxLabel:'圧縮積立金の当期取崩額',auxVal:tk,
         journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:4};
+    }else if(type===5){
+      // ---- 火災（保険差益・直接減額方式） ----
+      const n1=pick([10,20,25,30]);
+      const k=rand(5,25);
+      const C1=k*n1*12000;             // 旧建物の取得原価
+      const y=rand(1,n1-3);
+      const accum0=C1/n1*y;            // 期首減価償却累計額
+      const mm=rand(1,11);             // 期首から焼失月までの月数
+      const D1=C1/n1*mm/12;            // 焼失時までの月割償却
+      const BV=C1-accum0-D1;           // 焼失時の帳簿価額
+      const delta=rand(30,300)*1000;   // 保険差益＝圧縮額
+      const I=BV+delta;                // 保険金確定額
+      const P2=rand(100,900)*10000;    // 新建物の取得原価
+      let bad=false;
+      for(const v of[D1,accum0,BV,delta,I])if(!Number.isInteger(v)||v<=0){bad=true;break;}
+      if(bad||P2<=delta)continue;
+      const mo=3+mm,moL=mo>12?mo-12:mo,yL=moL>=4?'X5':'X6';
+      const entries=[
+        {d:'減価償却費',c:'建物減価償却累計額',amt:D1},
+        {d:'建物減価償却累計額',c:'建物',amt:accum0+D1},
+        {d:'火災未決算',c:'建物',amt:BV},
+        {d:'現金預金',c:'火災未決算',amt:BV},
+        {d:'現金預金',c:'保険差益',amt:delta},
+        {d:'建物',c:'現金預金',amt:P2},
+        {d:'固定資産圧縮損',c:'建物',amt:delta},
+      ];
+      let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">建物の取得原価</span><span class="g-val">${fmt(C1)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">期首減価償却累計額</span><span class="g-val">${fmt(accum0)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n1}年・残存価額0・間接法・月割計算</span></div>`;
+      g+=`<div class="g-head">火災と再取得</div>`;
+      g+=`<div class="g-row"><span class="g-key">焼失日</span><span class="g-val" style="font-size:14px">${yL}年${moL}月末に全焼（焼失月までの償却を月割計上）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">保険金の確定額</span><span class="g-val">${fmt(I)}（確定と同時に現金預金へ入金）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">代替建物の取得原価</span><span class="g-val">${fmt(P2)}（全額現金預金で支払い）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">直接減額方式（保険差益の全額を圧縮）</span></div>`;
+      const explain=[
+        `<b>① 焼失時までの減価償却</b>`,
+        `　${fmt(C1)} ÷ ${n1}年 × ${mm}/12 ＝ ${fmt(D1)}`,
+        `<b>② 帳簿価額を火災未決算へ振替</b>`,
+        `　累計額 ${fmt(accum0)}＋${fmt(D1)} ＝ ${fmt(accum0+D1)} を振替`,
+        `　帳簿価額 ＝ ${fmt(C1)} − ${fmt(accum0+D1)} ＝ ${fmt(BV)}`,
+        `<b>③ 保険金確定 → 保険差益</b>`,
+        `　${fmt(I)} − ${fmt(BV)} ＝ ${fmt(delta)}（特別利益）`,
+        `<b>④ 圧縮記帳（直接減額方式）</b>`,
+        `　新建物 ${fmt(P2)} から保険差益と同額 ${fmt(delta)} を圧縮`,
+        `<b>⑤ ポイント</b>　保険差益と圧縮損が相殺され、課税が繰り延べられる`,
+      ];
+      q={type,badges:['火災（保険差益）','直接減額方式'],
+        givenHTML:g,entries,
+        auxLabel:'保険差益（＝圧縮額）',auxVal:delta,
+        journalLabel:'①焼失時（償却・帳簿価額の振替） ②保険金確定 ③代替建物の取得 ④圧縮記帳 の仕訳',
+        explain,rowsFixed:8};
+    }else if(type===6){
+      // ---- 土地収用（売却益・直接減額方式） ----
+      const BV0=rand(100,800)*10000;   // 旧土地の帳簿価額
+      const delta=rand(50,400)*10000;  // 売却益＝圧縮額
+      const comp=BV0+delta;            // 収用補償金
+      const P2=delta+rand(20,200)*10000; // 代替土地の取得原価
+      const entries=[
+        {d:'現金預金',c:'土地',amt:BV0},
+        {d:'現金預金',c:'固定資産売却益',amt:delta},
+        {d:'土地',c:'現金預金',amt:P2},
+        {d:'固定資産圧縮損',c:'土地',amt:delta},
+      ];
+      let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">土地の帳簿価額</span><span class="g-val">${fmt(BV0)}</span></div>`;
+      g+=`<div class="g-head">収用と代替取得</div>`;
+      g+=`<div class="g-row"><span class="g-key">収用補償金</span><span class="g-val">${fmt(comp)}（現金預金で受領）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">代替土地の取得原価</span><span class="g-val">${fmt(P2)}（全額現金預金で支払い）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">直接減額方式（売却益相当額の全額を圧縮）</span></div>`;
+      const explain=[
+        `<b>① 収用（売却処理）</b>`,
+        `　売却益 ＝ 補償金 ${fmt(comp)} − 帳簿価額 ${fmt(BV0)} ＝ ${fmt(delta)}（特別利益）`,
+        `<b>② 代替土地の取得</b>　${fmt(P2)}`,
+        `<b>③ 圧縮記帳（直接減額方式）</b>`,
+        `　代替土地から売却益と同額 ${fmt(delta)} を圧縮`,
+        `<b>④ ポイント</b>　土地は減価償却しないため、圧縮の効果は売却まで続く`,
+      ];
+      q={type,badges:['土地収用','直接減額方式'],
+        givenHTML:g,entries,
+        auxLabel:'土地売却益（＝圧縮額）',auxVal:delta,
+        journalLabel:'①補償金の受領（売却処理） ②代替土地の取得 ③圧縮記帳 の仕訳',
+        explain,rowsFixed:5};
+    }else{
+      // ---- 機械の売却（積立金方式・税効果あり・圧縮積立金の全額取崩） ----
+      const m0=rand(4,10);             // 前期の経過月数
+      const accum0=P/n*m0/12;          // 期首減価償却累計額
+      const tk0=net/n*m0/12;           // 前期の積立金取崩額
+      const tsumi0=net-tk0;            // 期首の圧縮積立金残高
+      const dtl0=dtl-dtl/n*m0/12;      // 期首の繰延税金負債残高
+      const mm=rand(2,9);              // 当期の売却までの月数
+      const dM=P/n*mm/12;              // 売却時までの月割償却
+      const A=accum0+dM;               // 売却時の累計額
+      const BV=P-A;                    // 売却時の帳簿価額
+      const gain=Math.random()<0.5;
+      const delta=rand(20,200)*1000;
+      const S=gain?BV+delta:BV-delta;  // 売却価額
+      let bad=false;
+      for(const v of[accum0,tk0,tsumi0,dtl0,dM,BV,S])if(!Number.isInteger(v)||v<=0){bad=true;break;}
+      if(bad)continue;
+      const acq=acqDateOf(m0,'X4','X5');
+      const mo=4+mm,moL=mo>12?mo-12:mo,yL=moL>=4?'X5':'X6';
+      const entries=[
+        {d:'減価償却費',c:'機械減価償却累計額',amt:dM},
+        {d:'機械減価償却累計額',c:'機械',amt:A},
+      ];
+      if(gain){
+        entries.push({d:'現金預金',c:'機械',amt:BV});
+        entries.push({d:'現金預金',c:'固定資産売却益',amt:delta});
+      }else{
+        entries.push({d:'現金預金',c:'機械',amt:S});
+        entries.push({d:'固定資産売却損',c:'機械',amt:delta});
+      }
+      entries.push({d:'圧縮積立金',c:'繰越利益剰余金',amt:tsumi0});
+      entries.push({d:'繰延税金負債',c:'法人税等調整額',amt:dtl0});
+      let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・事業供用日</span><span class="g-val" style="font-size:14px">${acq}（前期）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">国庫補助金（前期受領）</span><span class="g-val">${fmt(G)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">積立金方式（全額・前期末に処理済み）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法・月割計算</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">税効果会計</span><span class="g-val" style="font-size:13px">適用する（法定実効税率${taxRate}%）</span></div>`;
+      g+=`<div class="g-head">期首残高（参考）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械減価償却累計額</span><span class="g-val">${fmt(accum0)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮積立金</span><span class="g-val">${fmt(tsumi0)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">繰延税金負債（圧縮分）</span><span class="g-val">${fmt(dtl0)}</span></div>`;
+      g+=`<div class="g-head">売却</div>`;
+      g+=`<div class="g-row"><span class="g-key">売却日・売却価額</span><span class="g-val">${yL}年${moL}月1日に ${fmt(S)} で売却（現金預金で受領）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 売却時までの当期償却を月割計上。圧縮積立金・繰延税金負債は<b>期首残高の全額</b>を取り崩す</span></div>`;
+      const explain=[
+        `<b>① 売却時までの減価償却</b>`,
+        `　${fmt(P)} ÷ ${n}年 × ${mm}/12 ＝ ${fmt(dM)}`,
+        `<b>② 機械の売却</b>`,
+        `　累計額 ＝ ${fmt(accum0)}＋${fmt(dM)} ＝ ${fmt(A)} を振替`,
+        `　帳簿価額 ＝ ${fmt(P)} − ${fmt(A)} ＝ ${fmt(BV)}`,
+        `　売却損益 ＝ ${fmt(S)} − ${fmt(BV)} ＝ ${gain?'＋':'−'}${fmt(delta)} → 売却${gain?'益':'損'}`,
+        `<b>③ 圧縮積立金・繰延税金負債の全額取崩</b>`,
+        `　機械を売却したので将来加算一時差異がすべて解消`,
+        `　圧縮積立金 ${fmt(tsumi0)}、繰延税金負債 ${fmt(dtl0)} を全額取崩`,
+        `<b>検算</b>　積立額 ${fmt(net)}（＝${fmt(G)}×(1−${taxRate}%)）− 前期取崩 ${fmt(tk0)} ＝ ${fmt(tsumi0)}`,
+      ];
+      q={type,badges:['機械の売却','積立金方式・税効果あり','圧つみ全額取崩'],
+        givenHTML:g,entries,
+        auxLabel:'圧縮積立金の取崩額',auxVal:tsumi0,
+        journalLabel:'①売却時までの償却 ②機械の売却 ③圧縮積立金・繰延税金負債の取崩 の仕訳',
+        explain,rowsFixed:7};
     }
     if(!q)continue;
     // 金額チェック
