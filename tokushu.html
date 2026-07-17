@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>特殊商品販売ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:560px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:150px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.g-sent{font-size:13px;color:var(--color-text);line-height:1.7;margin-bottom:6px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
+.cat-badge.b2{background:#FAEEDA;color:#854F0B}
+/* 補助計算 */
+.aux-grid{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
+.aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
+.aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+/* 仕訳テーブル（1行＝1仕訳：借方科目・貸方科目・金額） */
+table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
+table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.j-tbl .acct{color:var(--color-text);width:34%}
+table.j-tbl .acct select{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none;color:var(--color-text);appearance:none;-webkit-appearance:none}
+table.j-tbl .acct select.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .acct select.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .amt{padding:2px 4px;width:32%}
+table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
+table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+/* 正解仕訳表示 */
+table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
+table.sol-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.sol-tbl td.a{width:34%}
+table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>特殊商品販売ドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html" class="nav-on">特殊商品</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="badge-area"></div>
+    <div class="label">与件（単位：円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">補助計算</div>
+    <div class="aux-grid">
+      <span class="ans-label" id="aux-label"></span>
+      <div class="ans-cell"><input type="text" id="a-aux" inputmode="numeric" autocomplete="off"><span class="ans-ng-msg" id="ng-a-aux"></span></div>
+    </div>
+    <div class="label" id="journal-label"></div>
+    <div id="journal-area"></div>
+    <div class="hint">1行＝1つの仕訳（借方・貸方とも1科目・同額なので金額は1つだけ入力）。複合仕訳（借方または貸方が複数科目）は<b>単純仕訳に分解</b>して入力（例：積送時は「積送品／仕入」と「積送品／現金預金」の2行）。行の<b>順序は問わず</b>採点。不要な行は空欄のまま。仕訳が不要な取引は入力しない。<br>
+    <b>委託買付・受託買付</b>：内金・買付代金・諸掛・手数料はすべて委託買付勘定／受託買付勘定に集約（前払金・立替金は使わない）。<br>
+    <b>その都度法</b>：販売のつど、販売分の原価を積送品勘定・未着品勘定から仕入勘定へ振り替える。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,q:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+
+// 科目プルダウンの選択肢
+const ACCTS=['','現金預金','売掛金','買掛金','仕入','売上','積送品','積送品売上','積送諸掛','未着品','未着品売上','試用販売契約','試用仮売上','受託販売','受託買付','委託買付','受取手数料','返金負債','返品資産'];
+
+// ============ 問題生成 ============
+// 仕訳は1行＝1仕訳 {d:借方科目, c:貸方科目, amt:金額}
+// 1: 委託販売（委託者・その都度法・総額法/手取額法）
+// 2: 受託販売（受託者）
+// 3: 委託買付（委託者）
+// 4: 受託買付（受託者）
+// 5: 未着品（現品引取／証券転売／両方）
+// 6: 試用販売（対照勘定法）
+// 7: 返品権付き販売（決算整理）
+function genQ(){
+  for(let t=0;t<4000;t++){
+    const type=rand(1,7);
+    let q=null;
+    if(type===1){
+      // ---- 委託販売（委託者） ----
+      const uc=rand(2,8)*100, n=rand(2,9)*10, C=uc*n;
+      const F=rand(2,12)*500;
+      const us=uc+rand(3,12)*100, S=us*n;
+      const E=rand(2,10)*500;
+      const rate=pick([5,10]), H=S*rate/100;
+      const net=S-E-H;
+      if(net<=0)continue;
+      const gross=Math.random()<0.5;
+      const entries=[
+        {d:'積送品',c:'仕入',amt:C},
+        {d:'積送品',c:'現金預金',amt:F},
+        {d:'売掛金',c:'積送品売上',amt:net},
+      ];
+      if(gross)entries.push({d:'積送諸掛',c:'積送品売上',amt:E+H});
+      entries.push({d:'仕入',c:'積送品',amt:C+F});
+      let g=`<div class="g-head">前提</div>`;
+      g+=`<div class="g-row"><span class="g-key">販売形態</span><span class="g-val" style="font-size:13px">委託販売（B商店に販売を委託・その都度法）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">売上の計上基準</span><span class="g-val" style="font-size:13px">${gross?'受託者販売価額の総額で計上（総額法）':'諸掛・手数料控除後の手取額で計上（手取額法）'}</span></div>`;
+      g+=`<div class="g-head">取引</div>`;
+      g+=`<div class="g-sent">① 商品${n}個（原価@${fmt(uc)}）をB商店へ積送し、発送運賃 ${fmt(F)} を現金で支払った</div>`;
+      g+=`<div class="g-sent">② B商店から下記の売上計算書が届いた（手取額は掛けとして処理）</div>`;
+      g+=`<div class="g-head">売上計算書</div>`;
+      g+=`<div class="g-row"><span class="g-key">売上高</span><span class="g-val">@${fmt(us)} × ${n}個 ＝ ${fmt(S)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">販売諸掛</span><span class="g-val">${fmt(E)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">販売手数料</span><span class="g-val" style="font-size:13px">売上高の${rate}%（各自計算）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">差引手取金額</span><span class="g-val" style="font-size:13px">各自計算</span></div>`;
+      const explain=[
+        `<b>① 積送時</b>`,
+        `　積送品原価 ＝ 原価 ${fmt(C)} ＋ 発送諸掛 ${fmt(F)} ＝ ${fmt(C+F)}（発送諸掛は積送品原価に算入）`,
+        `<b>② 販売手数料と手取額</b>`,
+        `　手数料 ＝ ${fmt(S)} × ${rate}% ＝ ${fmt(H)}`,
+        `　手取額 ＝ ${fmt(S)} − 販売諸掛 ${fmt(E)} − 手数料 ${fmt(H)} ＝ ${fmt(net)}`,
+        gross
+          ?`<b>③ 売上計上（総額法）</b>　積送品売上 ${fmt(S)}。借方は売掛金 ${fmt(net)} と積送諸掛（費用）${fmt(E+H)} に分解して入力`
+          :`<b>③ 売上計上（手取額法）</b>　手取額 ${fmt(net)} をそのまま積送品売上に計上（諸掛・手数料は売上に含めない）`,
+        `<b>④ 原価の振替（その都度法）</b>　販売分の原価 ${fmt(C+F)} を積送品勘定から仕入勘定へ振替`,
+      ];
+      q={type,badges:['委託販売（委託者）',gross?'総額法・その都度法':'手取額法・その都度法'],
+        givenHTML:g,entries,
+        auxLabel:'売上計算書の手取金額',auxVal:net,
+        journalLabel:'①積送時 ②売上計算書の受取時（売上計上・原価振替）の仕訳',
+        explain,rowsFixed:6};
+    }else if(type===2){
+      // ---- 受託販売（受託者） ----
+      const n=rand(2,9)*10, us=rand(5,20)*100, S=us*n;
+      const T=rand(2,10)*500;
+      const rate=pick([5,10]), H=S*rate/100;
+      const remit=S-T-H;
+      if(remit<=0)continue;
+      const cashSale=Math.random()<0.5;
+      const entries=[
+        {d:'受託販売',c:'現金預金',amt:T},
+        {d:cashSale?'現金預金':'売掛金',c:'受託販売',amt:S},
+        {d:'受託販売',c:'受取手数料',amt:H},
+        {d:'受託販売',c:'現金預金',amt:remit},
+      ];
+      let g=`<div class="g-head">前提</div>`;
+      g+=`<div class="g-row"><span class="g-key">販売形態</span><span class="g-val" style="font-size:13px">受託販売（A商店から販売の委託を受けている）</span></div>`;
+      g+=`<div class="g-head">取引</div>`;
+      g+=`<div class="g-sent">① A商店から受託品が到着し、引取費用 ${fmt(T)} を現金で支払った</div>`;
+      g+=`<div class="g-sent">② 受託品の全部を @${fmt(us)} × ${n}個 ＝ ${fmt(S)} で${cashSale?'現金':'掛け'}販売した</div>`;
+      g+=`<div class="g-sent">③ 売上計算書をA商店へ送付した（販売手数料は売上高の${rate}%）</div>`;
+      g+=`<div class="g-sent">④ 手取金を小切手を振り出してA商店へ送金した</div>`;
+      const explain=[
+        `<b>受託販売勘定＝委託者Aとの債権・債務を表す勘定</b>`,
+        `<b>① 引取費用</b>　Aに代わって立て替え → 受託販売の借方 ${fmt(T)}`,
+        `<b>② 販売</b>　売上はAのもの → 自社の売上とせず受託販売の貸方 ${fmt(S)}`,
+        `<b>③ 手数料</b>　${fmt(S)} × ${rate}% ＝ ${fmt(H)} を受取手数料（収益）に計上し、受託販売の借方へ`,
+        `<b>④ 送金額</b>　${fmt(S)} − ${fmt(T)} − ${fmt(H)} ＝ ${fmt(remit)}（送金後、受託販売勘定の残高は0になる）`,
+      ];
+      q={type,badges:['受託販売（受託者）',cashSale?'現金販売':'掛け販売'],
+        givenHTML:g,entries,
+        auxLabel:'委託者への送金額',auxVal:remit,
+        journalLabel:'①引取費用の支払い ②販売 ③売上計算書の送付（手数料計上） ④手取金の送金 の仕訳（受託品の受取自体は仕訳不要）',
+        explain,rowsFixed:5};
+    }else if(type===3||type===4){
+      // ---- 委託買付／受託買付 ----
+      const up=rand(10,30)*100, n=rand(2,9)*10, P=up*n;
+      const rate=10, H=P*rate/100;
+      const F=rand(2,10)*500;
+      const M=rand(1,Math.floor(P/2/10000))*10000;
+      const total=P+H+F, bill=total-M;
+      if(bill<=0)continue;
+      if(type===3){
+        const entries=[
+          {d:'委託買付',c:'現金預金',amt:M},
+          {d:'仕入',c:'委託買付',amt:total},
+          {d:'委託買付',c:'現金預金',amt:bill},
+        ];
+        let g=`<div class="g-head">前提</div>`;
+        g+=`<div class="g-row"><span class="g-key">取引形態</span><span class="g-val" style="font-size:13px">委託買付（B商店に商品の買付けを委託・委託買付勘定で処理）</span></div>`;
+        g+=`<div class="g-head">取引</div>`;
+        g+=`<div class="g-sent">① 買付代金の内金として ${fmt(M)} をB商店へ振り込んだ</div>`;
+        g+=`<div class="g-sent">② B商店から商品${n}個（@${fmt(up)}）と下記の買付計算書が届いた</div>`;
+        g+=`<div class="g-sent">③ 後日、請求金額をB商店へ振り込んだ</div>`;
+        g+=`<div class="g-head">買付計算書</div>`;
+        g+=`<div class="g-row"><span class="g-key">買付代金</span><span class="g-val">@${fmt(up)} × ${n}個 ＝ ${fmt(P)}</span></div>`;
+        g+=`<div class="g-row"><span class="g-key">立替運賃</span><span class="g-val">${fmt(F)}</span></div>`;
+        g+=`<div class="g-row"><span class="g-key">買付手数料</span><span class="g-val" style="font-size:13px">代金の${rate}%（各自計算）</span></div>`;
+        g+=`<div class="g-row"><span class="g-key">差引：内金</span><span class="g-val">${fmt(M)}</span></div>`;
+        g+=`<div class="g-row"><span class="g-key">請求金額</span><span class="g-val" style="font-size:13px">各自計算</span></div>`;
+        const explain=[
+          `<b>① 内金</b>　委託買付の借方 ${fmt(M)}（Bに対する債権）`,
+          `<b>② 商品受取</b>　仕入原価 ＝ 代金 ${fmt(P)} ＋ 手数料 ${fmt(H)}（${fmt(P)}×${rate}%）＋ 立替運賃 ${fmt(F)} ＝ ${fmt(total)}（付随費用は取得原価に算入）`,
+          `　貸方は委託買付 ${fmt(total)}（内金と相殺後の貸方残高 ${fmt(bill)} ＝ Bへの未払い）`,
+          `<b>③ 残額支払い</b>　請求金額 ＝ ${fmt(total)} − 内金 ${fmt(M)} ＝ ${fmt(bill)}（支払後、委託買付勘定の残高は0になる）`,
+        ];
+        q={type,badges:['委託買付（委託者）',`手数料${rate}%`],
+          givenHTML:g,entries,
+          auxLabel:'商品の仕入原価',auxVal:total,
+          journalLabel:'①内金の支払い ②商品・買付計算書の受取 ③請求金額の支払い の仕訳',
+          explain,rowsFixed:4};
+      }else{
+        const entries=[
+          {d:'現金預金',c:'受託買付',amt:M},
+          {d:'受託買付',c:'現金預金',amt:P},
+          {d:'受託買付',c:'受取手数料',amt:H},
+          {d:'受託買付',c:'現金預金',amt:F},
+          {d:'現金預金',c:'受託買付',amt:bill},
+        ];
+        let g=`<div class="g-head">前提</div>`;
+        g+=`<div class="g-row"><span class="g-key">取引形態</span><span class="g-val" style="font-size:13px">受託買付（A商店から商品の買付委託を受けている・受託買付勘定で処理）</span></div>`;
+        g+=`<div class="g-head">取引</div>`;
+        g+=`<div class="g-sent">① A商店から買付代金の内金として ${fmt(M)} が振り込まれた</div>`;
+        g+=`<div class="g-sent">② 商品${n}個（@${fmt(up)}）を買い付け、代金 ${fmt(P)} を小切手を振り出して支払った</div>`;
+        g+=`<div class="g-sent">③ 商品と買付計算書（買付手数料は代金の${rate}%）をA商店へ送付し、A商店負担の発送運賃 ${fmt(F)} を小切手を振り出して支払った</div>`;
+        g+=`<div class="g-sent">④ 後日、請求金額がA商店から振り込まれた</div>`;
+        const explain=[
+          `<b>受託買付勘定＝委託者Aとの債権・債務を表す勘定</b>`,
+          `<b>① 内金受取</b>　受託買付の貸方 ${fmt(M)}（Aに対する債務）`,
+          `<b>② 買付け</b>　商品はAのもの → 自社の仕入とせず受託買付の借方 ${fmt(P)}`,
+          `<b>③ 発送・計算書送付</b>　手数料 ${fmt(P)}×${rate}% ＝ ${fmt(H)} を受取手数料（収益）に計上、A負担の運賃 ${fmt(F)} と合わせて受託買付の借方へ`,
+          `<b>④ 請求金額</b>　${fmt(P)} ＋ ${fmt(H)} ＋ ${fmt(F)} − 内金 ${fmt(M)} ＝ ${fmt(bill)}（受取後、受託買付勘定の残高は0になる）`,
+        ];
+        q={type,badges:['受託買付（受託者）',`手数料${rate}%`],
+          givenHTML:g,entries,
+          auxLabel:'買付計算書の請求金額',auxVal:bill,
+          journalLabel:'①内金の受取 ②買付け ③商品の発送と計算書の送付（A負担運賃の支払い） ④請求金額の受取 の仕訳',
+          explain,rowsFixed:6};
+      }
+    }else if(type===5){
+      // ---- 未着品 ----
+      const kase=pick(['pickup','resale','both']);
+      if(kase==='pickup'){
+        const P=rand(50,300)*1000, T=rand(2,10)*500;
+        const entries=[
+          {d:'未着品',c:'買掛金',amt:P},
+          {d:'仕入',c:'未着品',amt:P},
+          {d:'仕入',c:'現金預金',amt:T},
+        ];
+        let g=`<div class="g-head">取引</div>`;
+        g+=`<div class="g-sent">① 注文していた商品 ${fmt(P)} について船荷証券を受け取った。代金は掛けとした</div>`;
+        g+=`<div class="g-sent">② 現品が到着したので船荷証券と引き換えに引き取り、引取費用 ${fmt(T)} を現金で支払った</div>`;
+        const explain=[
+          `<b>① 船荷証券の受取</b>　現品未着 → 仕入ではなく未着品（資産）${fmt(P)} で計上`,
+          `<b>② 現品引取</b>　未着品 ${fmt(P)} を仕入勘定へ振替。引取費用 ${fmt(T)} も仕入原価に算入`,
+          `　仕入計上額（合計）＝ ${fmt(P)} ＋ ${fmt(T)} ＝ ${fmt(P+T)}`,
+        ];
+        q={type,badges:['未着品','現品引取'],
+          givenHTML:g,entries,
+          auxLabel:'仕入勘定に計上される金額（合計）',auxVal:P+T,
+          journalLabel:'①船荷証券の受取 ②現品の引取（引取費用の支払い）の仕訳',
+          explain,rowsFixed:4};
+      }else if(kase==='resale'){
+        const P=rand(50,300)*1000, Y=P+rand(10,60)*1000;
+        const entries=[
+          {d:'未着品',c:'買掛金',amt:P},
+          {d:'売掛金',c:'未着品売上',amt:Y},
+          {d:'仕入',c:'未着品',amt:P},
+        ];
+        let g=`<div class="g-head">取引</div>`;
+        g+=`<div class="g-sent">① 注文していた商品 ${fmt(P)} について船荷証券を受け取った。代金は掛けとした</div>`;
+        g+=`<div class="g-sent">② 上記の船荷証券を現品到着前に ${fmt(Y)} で転売し、代金は掛けとした（原価の振替はその都度法）</div>`;
+        const explain=[
+          `<b>① 船荷証券の受取</b>　現品未着 → 未着品（資産）${fmt(P)} で計上`,
+          `<b>② 証券のまま転売</b>　売上は未着品売上 ${fmt(Y)}（一般売上と区別）`,
+          `<b>③ 原価の振替（その都度法）</b>　販売分の原価 ${fmt(P)} を未着品勘定から仕入勘定へ振替`,
+          `　売上総利益 ＝ ${fmt(Y)} − ${fmt(P)} ＝ ${fmt(Y-P)}`,
+        ];
+        q={type,badges:['未着品','証券のまま転売'],
+          givenHTML:g,entries,
+          auxLabel:'転売による売上総利益',auxVal:Y-P,
+          journalLabel:'①船荷証券の受取 ②転売（売上計上・原価振替）の仕訳',
+          explain,rowsFixed:4};
+      }else{
+        const P1=rand(50,200)*1000, P2=rand(50,200)*1000;
+        const T=rand(2,10)*500, Y=P2+rand(10,60)*1000;
+        const entries=[
+          {d:'未着品',c:'買掛金',amt:P1},
+          {d:'未着品',c:'買掛金',amt:P2},
+          {d:'仕入',c:'未着品',amt:P1},
+          {d:'仕入',c:'現金預金',amt:T},
+          {d:'売掛金',c:'未着品売上',amt:Y},
+          {d:'仕入',c:'未着品',amt:P2},
+        ];
+        let g=`<div class="g-head">取引</div>`;
+        g+=`<div class="g-sent">① 注文していた商品につき船荷証券2通（甲 ${fmt(P1)}・乙 ${fmt(P2)}）を順次受け取った。代金はいずれも掛けとした（1通ずつ仕訳）</div>`;
+        g+=`<div class="g-sent">② 甲の現品が到着したので引き取り、引取費用 ${fmt(T)} を現金で支払った</div>`;
+        g+=`<div class="g-sent">③ 乙は現品到着前に船荷証券のまま ${fmt(Y)} で転売し、代金は掛けとした（原価の振替はその都度法）</div>`;
+        const explain=[
+          `<b>① 船荷証券の受取</b>　甲 ${fmt(P1)}・乙 ${fmt(P2)} をそれぞれ未着品で計上`,
+          `<b>② 甲の現品引取</b>　未着品 ${fmt(P1)} を仕入へ振替、引取費用 ${fmt(T)} も仕入原価に算入`,
+          `<b>③ 乙の転売</b>　未着品売上 ${fmt(Y)} を計上し、原価 ${fmt(P2)} を仕入へ振替（その都度法）`,
+          `　乙の売上総利益 ＝ ${fmt(Y)} − ${fmt(P2)} ＝ ${fmt(Y-P2)}`,
+        ];
+        q={type,badges:['未着品','現品引取と証券転売'],
+          givenHTML:g,entries,
+          auxLabel:'乙の転売による売上総利益',auxVal:Y-P2,
+          journalLabel:'①船荷証券2通の受取（1通ずつ） ②甲の現品引取 ③乙の転売（売上計上・原価振替）の仕訳',
+          explain,rowsFixed:7};
+      }
+    }else if(type===6){
+      // ---- 試用販売（対照勘定法） ----
+      const A1=rand(5,20)*10000, A2=rand(5,20)*10000, A3=rand(5,20)*10000;
+      const S=A1+A2+A3;
+      const entries=[
+        {d:'試用販売契約',c:'試用仮売上',amt:S},
+        {d:'売掛金',c:'売上',amt:A1},
+        {d:'試用仮売上',c:'試用販売契約',amt:A1},
+        {d:'試用仮売上',c:'試用販売契約',amt:A2},
+      ];
+      let g=`<div class="g-head">前提</div>`;
+      g+=`<div class="g-row"><span class="g-key">販売形態</span><span class="g-val" style="font-size:13px">試用販売（対照勘定法・対照勘定は売価で記入）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">売上の科目</span><span class="g-val" style="font-size:13px">売上勘定で処理（一般売上と区別しない）</span></div>`;
+      g+=`<div class="g-head">取引</div>`;
+      g+=`<div class="g-sent">① 得意先3社に商品を試送した（売価：X社 ${fmt(A1)}・Y社 ${fmt(A2)}・Z社 ${fmt(A3)}。まとめて1行で仕訳）</div>`;
+      g+=`<div class="g-sent">② X社から買取りの意思表示を受けた。代金は掛けとした</div>`;
+      g+=`<div class="g-sent">③ Y社から商品が返品されてきた</div>`;
+      g+=`<div class="g-sent">④ Z社は期末現在、意思表示がない</div>`;
+      const explain=[
+        `<b>① 試送時</b>　売価総額 ${fmt(A1)}＋${fmt(A2)}＋${fmt(A3)}＝${fmt(S)} を対照勘定（試用販売契約／試用仮売上）で備忘記録`,
+        `<b>② 買取りの意思表示</b>　この時点で売上 ${fmt(A1)} を計上し、対照勘定を同額戻す（2行）`,
+        `<b>③ 返品</b>　売上は計上せず、対照勘定を ${fmt(A2)} 戻すのみ`,
+        `<b>④ 意思表示なし</b>　仕訳不要。期末の対照勘定残高 ＝ ${fmt(A3)}（Z社分）`,
+      ];
+      q={type,badges:['試用販売','対照勘定法'],
+        givenHTML:g,entries,
+        auxLabel:'期末の試用仮売上勘定残高',auxVal:A3,
+        journalLabel:'①試送 ②X社の買取意思表示 ③Y社の返品 の仕訳（Z社は仕訳不要）',
+        explain,rowsFixed:5};
+    }else{
+      // ---- 返品権付き販売（決算整理） ----
+      const uc=rand(15,40)*100, n=rand(5,20)*10;
+      const us=uc+rand(2,10)*100;
+      const r=rand(2,Math.floor(n/10));
+      const refund=us*r, asset=uc*r;
+      const entries=[
+        {d:'売上',c:'返金負債',amt:refund},
+        {d:'返品資産',c:'仕入',amt:asset},
+      ];
+      let g=`<div class="g-head">前提</div>`;
+      g+=`<div class="g-row"><span class="g-key">販売形態</span><span class="g-val" style="font-size:13px">返品権付き販売（三分法・複数の得意先に掛け販売）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">当期の販売</span><span class="g-val">@${fmt(us)} × ${n}個 ＝ ${fmt(us*n)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">期中の記帳</span><span class="g-val" style="font-size:13px">販売価格の総額で売上に計上済み</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">仕入単価</span><span class="g-val">@${fmt(uc)}（付随費用込み）</span></div>`;
+      g+=`<div class="g-head">決算</div>`;
+      g+=`<div class="g-sent">・返品を ${r}個 と見積もった。返品される商品は再販売時に利益を獲得できると予想している</div>`;
+      g+=`<div class="g-sent">・予想される返品高は、帳簿上、控除的評価勘定（返金負債）で処理する</div>`;
+      const explain=[
+        `<b>① 売上の取消し</b>　返品見込分の売価 @${fmt(us)} × ${r}個 ＝ ${fmt(refund)} を売上から控除し、返金負債へ`,
+        `　（掛け販売で代金未回収のため、返金負債は売掛金に対する控除的評価勘定として扱う）`,
+        `<b>② 返品資産</b>　返品見込分の原価 @${fmt(uc)} × ${r}個 ＝ ${fmt(asset)} を仕入（売上原価）から控除し、返品資産へ`,
+        `　（再販売時に利益を獲得できる ＝ 価値の減少なし → 原価の全額を返品資産に計上）`,
+        `　参考：返品見込分の利益 ＝ ${fmt(refund)} − ${fmt(asset)} ＝ ${fmt(refund-asset)}`,
+      ];
+      q={type,badges:['返品権付き販売','決算整理（返金負債・返品資産）'],
+        givenHTML:g,entries,
+        auxLabel:'返品資産の計上額',auxVal:asset,
+        journalLabel:'決算整理仕訳（販売時の仕訳は不要）',
+        explain,rowsFixed:3};
+    }
+    if(!q)continue;
+    // 金額チェック
+    let bad=false;
+    for(const e of q.entries)if(!Number.isInteger(e.amt)||e.amt<=0){bad=true;break;}
+    if(!Number.isInteger(q.auxVal)||q.auxVal<=0)bad=true;
+    if(bad||q.entries.length>q.rowsFixed)continue;
+    return q;
+  }
+  return null;
+}
+
+// ============ 描画 ============
+function renderJournal(q){
+  const rows=q.rowsFixed;
+  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
+  let body='';
+  for(let i=0;i<rows;i++){
+    body+=`<tr>
+      <td class="acct">${sel('j-d-'+i)}</td>
+      <td class="acct">${sel('j-c-'+i)}</td>
+      <td class="amt"><input type="text" inputmode="numeric" id="j-v-${i}" autocomplete="off"></td>
+    </tr>`;
+  }
+  document.getElementById('journal-area').innerHTML=
+    `<table class="j-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+  STATE.rows=rows;
+  return rows;
+}
+
+function newQ(){
+  const q=genQ();
+  if(!q)return;
+  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();
+  document.getElementById('badge-area').innerHTML=
+    q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
+  document.getElementById('given-area').innerHTML=q.givenHTML;
+  document.getElementById('aux-label').textContent=q.auxLabel;
+  document.getElementById('journal-label').textContent=q.journalLabel+'（1行＝1仕訳）';
+  STATE.rows=renderJournal(q);
+  const auxEl=document.getElementById('a-aux');
+  auxEl.value='';auxEl.classList.remove('cell-ok','cell-ng');
+  document.getElementById('ng-a-aux').style.display='none';
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+// ============ 採点（行の順不同マッチ：借方科目・貸方科目・金額の3点セット） ============
+function gradeRows(expected,rows){
+  const exp=expected.map(e=>({d:e.d,c:e.c,amt:e.amt}));
+  while(exp.length<rows)exp.push({d:'',c:'',amt:0});
+  const used=new Array(rows).fill(false);
+  let ok=0;
+  const marks=[];
+  for(let i=0;i<rows;i++){
+    const d=document.getElementById(`j-d-${i}`).value;
+    const c=document.getElementById(`j-c-${i}`).value;
+    const amt=parseNum(document.getElementById(`j-v-${i}`).value);
+    let hit=-1;
+    for(let k=0;k<exp.length;k++){
+      if(!used[k]&&exp[k].d===d&&exp[k].c===c&&exp[k].amt===amt){hit=k;break;}
+    }
+    if(hit>=0){used[hit]=true;ok++;marks.push(true);}
+    else marks.push(false);
+  }
+  for(let i=0;i<rows;i++){
+    const d=document.getElementById(`j-d-${i}`);
+    const c=document.getElementById(`j-c-${i}`);
+    const v=document.getElementById(`j-v-${i}`);
+    for(const el of[d,c,v]){el.classList.remove('cell-ok','cell-ng');el.classList.add(marks[i]?'cell-ok':'cell-ng');}
+  }
+  return ok;
+}
+
+function grade(){
+  if(!STATE.q||STATE.graded)return;
+  const q=STATE.q;
+  const rows=STATE.rows;
+  let ok=0;
+  // 補助計算
+  const auxEl=document.getElementById('a-aux');
+  const auxOk=parseNum(auxEl.value)===q.auxVal;
+  if(auxOk)ok++;
+  auxEl.classList.remove('cell-ok','cell-ng');auxEl.classList.add(auxOk?'cell-ok':'cell-ng');
+  const auxNg=document.getElementById('ng-a-aux');
+  if(!auxOk){auxNg.textContent='正:'+fmt(q.auxVal);auxNg.style.display='inline';}
+  else auxNg.style.display='none';
+  // 仕訳
+  ok+=gradeRows(q.entries,rows);
+  const cnt=1+rows;
+
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===cnt;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  // 正解仕訳の表示
+  let solBody='';
+  for(const e of q.entries){
+    solBody+=`<tr><td class="a">${e.d}</td><td class="a">${e.c}</td><td class="v">${fmt(e.amt)}</td></tr>`;
+  }
+  const sol=`<div class="label" style="margin-top:8px">正解の仕訳</div>
+    <table class="sol-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${solBody}</table>`;
+  const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(q.explain).join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'}</div>`+sol+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
