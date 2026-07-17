@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0F6E56">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>車両買換えドリル</title>
+<title>圧縮記帳ドリル</title>
 <style>
 :root{
   --color-bg:#F7F6F3;
@@ -34,7 +34,7 @@ h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:
 button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
 button:active{opacity:0.85}
 .g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
-.g-key{font-size:13px;color:var(--color-text2);min-width:180px}
+.g-key{font-size:13px;color:var(--color-text2);min-width:170px}
 .g-val{font-size:15px;font-weight:600;color:var(--color-text)}
 .g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
 .stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
@@ -44,7 +44,7 @@ button:active{opacity:0.85}
 .cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
 .cat-badge.b2{background:#FAEEDA;color:#854F0B}
 /* 補助計算 */
-.aux-grid{display:grid;grid-template-columns:150px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
+.aux-grid{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
 .aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
 .aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
@@ -89,16 +89,16 @@ table.sol-tbl td.v{width:20%;text-align:right;font-variant-numeric:tabular-nums}
 </head>
 <body>
 <div id="app">
-  <h1>車両買換えドリル</h1>
+  <h1>圧縮記帳ドリル</h1>
   <div class="nav">
     <a href="index.html">減価償却</a>
     <a href="pension.html">退職給付</a>
     <a href="purchases.html">仕入</a>
     <a href="lease.html">リース</a>
-    <a href="trade.html" class="nav-on">買換え</a>
+    <a href="trade.html">買換え</a>
     <a href="wip.html">仕掛品</a>
     <a href="hedge.html">為替予約</a>
-    <a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a>
+    <a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html" class="nav-on">圧縮記帳</a>
   </div>
   <div class="stat-grid">
     <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
@@ -107,19 +107,22 @@ table.sol-tbl td.v{width:20%;text-align:right;font-variant-numeric:tabular-nums}
 
   <div class="card">
     <div id="badge-area"></div>
-    <div class="label">与件（単位：千円）</div>
+    <div class="label">与件（単位：円）</div>
     <div id="given-area"></div>
   </div>
 
   <div class="card">
     <div class="label">補助計算</div>
     <div class="aux-grid">
-      <span class="ans-label">旧車両の簿価<br><span style="font-size:11px;color:var(--color-text2)">（買換え時点）</span></span>
-      <div class="ans-cell"><input type="text" id="a-bv" autocomplete="off"><span class="ans-ng-msg" id="ng-a-bv"></span></div>
+      <span class="ans-label" id="aux-label"></span>
+      <div class="ans-cell"><input type="text" id="a-aux" inputmode="numeric" autocomplete="off"><span class="ans-ng-msg" id="ng-a-aux"></span></div>
     </div>
-    <div class="label">買換えの仕訳（科目と金額を入力。不要な行は空欄のまま）</div>
+    <div class="label" id="journal-label"></div>
     <div id="journal-area"></div>
-    <div class="hint">下取価格が<b>時価を上回る</b>とき、超過分は新車両の値引き（取得原価から控除）。売却損益は時価−簿価。<br>時価の記載がなければ下取価格を時価とみなす。現金支払額は「定価−下取価格」。<br>借方・貸方の中は<b>順不同</b>で採点します。</div>
+    <div class="hint"><b>直接減額方式</b>：圧縮後の帳簿価額を基礎に減価償却。<br>
+    <b>積立金方式</b>：減価償却は取得原価を基礎。積立額＝圧縮額×(1−実効税率)。税効果を適用しない場合は圧縮額の全額を積み立てる。<br>
+    取崩額は減価償却に対応させて月割（積立額 ÷ 耐用年数 × 経過月数/12）。積立と取崩は<b>相殺せず別々の行</b>に入力。<br>
+    借方・貸方の中は<b>順不同</b>で採点します。不要な行は空欄のまま。</div>
   </div>
 
   <div id="result-area"></div>
@@ -169,124 +172,195 @@ function parseNum(v){
 }
 
 // 科目プルダウンの選択肢
-const ACCTS=['','車両','車両減価償却累計額','減価償却費','固定資産売却損','固定資産売却益','現金','仮払消費税','仮受消費税','未収入金','未払金'];
+const ACCTS=['','現金預金','機械','機械減価償却累計額','減価償却費','国庫補助金受贈益','固定資産圧縮損','圧縮積立金','繰越利益剰余金','繰延税金負債','繰延税金資産','法人税等調整額'];
+
+// 経過月数 m（取得月〜3月）→ 取得月とその暦年ラベル
+// m=12→4月(X5)、m=4→12月(X5)、m=3→1月(X6)、m=2→2月(X6)
+function acqDateOf(m,yearIn,yearNext){
+  const mo=m>=4?16-m:4-m;
+  const y=mo>=4?yearIn:yearNext;
+  return `${y}年${mo}月1日`;
+}
 
 // ============ 問題生成 ============
-// パターン：時価の与え方（なし／下取価格>時価／下取価格=時価）× 買換え時期（期首／期中）
+// 1: 直接減額方式（補助金受領〜取得年度の決算）
+// 2: 積立金方式・税効果なし（取得年度の決算）
+// 3: 積立金方式・税効果あり（取得年度の決算）
+// 4: 積立金方式・税効果あり（翌年度の決算＝取崩のみ）
 function genQ(){
-  for(let t=0;t<8000;t++){
-    const taxMode=Math.random()<1/3;               // 消費税あり（税抜経理・10%）
-    const fvMode=taxMode?'none':pick(['none','premium','equal']);  // 消費税問題は時価論点と併用しない
-    const midYear=Math.random()<0.5;
-    const EL=pick([4,5,6,8]);
-    const C0=EL*12*rand(30,90);           // EL×12の倍数 → 月割整数
-    const annualDepr=C0/EL;
-    const monthlyDepr=C0/(EL*12);
-    const y=rand(1,EL-2);
-    const accum=annualDepr*y;
-    const m=midYear?rand(2,10):0;
-    const midDepr=monthlyDepr*m;
-    const bv=C0-accum-midDepr;
-    if(bv<=0)continue;
-    const gainSide=Math.random()<0.5;
-    const delta=rand(2,20)*10;
-    let FV=gainSide?bv+delta:bv-delta;
-    FV=Math.round(FV/10)*10;
-    if(FV<=0)continue;
-    const gainLoss=FV-bv;
-    if(gainLoss===0)continue;
-    let T,discount=0;
-    if(fvMode==='none'){T=FV;}
-    else if(fvMode==='premium'){discount=rand(5,30)*10;T=FV+discount;}
-    else{T=FV;}
-    const P=Math.round((C0+rand(0,150)*10)/10)*10;
-    if(P<=T)continue;
-    const newCost=P-discount;
-    // 消費税（税抜経理・10%）：仮払=新車定価×10%、仮受=下取価格×10%、現金は税込差額
-    const vatIn=taxMode?Math.round(P*0.1):0;
-    const vatOut=taxMode?Math.round(T*0.1):0;
-    if(taxMode&&(P*0.1!==vatIn||T*0.1!==vatOut))continue;
-    const cashPaid=(P-T)+(vatIn-vatOut);
-    let bad=false;
-    for(const v of[midDepr,bv,FV,T,newCost,cashPaid,vatIn,vatOut,Math.abs(gainLoss)])
-      if(!Number.isInteger(v)||v<0){bad=true;break;}
-    if(bad)continue;
+  for(let t=0;t<4000;t++){
+    const r=Math.random();
+    const type=r<0.2?1:r<0.4?2:r<0.75?3:4;
+    const n=pick([4,5,6,8,10]);
+    const base=n*12000;
+    const k1=rand(5,25);
+    const k2=rand(k1*2,k1*4);
+    const G=k1*base;              // 国庫補助金＝圧縮額
+    const P=k2*base;              // 機械の取得原価
+    const taxRate=pick([30,40]);  // 実効税率%
+    const dtl=G*taxRate/100;      // 繰延税金負債（圧縮時）
+    const net=G-dtl;              // 圧縮積立金の積立額（税効果あり）
 
-    // ===== 仕訳（借方・貸方） =====
-    const debits=[{acct:'車両減価償却累計額',amt:accum}];
-    if(m>0)debits.push({acct:'減価償却費',amt:midDepr});
-    debits.push({acct:'車両',amt:newCost});
-    if(taxMode)debits.push({acct:'仮払消費税',amt:vatIn});
-    if(gainLoss<0)debits.push({acct:'固定資産売却損',amt:-gainLoss});
-    const credits=[{acct:'車両',amt:C0}];
-    if(taxMode)credits.push({acct:'仮受消費税',amt:vatOut});
-    credits.push({acct:'現金',amt:cashPaid});
-    if(gainLoss>0)credits.push({acct:'固定資産売却益',amt:gainLoss});
+    let q=null;
+    if(type===1){
+      // ---- 直接減額方式 ----
+      const m=rand(3,12);
+      const D=(P-G)/n*m/12;
+      if(!Number.isInteger(D)||D<=0)continue;
+      const acq=acqDateOf(m,'X5','X6');
+      const debits=[
+        {acct:'現金預金',amt:G},
+        {acct:'機械',amt:P},
+        {acct:'固定資産圧縮損',amt:G},
+        {acct:'減価償却費',amt:D},
+      ];
+      const credits=[
+        {acct:'国庫補助金受贈益',amt:G},
+        {acct:'現金預金',amt:P},
+        {acct:'機械',amt:G},
+        {acct:'機械減価償却累計額',amt:D},
+      ];
+      let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">国庫補助金の受領額</span><span class="g-val">${fmt(G)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}（全額現金預金で支払い）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">補助金受領日・取得日</span><span class="g-val" style="font-size:14px">${acq}（同日に事業供用）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法・月割計算</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">直接減額方式（補助金相当額の全額を圧縮）</span></div>`;
+      const explain=[
+        `<b>① 圧縮記帳（直接減額方式）</b>`,
+        `　圧縮損 ${fmt(G)} を計上し、機械の帳簿価額を直接減額`,
+        `　圧縮後の帳簿価額 ＝ ${fmt(P)} − ${fmt(G)} ＝ ${fmt(P-G)}`,
+        `<b>② 減価償却（圧縮後の帳簿価額を基礎）</b>`,
+        `　${fmt(P-G)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(D)}`,
+        `<b>③ ポイント</b>　受贈益（特別利益）と圧縮損（特別損失）が相殺され、課税が繰り延べられる`,
+      ];
+      q={type,badges:['直接減額方式','補助金受領〜取得年度の決算'],
+        givenHTML:g,debits,credits,
+        auxLabel:'当期の減価償却費',auxVal:D,
+        journalLabel:'①補助金受領 ②機械の取得 ③圧縮記帳 ④決算日（X6年3月31日）の減価償却 の仕訳をまとめて入力',
+        explain,rowsFixed:4};
+    }else if(type===2||type===3){
+      // ---- 積立金方式・取得年度の決算 ----
+      const m=rand(3,12);
+      const D=P/n*m/12;
+      if(!Number.isInteger(D)||D<=0)continue;
+      const acq=acqDateOf(m,'X5','X6');
+      const tax=type===3;
+      const tsumi=tax?net:G;                 // 積立額
+      const tk=tsumi/n*m/12;                 // 積立金の取崩額
+      const tkTax=tax?dtl/n*m/12:0;          // 繰延税金負債の取崩額
+      let bad=false;
+      for(const v of[tsumi,tk,tkTax,dtl,net])if(!Number.isInteger(v)||v<0){bad=true;break;}
+      if(bad)continue;
+      const debits=[{acct:'減価償却費',amt:D}];
+      const credits=[{acct:'機械減価償却累計額',amt:D}];
+      if(tax){
+        debits.push({acct:'法人税等調整額',amt:dtl});
+        credits.push({acct:'繰延税金負債',amt:dtl});
+      }
+      debits.push({acct:'繰越利益剰余金',amt:tsumi});
+      credits.push({acct:'圧縮積立金',amt:tsumi});
+      debits.push({acct:'圧縮積立金',amt:tk});
+      credits.push({acct:'繰越利益剰余金',amt:tk});
+      if(tax){
+        debits.push({acct:'繰延税金負債',amt:tkTax});
+        credits.push({acct:'法人税等調整額',amt:tkTax});
+      }
+      let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">国庫補助金の受領額</span><span class="g-val">${fmt(G)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">補助金受領日・取得日</span><span class="g-val" style="font-size:14px">${acq}（同日に事業供用）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法・月割計算</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">積立金方式（補助金相当額の全額）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">税効果会計</span><span class="g-val" style="font-size:13px">${tax?`適用する（法定実効税率${taxRate}%）`:'適用しない'}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 補助金受領・機械取得の期中仕訳は処理済み。<b>決算時（X6年3月31日）の仕訳のみ</b>答える</span></div>`;
+      const explain=[
+        `<b>① 減価償却（積立金方式では取得原価を基礎）</b>`,
+        `　${fmt(P)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(D)}`,
+      ];
+      if(tax){
+        explain.push(`<b>② 税効果（圧縮は税務上のみ・将来加算一時差異）</b>`);
+        explain.push(`　繰延税金負債 ＝ 圧縮額 ${fmt(G)} × ${taxRate}% ＝ ${fmt(dtl)}`);
+        explain.push(`<b>③ 圧縮積立金の積立（税効果控除後）</b>`);
+        explain.push(`　${fmt(G)} × (1−${taxRate}%) ＝ ${fmt(tsumi)}`);
+        explain.push(`<b>④ 圧縮積立金の取崩（減価償却に対応・月割）</b>`);
+        explain.push(`　${fmt(tsumi)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(tk)}`);
+        explain.push(`<b>⑤ 繰延税金負債の取崩</b>`);
+        explain.push(`　${fmt(dtl)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(tkTax)}（法人税等調整額へ戻す）`);
+      }else{
+        explain.push(`<b>② 圧縮積立金の積立（税効果なし→全額）</b>`);
+        explain.push(`　繰越利益剰余金から ${fmt(tsumi)} を積立`);
+        explain.push(`<b>③ 圧縮積立金の取崩（減価償却に対応・月割）</b>`);
+        explain.push(`　${fmt(tsumi)} ÷ ${n}年 × ${m}/12 ＝ ${fmt(tk)}`);
+      }
+      q={type,badges:['積立金方式',tax?`税効果あり（${taxRate}%）`:'税効果なし','取得年度の決算'],
+        givenHTML:g,debits,credits,
+        auxLabel:'圧縮積立金の積立額',auxVal:tsumi,
+        journalLabel:'決算時（X6年3月31日）の仕訳をすべて入力',
+        explain,rowsFixed:tax?5:4};
+    }else{
+      // ---- 積立金方式・税効果あり・翌年度の決算 ----
+      const m0=rand(4,10);                   // 前期の経過月数
+      const D=P/n;                           // 当期はまる1年
+      const accum0=P/n*m0/12;                // 期首減価償却累計額
+      const tk0=net/n*m0/12;                 // 前期の積立金取崩額
+      const tsumi0=net-tk0;                  // 期首の圧縮積立金残高
+      const dtl0=dtl-dtl/n*m0/12;            // 期首の繰延税金負債残高
+      const tk=net/n;                        // 当期の積立金取崩額
+      const tkTax=dtl/n;                     // 当期の繰延税金負債取崩額
+      let bad=false;
+      for(const v of[D,accum0,tk0,tsumi0,dtl0,tk,tkTax])if(!Number.isInteger(v)||v<=0){bad=true;break;}
+      if(bad)continue;
+      const acq=acqDateOf(m0,'X4','X5');
+      const debits=[
+        {acct:'減価償却費',amt:D},
+        {acct:'圧縮積立金',amt:tk},
+        {acct:'繰延税金負債',amt:tkTax},
+      ];
+      const credits=[
+        {acct:'機械減価償却累計額',amt:D},
+        {acct:'繰越利益剰余金',amt:tk},
+        {acct:'法人税等調整額',amt:tkTax},
+      ];
+      let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・事業供用日</span><span class="g-val" style="font-size:14px">${acq}（前期）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">国庫補助金（前期受領）</span><span class="g-val">${fmt(G)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮記帳</span><span class="g-val" style="font-size:13px">積立金方式（全額・前期末に処理済み）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法・月割計算</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">税効果会計</span><span class="g-val" style="font-size:13px">適用する（法定実効税率${taxRate}%）</span></div>`;
+      g+=`<div class="g-head">期首残高（参考）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械減価償却累計額</span><span class="g-val">${fmt(accum0)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">圧縮積立金</span><span class="g-val">${fmt(tsumi0)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">繰延税金負債（圧縮分）</span><span class="g-val">${fmt(dtl0)}</span></div>`;
+      const explain=[
+        `<b>① 減価償却（取得原価を基礎・当期はまる1年）</b>`,
+        `　${fmt(P)} ÷ ${n}年 ＝ ${fmt(D)}`,
+        `<b>② 圧縮積立金の当期取崩</b>`,
+        `　積立額 ＝ ${fmt(G)} × (1−${taxRate}%) ＝ ${fmt(net)}`,
+        `　当期取崩 ＝ ${fmt(net)} ÷ ${n}年 ＝ ${fmt(tk)}`,
+        `<b>③ 繰延税金負債の取崩</b>`,
+        `　${fmt(G)} × ${taxRate}% ÷ ${n}年 ＝ ${fmt(tkTax)}（法人税等調整額へ戻す）`,
+        `<b>検算</b>　期首積立金残高 ${fmt(tsumi0)} ＝ 積立額 ${fmt(net)} − 前期取崩 ${fmt(net)}×${m0}/12÷${n}年（${fmt(tk0)}）`,
+      ];
+      q={type,badges:['積立金方式',`税効果あり（${taxRate}%）`,'翌年度の決算（取崩）'],
+        givenHTML:g,debits,credits,
+        auxLabel:'圧縮積立金の当期取崩額',auxVal:tk,
+        journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
+        explain,rowsFixed:4};
+    }
+    if(!q)continue;
     // 貸借一致チェック
-    const dSum=debits.reduce((a,r)=>a+r.amt,0),cSum=credits.reduce((a,r)=>a+r.amt,0);
+    const dSum=q.debits.reduce((a,r2)=>a+r2.amt,0),cSum=q.credits.reduce((a,r2)=>a+r2.amt,0);
     if(dSum!==cSum)continue;
-
-    // ===== 与件 =====
-    const tradeMonth=m===0?'期首（4月1日）':`${(3+m)%12+1}月1日（期首から${m}ヶ月経過）`;
-    let g=`<div class="g-head">旧車両</div>`;
-    g+=`<div class="g-row"><span class="g-key">取得原価</span><span class="g-val">${fmt(C0)}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">期首減価償却累計額</span><span class="g-val">${fmt(accum)}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${EL}年・残存価額0（記帳は間接法）</span></div>`;
-    g+=`<div class="g-head">買換え（会計期間：4月1日〜3月31日）</div>`;
-    g+=`<div class="g-row"><span class="g-key">買換え日</span><span class="g-val" style="font-size:14px">${tradeMonth}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">新車両の購入価額（定価${taxMode?'・税抜':''}）</span><span class="g-val">${fmt(P)}</span></div>`;
-    g+=`<div class="g-row"><span class="g-key">旧車両の下取価格${taxMode?'（税抜）':''}</span><span class="g-val">${fmt(T)}</span></div>`;
-    if(fvMode!=='none'){
-      g+=`<div class="g-row"><span class="g-key">旧車両の時価（適正売却価額）</span><span class="g-val">${fmt(FV)}</span></div>`;
-    }
-    if(taxMode){
-      g+=`<div class="g-row"><span class="g-key">消費税</span><span class="g-val" style="font-size:13px">税率10%・税抜経理方式（下取りは課税売上）</span></div>`;
-    }
-    g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 下取価格は新車両の購入代金に充当し、残額${taxMode?'（税込）':''}を現金で支払う</span></div>`;
-
-    // ===== 解説 =====
-    const explain=[];
-    explain.push(`<b>① 旧車両の簿価</b>`);
-    if(m>0){
-      explain.push(`　期中償却費：${fmt(C0)} ÷ ${EL}年 ÷ 12 × ${m}ヶ月 ＝ ${fmt(midDepr)}`);
-      explain.push(`　簿価 ＝ ${fmt(C0)} − ${fmt(accum)} − ${fmt(midDepr)} ＝ ${fmt(bv)}`);
-    }else{
-      explain.push(`　簿価 ＝ ${fmt(C0)} − ${fmt(accum)} ＝ ${fmt(bv)}`);
-    }
-    explain.push(`<b>② 下取価格と時価の比較</b>`);
-    if(fvMode==='none'){
-      explain.push(`　時価の記載なし → 下取価格 ${fmt(T)} を時価とみなす（値引きなし）`);
-    }else if(fvMode==='premium'){
-      explain.push(`　下取価格 ${fmt(T)} ＞ 時価 ${fmt(FV)} → 超過分 ${fmt(discount)} は<b>新車両の値引き</b>`);
-    }else{
-      explain.push(`　下取価格 ${fmt(T)} ＝ 時価 ${fmt(FV)} → 値引きなし（通常の売却処理）`);
-    }
-    explain.push(`<b>③ 旧車両の売却損益</b>　${fmt(FV)} − ${fmt(bv)} ＝ ${fmt(gainLoss)} → 売却${gainLoss>0?'益':'損'} ${fmt(Math.abs(gainLoss))}`);
-    explain.push(`<b>④ 新車両の取得原価</b>　${fmt(P)}${discount>0?` − 値引き ${fmt(discount)} ＝ ${fmt(newCost)}`:'（定価どおり）'}${taxMode?'（税抜で計上）':''}`);
-    if(taxMode){
-      explain.push(`<b>⑤ 消費税（税抜経理・10%）</b>`);
-      explain.push(`　仮払消費税 ＝ 新車定価 ${fmt(P)} × 10% ＝ ${fmt(vatIn)}（借方）`);
-      explain.push(`　仮受消費税 ＝ 下取価格 ${fmt(T)} × 10% ＝ ${fmt(vatOut)}（貸方・下取りは課税売上）`);
-      explain.push(`<b>⑥ 現金支払額（税込）</b>　（${fmt(P)}−${fmt(T)}）＋（${fmt(vatIn)}−${fmt(vatOut)}）＝ ${fmt(cashPaid)}`);
-    }else{
-      explain.push(`<b>⑤ 現金支払額</b>　定価 ${fmt(P)} − 下取価格 ${fmt(T)} ＝ ${fmt(cashPaid)}`);
-    }
-
-    const fvLabel={none:'時価の記載なし',premium:'下取価格＞時価',equal:'下取価格＝時価'}[fvMode];
-    const badges=['車両の買換え',fvLabel,m===0?'期首':'期中'];
-    if(taxMode)badges.push('消費税10%');
-    return{
-      badges,
-      givenHTML:g,debits,credits,bv,explain,
-      rowsFixed:taxMode?5:4,
-    };
+    return q;
   }
   return null;
 }
 
 // ============ 描画 ============
 function renderJournal(q){
-  const rows=q.rowsFixed||4;  // 通常4行・消費税問題は5行固定（行数からヒントを与えない）
+  const rows=q.rowsFixed;
   const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
   let body='';
   for(let i=0;i<rows;i++){
@@ -343,12 +417,14 @@ function newQ(){
   if(!q)return;
   STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();
   document.getElementById('badge-area').innerHTML=
-    q.badges.map((b,i)=>`<span class="cat-badge ${i===1?'b2':''}">${b}</span>`).join('');
+    q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
+  document.getElementById('aux-label').textContent=q.auxLabel;
+  document.getElementById('journal-label').textContent=q.journalLabel+'（科目と金額を入力）';
   STATE.rows=renderJournal(q);
-  const bvEl=document.getElementById('a-bv');
-  bvEl.value='';bvEl.classList.remove('cell-ok','cell-ng');
-  document.getElementById('ng-a-bv').style.display='none';
+  const auxEl=document.getElementById('a-aux');
+  auxEl.value='';auxEl.classList.remove('cell-ok','cell-ng');
+  document.getElementById('ng-a-aux').style.display='none';
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
@@ -356,7 +432,6 @@ function newQ(){
 
 // ============ 採点（借方・貸方それぞれ順不同マッチ） ============
 function gradeSide(prefix,expected,rows){
-  // 期待値を行数まで空欄で埋める
   const exp=expected.map(e=>({acct:e.acct,amt:e.amt}));
   while(exp.length<rows)exp.push({acct:'',amt:0});
   const used=new Array(rows).fill(false);
@@ -372,7 +447,6 @@ function gradeSide(prefix,expected,rows){
     if(hit>=0){used[hit]=true;ok++;marks.push(true);}
     else marks.push(false);
   }
-  // 表示
   for(let i=0;i<rows;i++){
     const a=document.getElementById(`${prefix}-a-${i}`);
     const v=document.getElementById(`${prefix}-v-${i}`);
@@ -386,14 +460,14 @@ function grade(){
   const q=STATE.q;
   const rows=STATE.rows;
   let ok=0;
-  // 簿価
-  const bvEl=document.getElementById('a-bv');
-  const bvOk=parseNum(bvEl.value)===q.bv;
-  if(bvOk)ok++;
-  bvEl.classList.remove('cell-ok','cell-ng');bvEl.classList.add(bvOk?'cell-ok':'cell-ng');
-  const bvNg=document.getElementById('ng-a-bv');
-  if(!bvOk){bvNg.textContent='正:'+fmt(q.bv);bvNg.style.display='inline';}
-  else bvNg.style.display='none';
+  // 補助計算
+  const auxEl=document.getElementById('a-aux');
+  const auxOk=parseNum(auxEl.value)===q.auxVal;
+  if(auxOk)ok++;
+  auxEl.classList.remove('cell-ok','cell-ng');auxEl.classList.add(auxOk?'cell-ok':'cell-ng');
+  const auxNg=document.getElementById('ng-a-aux');
+  if(!auxOk){auxNg.textContent='正:'+fmt(q.auxVal);auxNg.style.display='inline';}
+  else auxNg.style.display='none';
   // 仕訳
   ok+=gradeSide('jd',q.debits,rows);
   ok+=gradeSide('jc',q.credits,rows);
