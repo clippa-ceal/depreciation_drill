@@ -70,6 +70,23 @@ input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+/* スマホ縦持ち時：このページだけ全体を90°回転して横向き表示にする（表の横スクロール対策） */
+@media (orientation:portrait) and (pointer:coarse) and (max-width:600px){
+  body{overflow:hidden;height:100vh;padding:0}
+  #app{
+    position:fixed;top:0;left:0;margin:0;
+    width:100vh;width:100dvh;
+    height:100vw;
+    max-width:none;
+    transform:rotate(90deg) translateY(-100%);
+    transform-origin:top left;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:0.75rem;
+    padding-left:max(0.75rem,env(safe-area-inset-top));
+    padding-right:max(0.75rem,env(safe-area-inset-bottom));
+  }
+}
 </style>
 </head>
 <body>
@@ -370,6 +387,13 @@ function calcIn(v){
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}
 function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+// インストール版PWA（Android等）ではネイティブの横向き固定を試みる。非対応環境（iOS Safari・通常タブ）では上のCSS回転で代替
+try{
+  if(screen.orientation&&screen.orientation.lock){
+    screen.orientation.lock('landscape').catch(()=>{});
+  }
+}catch(e){}
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
