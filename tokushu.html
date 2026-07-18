@@ -44,14 +44,6 @@ button:active{opacity:0.85}
 .stat .l{font-size:12px;color:var(--color-text2)}
 .cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
 .cat-badge.b2{background:#FAEEDA;color:#854F0B}
-/* 補助計算 */
-.aux-grid{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
-.aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
-.aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
-.aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
-.aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
-.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
 /* 仕訳テーブル（1行＝1仕訳：借方科目・貸方科目・金額） */
 table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
@@ -108,11 +100,6 @@ table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
   </div>
 
   <div class="card">
-    <div class="label">補助計算</div>
-    <div class="aux-grid">
-      <span class="ans-label" id="aux-label"></span>
-      <div class="ans-cell"><input type="text" id="a-aux" inputmode="numeric" autocomplete="off"><span class="ans-ng-msg" id="ng-a-aux"></span></div>
-    </div>
     <div class="label" id="journal-label"></div>
     <div id="journal-area"></div>
     <div class="hint">1行＝1つの仕訳（借方・貸方とも1科目・同額なので金額は1つだけ入力）。複合仕訳（借方または貸方が複数科目）は<b>単純仕訳に分解</b>して入力（例：積送時は「積送品／仕入」と「積送品／現金預金」の2行）。行の<b>順序は問わず</b>採点。不要な行は空欄のまま。仕訳が不要な取引は入力しない。<br>
@@ -223,7 +210,7 @@ function genQ(){
       ];
       q={type,badges:['委託販売（委託者）',gross?'総額法・その都度法':'手取額法・その都度法'],
         givenHTML:g,entries,
-        auxLabel:'売上計算書の手取金額',auxVal:net,
+        
         journalLabel:'①積送時 ②売上計算書の受取時（売上計上・原価振替）の仕訳',
         explain,rowsFixed:6};
     }else if(type===2){
@@ -256,7 +243,7 @@ function genQ(){
       ];
       q={type,badges:['受託販売（受託者）',cashSale?'現金販売':'掛け販売'],
         givenHTML:g,entries,
-        auxLabel:'委託者への送金額',auxVal:remit,
+        
         journalLabel:'①引取費用の支払い ②販売 ③売上計算書の送付（手数料計上） ④手取金の送金 の仕訳（受託品の受取自体は仕訳不要）',
         explain,rowsFixed:5};
     }else if(type===3||type===4){
@@ -293,7 +280,7 @@ function genQ(){
         ];
         q={type,badges:['委託買付（委託者）',`手数料${rate}%`],
           givenHTML:g,entries,
-          auxLabel:'商品の仕入原価',auxVal:total,
+          
           journalLabel:'①内金の支払い ②商品・買付計算書の受取 ③請求金額の支払い の仕訳',
           explain,rowsFixed:4};
       }else{
@@ -320,7 +307,7 @@ function genQ(){
         ];
         q={type,badges:['受託買付（受託者）',`手数料${rate}%`],
           givenHTML:g,entries,
-          auxLabel:'買付計算書の請求金額',auxVal:bill,
+          
           journalLabel:'①内金の受取 ②買付け ③商品の発送と計算書の送付（A負担運賃の支払い） ④請求金額の受取 の仕訳',
           explain,rowsFixed:6};
       }
@@ -344,7 +331,7 @@ function genQ(){
         ];
         q={type,badges:['未着品','現品引取'],
           givenHTML:g,entries,
-          auxLabel:'仕入勘定に計上される金額（合計）',auxVal:P+T,
+          
           journalLabel:'①船荷証券の受取 ②現品の引取（引取費用の支払い）の仕訳',
           explain,rowsFixed:4};
       }else if(kase==='resale'){
@@ -365,7 +352,7 @@ function genQ(){
         ];
         q={type,badges:['未着品','証券のまま転売'],
           givenHTML:g,entries,
-          auxLabel:'転売による売上総利益',auxVal:Y-P,
+          
           journalLabel:'①船荷証券の受取 ②転売（売上計上・原価振替）の仕訳',
           explain,rowsFixed:4};
       }else{
@@ -391,7 +378,7 @@ function genQ(){
         ];
         q={type,badges:['未着品','現品引取と証券転売'],
           givenHTML:g,entries,
-          auxLabel:'乙の転売による売上総利益',auxVal:Y-P2,
+          
           journalLabel:'①船荷証券2通の受取（1通ずつ） ②甲の現品引取 ③乙の転売（売上計上・原価振替）の仕訳',
           explain,rowsFixed:7};
       }
@@ -421,7 +408,7 @@ function genQ(){
       ];
       q={type,badges:['試用販売','対照勘定法'],
         givenHTML:g,entries,
-        auxLabel:'期末の試用仮売上勘定残高',auxVal:A3,
+        
         journalLabel:'①試送 ②X社の買取意思表示 ③Y社の返品 の仕訳（Z社は仕訳不要）',
         explain,rowsFixed:5};
     }else{
@@ -451,7 +438,7 @@ function genQ(){
       ];
       q={type,badges:['返品権付き販売','決算整理（返金負債・返品資産）'],
         givenHTML:g,entries,
-        auxLabel:'返品資産の計上額',auxVal:asset,
+        
         journalLabel:'決算整理仕訳（販売時の仕訳は不要）',
         explain,rowsFixed:3};
     }
@@ -459,7 +446,6 @@ function genQ(){
     // 金額チェック
     let bad=false;
     for(const e of q.entries)if(!Number.isInteger(e.amt)||e.amt<=0){bad=true;break;}
-    if(!Number.isInteger(q.auxVal)||q.auxVal<=0)bad=true;
     if(bad||q.entries.length>q.rowsFixed)continue;
     return q;
   }
@@ -491,12 +477,8 @@ function newQ(){
   document.getElementById('badge-area').innerHTML=
     q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
-  document.getElementById('aux-label').textContent=q.auxLabel;
   document.getElementById('journal-label').textContent=q.journalLabel+'（1行＝1仕訳）';
   STATE.rows=renderJournal(q);
-  const auxEl=document.getElementById('a-aux');
-  auxEl.value='';auxEl.classList.remove('cell-ok','cell-ng');
-  document.getElementById('ng-a-aux').style.display='none';
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
@@ -534,17 +516,9 @@ function grade(){
   const q=STATE.q;
   const rows=STATE.rows;
   let ok=0;
-  // 補助計算
-  const auxEl=document.getElementById('a-aux');
-  const auxOk=parseNum(auxEl.value)===q.auxVal;
-  if(auxOk)ok++;
-  auxEl.classList.remove('cell-ok','cell-ng');auxEl.classList.add(auxOk?'cell-ok':'cell-ng');
-  const auxNg=document.getElementById('ng-a-aux');
-  if(!auxOk){auxNg.textContent='正:'+fmt(q.auxVal);auxNg.style.display='inline';}
-  else auxNg.style.display='none';
   // 仕訳
   ok+=gradeRows(q.entries,rows);
-  const cnt=1+rows;
+  const cnt=rows;
 
   STATE.graded=true;STATE.total++;
   const allOk=ok===cnt;
