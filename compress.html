@@ -43,14 +43,6 @@ button:active{opacity:0.85}
 .stat .l{font-size:12px;color:var(--color-text2)}
 .cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
 .cat-badge.b2{background:#FAEEDA;color:#854F0B}
-/* 補助計算 */
-.aux-grid{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center;margin-bottom:10px}
-.aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500}
-.aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
-.aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
-.aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
-.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
 /* 仕訳テーブル（借方科目・貸方科目・金額。伝票式＝片側だけの行もOK） */
 table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
@@ -113,11 +105,6 @@ table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
   </div>
 
   <div class="card">
-    <div class="label">補助計算</div>
-    <div class="aux-grid">
-      <span class="ans-label" id="aux-label"></span>
-      <div class="ans-cell"><input type="text" id="a-aux" inputmode="numeric" autocomplete="off"><span class="ans-ng-msg" id="ng-a-aux"></span></div>
-    </div>
     <div class="label" id="journal-label"></div>
     <div id="journal-area"></div>
     <div class="hint">金額は各行1つ。<b>1行1仕訳</b>（借方と貸方を同じ行に）でも、<b>伝票式</b>（借方だけの行・貸方だけの行に分けて記入）でもOK。<br>
@@ -243,7 +230,6 @@ function genQ(){
       ];
       q={type,badges:['直接減額方式','補助金受領〜取得年度の決算'],
         givenHTML:g,groups,
-        auxLabel:'当期の減価償却費',auxVal:D,
         journalLabel:'①補助金受領 ②機械の取得 ③圧縮記帳 ④決算日（X6年3月31日）の減価償却 の仕訳',
         explain,rowsFixed:5};
     }else if(type===2||type===3){
@@ -298,7 +284,6 @@ function genQ(){
       }
       q={type,badges:['積立金方式',tax?`税効果あり（${taxRate}%）`:'税効果なし','補助金受領〜取得年度の決算'],
         givenHTML:g,groups,
-        auxLabel:'圧縮積立金の積立額',auxVal:tsumi,
         journalLabel:'①補助金受領 ②機械の取得 ③決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:tax?8:6};
     }else if(type===4){
@@ -343,7 +328,6 @@ function genQ(){
       ];
       q={type,badges:['積立金方式',`税効果あり（${taxRate}%）`,'翌年度の決算（取崩）'],
         givenHTML:g,groups,
-        auxLabel:'圧縮積立金の当期取崩額',auxVal:tk,
         journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:4};
     }else if(type===5){
@@ -393,7 +377,6 @@ function genQ(){
       ];
       q={type,badges:['火災（保険差益）','直接減額方式'],
         givenHTML:g,groups,
-        auxLabel:'保険差益（＝圧縮額）',auxVal:delta,
         journalLabel:'①焼失時（償却・未決算への振替） ②保険金確定 ③代替建物の取得 ④圧縮記帳 の仕訳',
         explain,rowsFixed:10};
     }else if(type===6){
@@ -423,7 +406,6 @@ function genQ(){
       ];
       q={type,badges:['土地収用','直接減額方式'],
         givenHTML:g,groups,
-        auxLabel:'土地売却益（＝圧縮額）',auxVal:delta,
         journalLabel:'①補償金の受領（売却処理） ②代替土地の取得 ③圧縮記帳 の仕訳',
         explain,rowsFixed:6};
     }else{
@@ -482,7 +464,6 @@ function genQ(){
       ];
       q={type,badges:['機械の売却','積立金方式・税効果あり','圧つみ全額取崩'],
         givenHTML:g,groups,
-        auxLabel:'圧縮積立金の取崩額',auxVal:tsumi0,
         journalLabel:'①売却時までの償却 ②機械の売却 ③圧縮積立金・繰延税金負債の取崩 の仕訳',
         explain,rowsFixed:8};
     }
@@ -584,12 +565,8 @@ function newQ(){
   document.getElementById('badge-area').innerHTML=
     q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
-  document.getElementById('aux-label').textContent=q.auxLabel;
   document.getElementById('journal-label').textContent=q.journalLabel+'（伝票式の記入もOK）';
   STATE.rows=renderJournal(q);
-  const auxEl=document.getElementById('a-aux');
-  auxEl.value='';auxEl.classList.remove('cell-ok','cell-ng');
-  document.getElementById('ng-a-aux').style.display='none';
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
@@ -646,18 +623,11 @@ function grade(){
   if(!STATE.q||STATE.graded)return;
   const q=STATE.q;
   const rows=STATE.rows;
-  // 補助計算
-  const auxEl=document.getElementById('a-aux');
-  const auxOk=parseNum(auxEl.value)===q.auxVal;
-  auxEl.classList.remove('cell-ok','cell-ng');auxEl.classList.add(auxOk?'cell-ok':'cell-ng');
-  const auxNg=document.getElementById('ng-a-aux');
-  if(!auxOk){auxNg.textContent='正:'+fmt(q.auxVal);auxNg.style.display='inline';}
-  else auxNg.style.display='none';
   // 仕訳（科目ごとの借方合計・貸方合計）
   const res=gradeJournal(q,rows);
-  const cnt=1+res.totalExp;
-  const ok=(auxOk?1:0)+res.matched;
-  const allOk=auxOk&&res.matched===res.totalExp&&res.spurious===0&&!res.rowErr;
+  const cnt=res.totalExp;
+  const ok=res.matched;
+  const allOk=res.matched===res.totalExp&&res.spurious===0&&!res.rowErr;
 
   STATE.graded=true;STATE.total++;
   if(allOk)STATE.perfect++;
