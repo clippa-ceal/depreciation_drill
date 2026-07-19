@@ -1,4 +1,4 @@
-const CACHE = 'shokyaku-drill-v42';
+const CACHE = 'shokyaku-drill-v43';
 const ASSETS = [
   './',
   './index.html',

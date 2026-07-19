@@ -90,7 +90,7 @@ input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
     <div class="label">ワークシートを埋めて「答え合わせ」</div>
     <div class="unit-note">単位：千円　／　減少は「−」を付けて入力</div>
     <div class="ws-wrap"><div id="ws-area"></div></div>
-    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 ＋ 差異<br>差異列＝未認識の数理計算上の差異（有利＝＋／不利＝−）。償却は差異残高と反対符号で費用行に記入<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）</div>
+    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 ＋ 差異<br>差異列＝未認識の数理計算上の差異（有利＝＋／不利＝−）。償却は差異残高と反対符号で費用行に記入<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）<br>予想末残高は2段：上段＝縦計（期首＋費用＋拠出）／下段＝横計（列どうしの関係）。上下一致でクロスチェック（両方採点）</div>
   </div>
 
   <div id="result-area"></div>
@@ -242,6 +242,18 @@ function renderTable(e){
   for(const[c,cl]of COLS)h+=`<th>${cl}</th>`;
   h+='</tr></thead><tbody>';
   for(const[r,rl]of ROWS){
+    if(r==='yoso'){
+      h+=`<tr><td class="rowlabel" rowspan="2">${rl}</td>`;
+      for(const[c,cl]of COLS){
+        h+=`<td class="ws-cell"><input type="text" id="c_yoso_${c}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoso('${c}')">↓縦計</button></td>`;
+      }
+      h+='</tr><tr>';
+      for(const[c,cl]of COLS){
+        h+=`<td class="ws-cell"><input type="text" id="c_yoso2_${c}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('${c}')">→横計</button><span class="ws-ans" id="ans_c_yoso_${c}"></span></td>`;
+      }
+      h+='</tr>';
+      continue;
+    }
     h+=`<tr><td class="rowlabel">${rl}</td>`;
     for(const[c,cl]of COLS){
       const tp=cellType(r,c),base=`c_${r}_${c}`;
@@ -254,8 +266,7 @@ function renderTable(e){
       }else if(tp==='triple'){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><input type="text" id="${base}_2" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else{
-        const btn=r==='yoso'?`<button class="ws-sumbtn" onclick="fillYoso('${c}')">↓縦計</button>`:'';
-        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span>${btn}</td>`;
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }
     }
     h+='</tr>';
@@ -275,6 +286,20 @@ function readCell(r,c){
 function fillYoso(c){
   const sum=readCell('kishu',c)+readCell('hiyo',c)+readCell('kyo',c);
   document.getElementById(`c_yoso_${c}`).value=String(sum);
+}
+function yosoVal(c){
+  const top=document.getElementById(`c_yoso_${c}`).value;
+  if(String(top).trim()!=='')return parseNum(top);
+  return parseNum(document.getElementById(`c_yoso2_${c}`).value);
+}
+function fillYoko(c){
+  let v;
+  if(c==='A')v=yosoVal('B')-yosoVal('C');
+  else if(c==='B')v=yosoVal('A')+yosoVal('C');
+  else if(c==='C')v=yosoVal('B')-yosoVal('A');
+  else if(c==='D')v=yosoVal('E')-yosoVal('C');
+  else v=yosoVal('C')+yosoVal('D');
+  document.getElementById(`c_yoso2_${c}`).value=String(v);
 }
 
 function newQ(){
@@ -308,17 +333,24 @@ function grade(){
       if(tp==='prefill'||tp==='zero'||tp==='none')continue;
       total++;
       const base=`c_${r}_${c}`,exp=e[r+c];
-      let val,ids;
+      let correct;
       if(tp==='triple'){
-        ids=[`${base}_0`,`${base}_1`,`${base}_2`];
-        val=ids.reduce((s,id)=>s+parseNum(document.getElementById(id).value),0);
+        const ids=[`${base}_0`,`${base}_1`,`${base}_2`];
+        const val=ids.reduce((s,id)=>s+parseNum(document.getElementById(id).value),0);
+        correct=val===exp;
+        ids.forEach(id=>markInput(id,correct));
+      }else if(r==='yoso'){
+        correct=true;
+        for(const id of [base,`c_yoso2_${c}`]){
+          const okOne=parseNum(document.getElementById(id).value)===exp;
+          markInput(id,okOne);
+          if(!okOne)correct=false;
+        }
       }else{
-        ids=[base];
-        val=parseNum(document.getElementById(base).value);
+        correct=parseNum(document.getElementById(base).value)===exp;
+        markInput(base,correct);
       }
-      const correct=val===exp;
       if(correct)ok++;
-      ids.forEach(id=>markInput(id,correct));
       const ans=document.getElementById('ans_'+base);
       if(!correct){ans.textContent='正:'+fmt(exp);ans.style.display='block';}
       else{ans.style.display='none';}
