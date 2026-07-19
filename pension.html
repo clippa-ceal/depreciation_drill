@@ -248,7 +248,7 @@ function renderTable(e){
       h+=`<tr><td class="rowlabel" rowspan="2">${rl}</td>`;
       for(const[c,cl]of COLS){
         if(c==='C'){
-          h+='<td></td>';
+          h+=`<td class="ws-cell" rowspan="2"><input type="text" id="c_yoso2_C" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('C')">→横計</button><span class="ws-ans" id="ans_c_yoso_C"></span></td>`;
         }else if(c==='E'){
           h+=`<td class="ws-cell"><input type="text" id="c_yoso_E" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoso('E')">↓縦計</button></td>`;
         }else{
@@ -256,7 +256,6 @@ function renderTable(e){
         }
       }
       h+='</tr><tr>';
-      h+=`<td class="ws-cell"><input type="text" id="c_yoso2_C" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('C')">→横計</button><span class="ws-ans" id="ans_c_yoso_C"></span></td>`;
       h+=`<td class="ws-cell"><input type="text" id="c_yoso2_E" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('E')">→横計</button><span class="ws-ans" id="ans_c_yoso_E"></span></td>`;
       h+='</tr>';
       continue;
