@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>資産除去債務ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:560px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:170px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
+.cat-badge.b2{background:#FAEEDA;color:#854F0B}
+/* 仕訳テーブル（借方科目・貸方科目・金額。伝票式＝片側だけの行もOK） */
+table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
+table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.j-tbl .acct{color:var(--color-text);width:34%}
+table.j-tbl .acct select{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none;color:var(--color-text);appearance:none;-webkit-appearance:none}
+table.j-tbl .acct select.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .acct select.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .amt{padding:2px 4px;width:32%}
+table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
+table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl tr.j-tot td{border:none;padding:2px 6px}
+table.j-tbl .j-tot-lbl{font-size:11px;color:var(--color-text2);font-weight:600;text-align:center;padding-top:6px}
+table.j-tbl .j-tot-val{font-size:15px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:var(--color-text)}
+table.j-tbl .j-tot-val.j-tot-ok{color:#3B6D11}
+table.j-tbl .j-tot-val.j-tot-ng{color:#A32D2D}
+/* 正解仕訳表示 */
+table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
+table.sol-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.sol-tbl td.a{width:34%}
+table.sol-tbl td.v{width:32%;text-align:right;font-variant-numeric:tabular-nums}
+table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>資産除去債務ドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html" class="nav-on">資産除去</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="badge-area"></div>
+    <div class="label">与件（単位：円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label" id="journal-label"></div>
+    <div id="journal-area"></div>
+    <div class="hint">金額は各行1つ。<b>1行1仕訳</b>（借方と貸方を同じ行に）でも、<b>伝票式</b>（借方だけの行・貸方だけの行に分けて記入）でもOK。<br>
+    行の順序は問わず、<b>科目ごとの借方合計・貸方合計</b>が合っていれば正解。不要な行は空欄のまま。<br>
+    <b>計上</b>：資産除去債務＝将来の除去費用の<b>割引現在価値</b>。同額を機械の取得原価に<b>加算</b>する。<br>
+    <b>決算</b>：時の経過による調整額（<b>期首残高×割引率</b>）を<b>利息費用</b>として債務に加算。減価償却は除去費用分を含めた計上額を基礎に行う。<br>
+    <b>履行</b>：債務残高と実際支出額との差額は<b>履行差額</b>（実際が多ければ借方＝費用、少なければ貸方）。<br>
+    <b>見積りの増加</b>：増加分は<b>変更時点の割引率</b>で割り引いて資産と債務に加算（翌期から残存年数で償却）。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,q:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+
+// 科目プルダウンの選択肢
+const ACCTS=['','現金預金','機械','機械減価償却累計額','減価償却費','資産除去債務','利息費用','履行差額','固定資産除却損','未払金'];
+// 略語（プルダウンは略語のみ、正解表は「略語（正式名称）」併記、解説は正式名称）
+const ABBR={'現金預金':'と','減価償却費':'Dep','機械減価償却累計額':'Dep∫','資産除去債務':'ARO'};
+function abbr(a){return ABBR[a]||a;}
+function abbrFull(a){return ABBR[a]?`${ABBR[a]}（${a}）`:a;}
+
+// ============ 問題生成 ============
+// 仕訳は groups の配列。各 group ＝ 1つの仕訳 {ds:[[借方科目,金額],...], cs:[[貸方科目,金額],...]}
+// 採点は科目ごとの借方合計・貸方合計で行うため、1行1仕訳でも伝票式でも入力できる
+// 割引計算が必ず整数になるよう、現在価値PV＝den^n の倍数で設計
+// （2%＝×51/50、4%＝×26/25、5%＝×21/20。残高は毎年 num/den 倍）
+// 1: 取得＋初年度の決算（計上・減価償却・利息費用）
+// 2: 中間年度の決算（減価償却・利息費用）
+// 3: 最終年度の決算＋履行（償却・利息・除却・支払と履行差額）
+// 4: 見積りの変更（増加。当期の決算仕訳＋増加分の計上）
+const COMBOS=[
+  {r:2,den:50,num:51,n:3,kMin:1,kMax:8},
+  {r:4,den:25,num:26,n:3,kMin:8,kMax:60},
+  {r:4,den:25,num:26,n:4,kMin:1,kMax:2},
+  {r:5,den:20,num:21,n:3,kMin:15,kMax:120},
+  {r:5,den:20,num:21,n:4,kMin:1,kMax:6},
+];
+const RATES=[{r:2,den:50,num:51},{r:4,den:25,num:26},{r:5,den:20,num:21}];
+function genQ(){
+  const S1=(d,c,amt)=>({ds:[[d,amt]],cs:[[c,amt]]});
+  for(let t=0;t<4000;t++){
+    const r0=Math.random();
+    const type=r0<0.28?1:r0<0.5?2:r0<0.78?3:4;
+    const cb=pick(COMBOS);
+    const{r,den,num,n}=cb;
+    const k=rand(cb.kMin,cb.kMax);
+    // B[j]＝j年経過後の資産除去債務残高（B[0]＝割引現在価値、B[n]＝除去費用の見積額）
+    const B=[k*Math.pow(den,n)];
+    for(let j=1;j<=n;j++)B.push(B[j-1]/den*num);
+    const PV=B[0],FV=B[n];
+    const P=rand(30,200)*10000;   // 機械本体の取得原価
+    const C=P+PV;                 // 機械の計上額（除去費用分を含む）
+    if(C%n!==0)continue;
+    const D=C/n;                  // 年間減価償却費
+    const chain=[];
+    for(let j=n;j>=0;j--)chain.push(fmt(B[j]));
+    const chainStr=chain.join(' → ');
+    const depRow=`<div class="g-row"><span class="g-key">減価償却</span><span class="g-val" style="font-size:13px">定額法・耐用年数${n}年・残存価額0・間接法</span></div>`;
+    const aroRows=`<div class="g-row"><span class="g-key">除去義務</span><span class="g-val" style="font-size:13px">使用終了後（${n}年後）に除去する法的義務あり</span></div>`+
+      `<div class="g-row"><span class="g-key">除去費用の見積額</span><span class="g-val">${fmt(FV)}（${n}年後の支出見込み）</span></div>`+
+      `<div class="g-row"><span class="g-key">割引率</span><span class="g-val">${r}%</span></div>`;
+
+    let q=null;
+    if(type===1){
+      // ---- 取得＋初年度の決算 ----
+      const I=B[1]-B[0];
+      const groups=[
+        {ds:[['機械',C]],cs:[['現金預金',P],['資産除去債務',PV]]},
+        S1('減価償却費','機械減価償却累計額',D),
+        S1('利息費用','資産除去債務',I),
+      ];
+      let g=`<div class="g-head">前提（会計期間：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価（本体）</span><span class="g-val">${fmt(P)}（全額現金預金で支払い）</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・使用開始日</span><span class="g-val" style="font-size:14px">X5年4月1日</span></div>`;
+      g+=depRow+aroRows;
+      const explain=[
+        `<b>① 資産除去債務の計上額（割引現在価値）</b>`,
+        `　${fmt(FV)} ÷ 1.0${r}<sup>${n}</sup>（1.0${r}で${n}回割る）：${chainStr}`,
+        `<b>② 機械の計上額</b>　取得原価 ${fmt(P)} ＋ 資産除去債務 ${fmt(PV)} ＝ ${fmt(C)}`,
+        `<b>③ 減価償却（除去費用分を含めて償却）</b>`,
+        `　${fmt(C)} ÷ ${n}年 ＝ ${fmt(D)}`,
+        `<b>④ 利息費用（時の経過による調整）</b>`,
+        `　期首残高 ${fmt(PV)} × ${r}% ＝ ${fmt(I)}（残高は ${fmt(B[1])} に）`,
+      ];
+      q={type,badges:['取得＋初年度の決算',`割引率${r}%・${n}年`],
+        givenHTML:g,groups,
+        journalLabel:'①取得時（X5年4月1日） ②決算時（X6年3月31日） の仕訳',
+        explain,rowsFixed:6};
+    }else if(type===2){
+      // ---- 中間年度の決算（利息・償却のみ） ----
+      const jj=rand(2,n-1);          // 当期＝使用jj年目
+      const I=B[jj]-B[jj-1];
+      const groups=[
+        S1('減価償却費','機械減価償却累計額',D),
+        S1('利息費用','資産除去債務',I),
+      ];
+      let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価（本体）</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・使用開始日</span><span class="g-val" style="font-size:14px">X${6-jj}年4月1日（当期は使用${jj}年目）</span></div>`;
+      g+=depRow+aroRows;
+      g+=`<div class="g-head">期首残高（参考）</div>`;
+      g+=`<div class="g-row"><span class="g-key">資産除去債務</span><span class="g-val">${fmt(B[jj-1])}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">機械減価償却累計額</span><span class="g-val">${fmt(D*(jj-1))}</span></div>`;
+      const explain=[
+        `<b>① 機械の計上額</b>　取得原価 ${fmt(P)} ＋ 割引現在価値 ${fmt(PV)} ＝ ${fmt(C)}`,
+        `　（現在価値：${fmt(FV)} を 1.0${r} で${n}回割る：${chainStr}）`,
+        `<b>② 減価償却</b>　${fmt(C)} ÷ ${n}年 ＝ ${fmt(D)}`,
+        `<b>③ 利息費用（時の経過による調整）</b>`,
+        `　期首残高 ${fmt(B[jj-1])} × ${r}% ＝ ${fmt(I)}（残高は ${fmt(B[jj])} に）`,
+        `<b>検算</b>　期首残高 ＝ ${fmt(PV)} × 1.0${r}<sup>${jj-1}</sup> ＝ ${fmt(B[jj-1])}`,
+      ];
+      q={type,badges:['決算（利息・償却）',`使用${jj}年目・割引率${r}%`],
+        givenHTML:g,groups,
+        journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
+        explain,rowsFixed:4};
+    }else if(type===3){
+      // ---- 最終年度の決算＋履行 ----
+      const I=B[n]-B[n-1];
+      const over=Math.random()<0.6;
+      const diff=rand(5,50)*1000;
+      const actual=over?FV+diff:FV-diff;   // 実際の除去費用
+      const payGrp=over
+        ?{ds:[['資産除去債務',FV],['履行差額',diff]],cs:[['現金預金',actual]]}
+        :{ds:[['資産除去債務',FV]],cs:[['現金預金',actual],['履行差額',diff]]};
+      const groups=[
+        S1('減価償却費','機械減価償却累計額',D),
+        S1('利息費用','資産除去債務',I),
+        S1('機械減価償却累計額','機械',C),
+        payGrp,
+      ];
+      let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価（本体）</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・使用開始日</span><span class="g-val" style="font-size:14px">X${6-n}年4月1日（当期は最終・使用${n}年目）</span></div>`;
+      g+=depRow+aroRows;
+      g+=`<div class="g-head">期首残高（参考）</div>`;
+      g+=`<div class="g-row"><span class="g-key">資産除去債務</span><span class="g-val">${fmt(B[n-1])}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">機械減価償却累計額</span><span class="g-val">${fmt(D*(n-1))}</span></div>`;
+      g+=`<div class="g-head">除去の履行</div>`;
+      g+=`<div class="g-row"><span class="g-key">除去の実施</span><span class="g-val" style="font-size:14px">X6年3月31日に除去し、機械を除却</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">実際の除去費用</span><span class="g-val">${fmt(actual)}（現金預金で支払い）</span></div>`;
+      const explain=[
+        `<b>① 減価償却（最終年度）</b>`,
+        `　${fmt(C)} ÷ ${n}年 ＝ ${fmt(D)} → 累計額は ${fmt(C)} に到達`,
+        `<b>② 利息費用（時の経過による調整）</b>`,
+        `　期首残高 ${fmt(B[n-1])} × ${r}% ＝ ${fmt(I)}（残高は見積額 ${fmt(FV)} に一致）`,
+        `<b>③ 機械の除却</b>`,
+        `　累計額 ${fmt(C)} ／ 機械 ${fmt(C)}（帳簿価額0なので除却損は出ない）`,
+        `<b>④ 除去費用の支払と履行差額</b>`,
+        `　実際支出 ${fmt(actual)} − 債務残高 ${fmt(FV)} ＝ ${over?'＋':'−'}${fmt(diff)}`,
+        `　→ 履行差額 ${fmt(diff)} を${over?'借方（費用）':'貸方'}に計上`,
+      ];
+      q={type,badges:['最終年度・除去の履行',`実際支出が見積より${over?'多い':'少ない'}`],
+        givenHTML:g,groups,
+        journalLabel:'①決算時の償却・利息 ②機械の除却 ③除去費用の支払 の仕訳（すべてX6年3月31日）',
+        explain,rowsFixed:8};
+    }else{
+      // ---- 見積りの変更（増加） ----
+      const jj=rand(2,n-1);          // 当期＝使用jj年目（期末に見積り変更）
+      const m=n-jj;                  // 残存年数
+      const rt2=pick(RATES);
+      const d2m=Math.pow(rt2.den,m);
+      const k2=rand(Math.ceil(20000/d2m),Math.floor(150000/d2m));
+      const dPV=k2*d2m;              // 増加分の割引現在価値
+      const dFV=k2*Math.pow(rt2.num,m);  // 見積りの増加額
+      if(dPV%m!==0)continue;
+      const I=B[jj]-B[jj-1];
+      const groups=[
+        S1('減価償却費','機械減価償却累計額',D),
+        S1('利息費用','資産除去債務',I),
+        S1('機械','資産除去債務',dPV),
+      ];
+      const chain2=[];
+      {let a=dPV;const arr=[a];for(let j=0;j<m;j++){a=a/rt2.den*rt2.num;arr.push(a);}for(let j=m;j>=0;j--)chain2.push(fmt(arr[j]));}
+      let g=`<div class="g-head">前提（当期：X5年4月1日〜X6年3月31日）</div>`;
+      g+=`<div class="g-row"><span class="g-key">機械の取得原価（本体）</span><span class="g-val">${fmt(P)}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">取得日・使用開始日</span><span class="g-val" style="font-size:14px">X${6-jj}年4月1日（当期は使用${jj}年目）</span></div>`;
+      g+=depRow+aroRows;
+      g+=`<div class="g-head">期首残高（参考）</div>`;
+      g+=`<div class="g-row"><span class="g-key">資産除去債務</span><span class="g-val">${fmt(B[jj-1])}</span></div>`;
+      g+=`<div class="g-row"><span class="g-key">機械減価償却累計額</span><span class="g-val">${fmt(D*(jj-1))}</span></div>`;
+      g+=`<div class="g-head">見積りの変更</div>`;
+      g+=`<div class="g-row"><span class="g-key">変更の内容</span><span class="g-val" style="font-size:13px">当期末（X6年3月31日）に除去費用の見積額が ${fmt(dFV)} <b>増加</b></span></div>`;
+      g+=`<div class="g-row"><span class="g-key">変更時点の割引率</span><span class="g-val">${rt2.r}%（残り${m}年）</span></div>`;
+      const explain=[
+        `<b>① 減価償却（当初分・従来どおり）</b>`,
+        `　（${fmt(P)}＋${fmt(PV)}）÷ ${n}年 ＝ ${fmt(D)}`,
+        `<b>② 利息費用（時の経過による調整）</b>`,
+        `　期首残高 ${fmt(B[jj-1])} × ${r}% ＝ ${fmt(I)}`,
+        `<b>③ 見積り増加分の計上（増加時は変更時点の割引率）</b>`,
+        `　${fmt(dFV)} ÷ 1.0${rt2.r}<sup>${m}</sup>（1.0${rt2.r}で${m}回割る）：${chain2.join(' → ')}`,
+        `　機械 ${fmt(dPV)} ／ 資産除去債務 ${fmt(dPV)}`,
+        `<b>④ 翌期以降のポイント</b>`,
+        `　増加分は残存耐用年数${m}年で償却（${fmt(dPV)} ÷ ${m}年 ＝ ${fmt(dPV/m)}）`,
+        `　利息費用は当初分${r}%・増加分${rt2.r}%で<b>別々に</b>計算する`,
+      ];
+      q={type,badges:['見積りの変更（増加）',`使用${jj}年目・新割引率${rt2.r}%`],
+        givenHTML:g,groups,
+        journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力（見積りの変更を含む）',
+        explain,rowsFixed:5};
+    }
+    if(!q)continue;
+    // 各仕訳の貸借一致・金額チェック
+    let bad=false;
+    for(const gr of q.groups){
+      let ds=0,cs=0;
+      for(const[a,amt]of gr.ds){if(!Number.isInteger(amt)||amt<=0||!ACCTS.includes(a))bad=true;ds+=amt;}
+      for(const[a,amt]of gr.cs){if(!Number.isInteger(amt)||amt<=0||!ACCTS.includes(a))bad=true;cs+=amt;}
+      if(ds!==cs)bad=true;
+    }
+    if(bad||solLines(q.groups).length>q.rowsFixed)continue;
+    return q;
+  }
+  return null;
+}
+
+// 正解表示用の行（単一仕訳は1行、複合仕訳は伝票式に借方行→貸方行）
+function solLines(groups){
+  const out=[];
+  for(const gr of groups){
+    if(gr.ds.length===1&&gr.cs.length===1){
+      out.push({d:gr.ds[0][0],c:gr.cs[0][0],amt:gr.ds[0][1],grp:true});
+    }else{
+      let first=true;
+      for(const[a,amt]of gr.ds){out.push({d:a,c:'',amt,grp:first});first=false;}
+      for(const[a,amt]of gr.cs){out.push({d:'',c:a,amt,grp:false});}
+    }
+  }
+  return out;
+}
+
+// ============ 描画 ============
+function renderJournal(q){
+  const rows=q.rowsFixed;
+  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a?abbr(a):'―'}</option>`).join('')}</select>`;
+  let body='';
+  for(let i=0;i<rows;i++){
+    body+=`<tr>
+      <td class="acct">${sel('j-d-'+i)}</td>
+      <td class="acct">${sel('j-c-'+i)}</td>
+      <td class="amt"><input type="text" inputmode="numeric" id="j-v-${i}" autocomplete="off"></td>
+    </tr>`;
+  }
+  body+=`<tr class="j-tot">
+    <td class="j-tot-lbl">借方合計</td>
+    <td class="j-tot-lbl">貸方合計</td>
+    <td></td>
+  </tr>
+  <tr class="j-tot">
+    <td class="j-tot-val" id="jd-total">0</td>
+    <td class="j-tot-val" id="jc-total">0</td>
+    <td></td>
+  </tr>`;
+  document.getElementById('journal-area').innerHTML=
+    `<table class="j-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+  STATE.rows=rows;
+  for(let i=0;i<rows;i++){
+    document.getElementById(`j-v-${i}`).addEventListener('input',updateJournalTotals);
+    document.getElementById(`j-d-${i}`).addEventListener('change',updateJournalTotals);
+    document.getElementById(`j-c-${i}`).addEventListener('change',updateJournalTotals);
+  }
+  updateJournalTotals();
+  return rows;
+}
+
+function updateJournalTotals(){
+  const rows=STATE.rows||0;
+  let dSum=0,cSum=0;
+  for(let i=0;i<rows;i++){
+    const dEl=document.getElementById(`j-d-${i}`);
+    if(!dEl)return;
+    const d=dEl.value;
+    const c=document.getElementById(`j-c-${i}`).value;
+    const amt=parseNum(document.getElementById(`j-v-${i}`).value);
+    if(amt>0){
+      if(d)dSum+=amt;
+      if(c)cSum+=amt;
+    }
+  }
+  const dT=document.getElementById('jd-total');
+  const cT=document.getElementById('jc-total');
+  if(!dT||!cT)return;
+  dT.textContent=fmt(dSum);
+  cT.textContent=fmt(cSum);
+  const balanced=dSum>0&&cSum>0&&dSum===cSum;
+  const mismatched=dSum>0&&cSum>0&&dSum!==cSum;
+  dT.classList.toggle('j-tot-ok',balanced);
+  cT.classList.toggle('j-tot-ok',balanced);
+  dT.classList.toggle('j-tot-ng',mismatched);
+  cT.classList.toggle('j-tot-ng',mismatched);
+}
+
+function newQ(){
+  const q=genQ();
+  if(!q)return;
+  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();
+  document.getElementById('badge-area').innerHTML=
+    q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
+  document.getElementById('given-area').innerHTML=q.givenHTML;
+  document.getElementById('journal-label').textContent=q.journalLabel+'（伝票式の記入もOK）';
+  STATE.rows=renderJournal(q);
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+// ============ 採点（科目ごとの借方合計・貸方合計の一致） ============
+function gradeJournal(q,rows){
+  const expD={},expC={};
+  for(const gr of q.groups){
+    for(const[a,amt]of gr.ds)expD[a]=(expD[a]||0)+amt;
+    for(const[a,amt]of gr.cs)expC[a]=(expC[a]||0)+amt;
+  }
+  const dAgg={},cAgg={};
+  const rowsIn=[];
+  for(let i=0;i<rows;i++){
+    const d=document.getElementById(`j-d-${i}`).value;
+    const c=document.getElementById(`j-c-${i}`).value;
+    const raw=document.getElementById(`j-v-${i}`).value;
+    const amt=parseNum(raw);
+    rowsIn.push({d,c,amt,raw});
+    if(amt>0){
+      if(d)dAgg[d]=(dAgg[d]||0)+amt;
+      if(c)cAgg[c]=(cAgg[c]||0)+amt;
+    }
+  }
+  let matched=0;
+  const totalExp=Object.keys(expD).length+Object.keys(expC).length;
+  for(const k in expD)if(dAgg[k]===expD[k])matched++;
+  for(const k in expC)if(cAgg[k]===expC[k])matched++;
+  let spurious=0;
+  for(const k in dAgg)if(!(k in expD))spurious++;
+  for(const k in cAgg)if(!(k in expC))spurious++;
+  let rowErr=false;
+  for(let i=0;i<rows;i++){
+    const r=rowsIn[i];
+    const dEl=document.getElementById(`j-d-${i}`);
+    const cEl=document.getElementById(`j-c-${i}`);
+    const vEl=document.getElementById(`j-v-${i}`);
+    for(const el of[dEl,cEl,vEl])el.classList.remove('cell-ok','cell-ng');
+    const empty=!r.d&&!r.c&&r.raw.trim()==='';
+    if(empty){for(const el of[dEl,cEl,vEl])el.classList.add('cell-ok');continue;}
+    const invalid=(!r.d&&!r.c)||r.amt<=0;
+    if(invalid){rowErr=true;for(const el of[dEl,cEl,vEl])el.classList.add('cell-ng');continue;}
+    const dOk=!r.d||((r.d in expD)&&dAgg[r.d]===expD[r.d]);
+    const cOk=!r.c||((r.c in expC)&&cAgg[r.c]===expC[r.c]);
+    dEl.classList.add(!r.d||dOk?'cell-ok':'cell-ng');
+    cEl.classList.add(!r.c||cOk?'cell-ok':'cell-ng');
+    vEl.classList.add(dOk&&cOk?'cell-ok':'cell-ng');
+  }
+  return{matched,totalExp,spurious,rowErr};
+}
+
+function grade(){
+  if(!STATE.q||STATE.graded)return;
+  const q=STATE.q;
+  const rows=STATE.rows;
+  // 仕訳（科目ごとの借方合計・貸方合計）
+  const res=gradeJournal(q,rows);
+  const cnt=res.totalExp;
+  const ok=res.matched;
+  const allOk=res.matched===res.totalExp&&res.spurious===0&&!res.rowErr;
+
+  STATE.graded=true;STATE.total++;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  // 正解仕訳の表示（複合仕訳は伝票式）
+  let solBody='';
+  for(const l of solLines(q.groups)){
+    solBody+=`<tr${l.grp?' class="grp"':''}><td class="a">${l.d?abbrFull(l.d):''}</td><td class="a">${l.c?abbrFull(l.c):''}</td><td class="v">${fmt(l.amt)}</td></tr>`;
+  }
+  const sol=`<div class="label" style="margin-top:8px">正解の仕訳（太線＝仕訳の区切り。1行1仕訳に分解して書いてもOK）</div>
+    <table class="sol-tbl"><tr><th>借方科目</th><th>貸方科目</th><th>金額</th></tr>${solBody}</table>`;
+  const spuriousNote=res.spurious>0?'　※不要な科目があります':'';
+  const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(q.explain).join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'+spuriousNote}</div>`+sol+recon;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
