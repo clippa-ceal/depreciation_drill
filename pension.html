@@ -91,7 +91,7 @@ input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
     <div class="label">ワークシートを埋めて「答え合わせ」</div>
     <div class="unit-note">単位：千円　／　減少は「−」を付けて入力</div>
     <div class="ws-wrap"><div id="ws-area"></div></div>
-    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 ＋ 差異<br>差異列＝未認識の数理計算上の差異（有利＝＋／不利＝−）。償却は差異残高と反対符号で費用行に記入<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）<br>費用行の差異列は2欄：前期以前分の償却と当期発生分の償却を分けて入力可（順不同・合計で判定）<br>予想末残高：資産・債務・差異は縦計、合計は横計（債務−資産）、引当金は縦計と横計の2段で一致を確認（両方採点）</div>
+    <div class="hint">合計＝退職給付債務 − 年金資産　／　引当金＝合計 ＋ 差異<br>差異列＝未認識の数理計算上の差異（有利＝＋／不利＝−）。償却は差異残高と反対符号で費用行に記入<br>当期発生差異は期首セルの下段（※当期発生）に入力（不利＝−）。実際末の差異＝期首＋当期発生＋費用行の償却<br>退職給付費用・拠出/給付の年金資産・退職給付債務は3行に分けて入力可（順不同・合計で判定）<br>費用行の差異列は2欄：前期以前分の償却と当期発生分の償却を分けて入力可（順不同・合計で判定）<br>予想末残高：資産・債務・差異は縦計、合計は横計（債務−資産）、引当金は縦計と横計の2段で一致を確認（両方採点）</div>
   </div>
 
   <div id="result-area"></div>
@@ -244,6 +244,7 @@ function renderTable(e){
   for(const[c,cl]of COLS)h+=`<th>${cl}</th>`;
   h+='</tr></thead><tbody>';
   for(const[r,rl]of ROWS){
+    if(r==='shin')continue; // 当期発生差異は期首行の差異セル下段に統合
     if(r==='yoso'){
       h+=`<tr><td class="rowlabel" rowspan="2">${rl}</td>`;
       for(const[c,cl]of COLS){
@@ -277,6 +278,8 @@ function renderTable(e){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoHiyo()">→横計</button><span class="ws-note">※退職給付費用</span><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(c==='C'&&(r==='kishu'||r==='jissai')){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoC('${r}')">→横計</button><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }else if(r==='kishu'&&c==='D'){
+        h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span><span class="ws-note">※当期発生</span><input type="text" id="c_shin_D" autocomplete="off"><span class="ws-ans" id="ans_c_shin_D"></span></td>`;
       }else{
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }
