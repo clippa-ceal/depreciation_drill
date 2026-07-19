@@ -78,6 +78,7 @@ table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+.calc-btn-rate{font-size:14px;background:#0F6E56;color:#fff}
 </style>
 </head>
 <body>
@@ -123,6 +124,10 @@ table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
     <div class="label" style="margin-bottom:6px">電卓</div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
+      <button class="calc-btn calc-btn-rate" id="rate-mul-0" onclick="calcRate(0,'×')">×1.05</button>
+      <button class="calc-btn calc-btn-rate" id="rate-div-0" onclick="calcRate(0,'÷')">÷1.05</button>
+      <button class="calc-btn calc-btn-rate" id="rate-mul-1" style="visibility:hidden" onclick="calcRate(1,'×')"></button>
+      <button class="calc-btn calc-btn-rate" id="rate-div-1" style="visibility:hidden" onclick="calcRate(1,'÷')"></button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
@@ -232,7 +237,7 @@ function genQ(){
         `　期首残高 ${fmt(PV)} × ${r}% ＝ ${fmt(I)}（残高は ${fmt(B[1])} に）`,
       ];
       q={type,badges:['取得＋初年度の決算',`割引率${r}%・${n}年`],
-        givenHTML:g,groups,
+        givenHTML:g,groups,rates:[{r,den,num}],
         journalLabel:'①取得時（X5年4月1日） ②決算時（X6年3月31日） の仕訳',
         explain,rowsFixed:6};
     }else if(type===2){
@@ -259,7 +264,7 @@ function genQ(){
         `<b>検算</b>　期首残高 ＝ ${fmt(PV)} × 1.0${r}<sup>${jj-1}</sup> ＝ ${fmt(B[jj-1])}`,
       ];
       q={type,badges:['決算（利息・償却）',`使用${jj}年目・割引率${r}%`],
-        givenHTML:g,groups,
+        givenHTML:g,groups,rates:[{r,den,num}],
         journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力',
         explain,rowsFixed:4};
     }else if(type===3){
@@ -299,7 +304,7 @@ function genQ(){
         `　→ 履行差額 ${fmt(diff)} を${over?'借方（費用）':'貸方'}に計上`,
       ];
       q={type,badges:['最終年度・除去の履行',`実際支出が見積より${over?'多い':'少ない'}`],
-        givenHTML:g,groups,
+        givenHTML:g,groups,rates:[{r,den,num}],
         journalLabel:'①決算時の償却・利息 ②機械の除却 ③除去費用の支払 の仕訳（すべてX6年3月31日）',
         explain,rowsFixed:8};
     }else{
@@ -343,7 +348,7 @@ function genQ(){
         `　利息費用は当初分${r}%・増加分${rt2.r}%で<b>別々に</b>計算する`,
       ];
       q={type,badges:['見積りの変更（増加）',`使用${jj}年目・新割引率${rt2.r}%`],
-        givenHTML:g,groups,
+        givenHTML:g,groups,rates:[{r,den,num},{r:rt2.r,den:rt2.den,num:rt2.num}],
         journalLabel:'当期の決算時（X6年3月31日）の仕訳をすべて入力（見積りの変更を含む）',
         explain,rowsFixed:5};
     }
@@ -447,6 +452,7 @@ function newQ(){
   document.getElementById('given-area').innerHTML=q.givenHTML;
   document.getElementById('journal-label').textContent=q.journalLabel+'（伝票式の記入もOK）';
   STATE.rows=renderJournal(q);
+  setRateButtons();
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
@@ -554,6 +560,28 @@ function calcIn(v){
   document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
 }
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+// 割引率ボタン（問題の割引率に連動。誤差が出ないよう num/den の分数で計算）
+function setRateButtons(){
+  const rates=(STATE.q&&STATE.q.rates)||[];
+  for(let i=0;i<2;i++){
+    const m=document.getElementById('rate-mul-'+i),d=document.getElementById('rate-div-'+i);
+    if(rates[i]){
+      m.style.visibility='visible';d.style.visibility='visible';
+      m.textContent='×1.0'+rates[i].r;d.textContent='÷1.0'+rates[i].r;
+    }else{
+      m.style.visibility='hidden';d.style.visibility='hidden';
+    }
+  }
+}
+function calcRate(i,dir){
+  const rates=(STATE.q&&STATE.q.rates)||[];
+  if(!rates[i])return;
+  const{num,den}=rates[i];
+  const v=parseFloat(cs.disp)||0;
+  cs.disp=numStr(dir==='×'?v*num/den:v*den/num);
+  cs.fresh=true;
+  document.getElementById('calc-disp').textContent=fmtCalc(cs.disp);
+}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}
 function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
 
