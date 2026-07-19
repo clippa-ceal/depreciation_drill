@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>貸倒引当金ワークシートドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:480px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+input[type=text]{width:100%;margin-bottom:8px;font-size:16px;padding:12px;border:1px solid var(--color-border2);border-radius:var(--radius-md);background:var(--color-card)}
+.ans-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:7px}
+.ans-row label{flex:1;font-size:12.5px;color:var(--color-text2);line-height:1.45;padding-top:9px}
+.ans-row label .sub{font-size:10.5px;color:var(--color-text2);opacity:0.8}
+.ans-cell{width:46%;flex-shrink:0}
+.ans-cell input{width:100%;margin-bottom:0;font-size:15px;padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums}
+.ans-cell input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.ans-cell input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-cell .corr{font-size:11px;color:var(--color-text2);text-align:right;margin-top:2px;display:none}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.q-row{display:flex;gap:8px;margin-bottom:8px;align-items:baseline}
+.q-key{font-size:13px;color:var(--color-text2);min-width:100px;flex-shrink:0}
+.q-val{font-size:15px;font-weight:500;color:var(--color-text)}
+.q-ask{font-size:15px;font-weight:500;color:var(--color-info)}
+.q-note{font-size:13px;color:var(--color-text2);margin:2px 0 8px;line-height:1.7}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.step{font-weight:500;color:var(--color-text);font-size:13px;margin-top:6px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+.calc-btn-pull{background:#0F6E56;color:#fff;font-size:13px}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px}
+.type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;margin-right:4px}
+.type-d{background:#E3EEF7;color:#185FA5}
+details.basics{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:0.85rem 1.25rem;margin-bottom:1rem}
+details.basics summary{font-size:13px;font-weight:500;color:var(--color-text2);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.basics summary::after{content:'＋';font-size:15px;color:var(--color-text2)}
+details.basics[open] summary::after{content:'−'}
+details.basics summary::-webkit-details-marker{display:none}
+.basics-body{margin-top:10px;font-size:13px;color:var(--color-text2);line-height:1.9}
+.basics-body h3{font-size:13px;color:var(--color-text);margin:10px 0 2px;font-weight:600}
+.k-wrap{overflow-x:auto}
+.k-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+.k-tbl th,.k-tbl td{border:1px solid var(--color-border2);padding:5px 7px;text-align:center}
+.k-tbl th{background:var(--color-bg-secondary);font-weight:600;color:var(--color-text2);font-size:11px}
+.k-tbl td:first-child{text-align:left;font-weight:500;color:var(--color-text);white-space:nowrap}
+.k-tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>貸倒引当金ワークシートドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a>
+    <a href="interest.html">利息</a>
+    <a href="stockoption.html">ストックオプション</a>
+    <a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html" class="nav-on">貸倒</a><a href="genson.html">減損</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-correct">0</span><span class="l">正解</span></div>
+  </div>
+
+  <details class="basics">
+    <summary>基礎知識まとめ</summary>
+    <div class="basics-body">
+      <h3>債権の3分類と見積り方法（ここを覚える）</h3>
+      <div class="k-wrap">
+      <table class="k-tbl">
+        <tr><th>区分</th><th>状態</th><th>方法</th><th>計算</th></tr>
+        <tr><td>一般債権</td><td>正常</td><td>貸倒実績率法</td><td>残高×実績率</td></tr>
+        <tr><td>貸倒懸念債権</td><td>弁済に重大な問題</td><td>財務内容評価法<br>（またはCF見積法）</td><td>（債権−担保等）×見積率</td></tr>
+        <tr><td>破産更生債権等</td><td>破産・取引停止処分など</td><td>財務内容評価法のみ</td><td>（債権−担保等）の<strong>全額</strong></td></tr>
+      </table>
+      </div>
+      悪化するほど「個別に・厳しく」見積もる。破産更生債権等はB/Sで<strong>投資その他の資産</strong>へ振替。
+      <h3>解く順番（ワークシート）</h3>
+      <strong>⓪期中修正 → ①残高の振り分け → ②区分ごとの要設定額 → ③貸引の増減（差額補充）</strong><br>
+      ⓪のゲートに引っかけが集中する：<br>
+      ・<strong>当期発生</strong>債権の貸倒 → 貸引は使えない。<strong>全額貸倒損失</strong>（前期末の貸引はこの債権を見積もっていない）<br>
+      ・<strong>前期以前</strong>債権の貸倒 → まず<strong>貸引を充当</strong>、不足分だけ貸倒損失<br>
+      ・<strong>不渡り</strong> → 受取手形から<strong>不渡手形</strong>へ振替。額面＋拒絶証書作成費等（相手に遡求できる金額）<br>
+      ・過年度償却済み債権の回収 → <strong>償却債権取立益</strong>。ワークシートには出てこない
+      <h3>③の締め方</h3>
+      前期末残高 − 期中充当 ＝ 整理前残高。要設定額との差が<strong>繰入</strong>（マイナスなら戻入）。営業債権分は販管費。
+    </div>
+  </details>
+
+  <div class="card">
+    <div id="type-badge-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" style="margin-top:8px"></div>
+  </div>
+
+  <div id="answer-area">
+    <div class="label">解答欄（該当がない項目は空欄のままでOK）</div>
+    <div class="ans-row"><label>⓪ 貸倒損失（P/L）<br><span class="sub">未処理事項から生じる分</span></label>
+      <div class="ans-cell"><input type="text" id="a-loss" inputmode="text" placeholder="円"><div class="corr" id="c-loss"></div></div></div>
+    <div class="ans-row"><label>① 一般債権 計（期末）</label>
+      <div class="ans-cell"><input type="text" id="a-gen" inputmode="text" placeholder="円"><div class="corr" id="c-gen"></div></div></div>
+    <div class="ans-row"><label>① 貸倒懸念債権 計（期末）</label>
+      <div class="ans-cell"><input type="text" id="a-doubt" inputmode="text" placeholder="円"><div class="corr" id="c-doubt"></div></div></div>
+    <div class="ans-row"><label>① 破産更生債権等 計（期末）</label>
+      <div class="ans-cell"><input type="text" id="a-bank" inputmode="text" placeholder="円"><div class="corr" id="c-bank"></div></div></div>
+    <div class="ans-row"><label>② 要設定額（一般）</label>
+      <div class="ans-cell"><input type="text" id="a-sgen" inputmode="text" placeholder="円"><div class="corr" id="c-sgen"></div></div></div>
+    <div class="ans-row"><label>② 要設定額（懸念）</label>
+      <div class="ans-cell"><input type="text" id="a-sdoubt" inputmode="text" placeholder="円"><div class="corr" id="c-sdoubt"></div></div></div>
+    <div class="ans-row"><label>② 要設定額（破産更生）</label>
+      <div class="ans-cell"><input type="text" id="a-sbank" inputmode="text" placeholder="円"><div class="corr" id="c-sbank"></div></div></div>
+    <div class="ans-row"><label>③ 決算整理前の貸引残高<br><span class="sub">期中充当を反映した後</span></label>
+      <div class="ans-cell"><input type="text" id="a-pre" inputmode="text" placeholder="円"><div class="corr" id="c-pre"></div></div></div>
+    <div class="ans-row"><label>③ 貸倒引当金繰入額<br><span class="sub">戻入はマイナス</span></label>
+      <div class="ans-cell"><input type="text" id="a-prov" inputmode="text" placeholder="円"><div class="corr" id="c-prov"></div></div></div>
+    <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
+  </div>
+  <div id="result-area"></div>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-pull calc-btn-wide" onclick="calcFromQ()">↓ 問題から引用</button>
+      <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state={total:0,correct:0,q:null,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){return n.toLocaleString('ja-JP');}
+function fmtS(n){return (n>0?'＋':n<0?'−':'')+fmt(Math.abs(n));}
+
+const FIELDS=[
+  {id:'loss'},{id:'gen'},{id:'doubt'},{id:'bank'},
+  {id:'sgen'},{id:'sdoubt'},{id:'sbank'},{id:'pre'},{id:'prov'},
+];
+
+// ============ 問題生成 ============
+// ⓪期中修正 → ①振り分け → ②要設定額 → ③差額補充 を1問で通すワークシート型。
+// 全金額を100の倍数、率を1〜3%／40・50・60%にして必ず割り切れる基数設計。
+function gen(){
+  for(let t=0;t<500;t++){
+    const y=rand(5,12);
+    const R=rand(200,600)*100;                 // T/B 受取手形
+    const U=rand(400,900)*100;                 // T/B 売掛金
+    const Z=rand(5,30)*100;                    // T/B 貸倒引当金（前期末残高）
+    const ev1=Math.random()<0.7;               // 当期発生分の貸倒
+    const ev2=Math.random()<0.7;               // 前期以前分の貸倒
+    const ev3=Math.random()<0.6;               // 不渡り
+    const ev4=Math.random()<0.6;               // 破産更生へ振替
+    if(ev1+ev2+ev3+ev4<2)continue;             // 未処理事項は2件以上
+    const a1=ev1?rand(5,30)*100:0;
+    const a2=ev2?rand(5,30)*100:0;
+    const a3=ev3?rand(5,20)*100:0;
+    const fee=ev3?rand(1,5)*100:0;             // 拒絶証書作成費等
+    const a4=ev4?rand(5,25)*100:0;
+    const k=rand(10,40)*100;                   // A社売掛金（懸念に区分）
+    const genU=U-a1-a2-a4-k;                   // 売掛金のうち一般債権
+    if(genU<5000)continue;
+    const genR=R-a3;                           // 受取手形のうち一般債権
+    const G=genR+genU;                         // 一般 計
+    const nf=a3+fee;                           // 不渡手形（額面＋諸費用）
+    const D=k+nf;                              // 懸念 計
+    const B=a4;                                // 破産更生 計
+    const p=rand(1,3);                         // 実績率％
+    const qr=pick([40,50,60]);                 // 懸念の見積率％
+    const sd=rand(1,Math.floor(D/100)-1)*100;  // 担保等（懸念）
+    const sb=ev4?rand(1,Math.floor(B/100)-1)*100:0;  // 担保等（破産更生）
+    const sgen=G*p/100;
+    const sdoubt=(D-sd)*qr/100;
+    const sbank=B-sb;
+    const juto=Math.min(Z,a2);                 // 貸引への充当
+    const shortfall=a2-juto;                   // 貸引不足→貸倒損失
+    const loss=a1+shortfall;
+    const pre=Z-juto;                          // 決算整理前の貸引残高
+    const total=sgen+sdoubt+sbank;
+    const prov=total-pre;
+    const q={y,pullVal:U,ev1,ev2,ev3,ev4,
+      dbg:{R,U,Z,a1,a2,a3,fee,a4,k,p,qr,sd,sb,juto},
+      answers:{loss,gen:G,doubt:D,bank:B,sgen,sdoubt,sbank,pre,prov}};
+
+    // ---- 問題文 ----
+    let no=0;
+    const uns=[];
+    if(ev1)uns.push(`【${++no}】当期に発生した売掛金 ${fmt(a1)}円 が貸倒れた（未処理）`);
+    if(ev2)uns.push(`【${++no}】前期以前に発生した売掛金 ${fmt(a2)}円 が貸倒れた（未処理）`);
+    if(ev3)uns.push(`【${++no}】受取手形 ${fmt(a3)}円 が不渡りとなり、支払拒絶証書作成費等 ${fmt(fee)}円 を現金で支払った（未処理）。この債権は貸倒懸念債権に区分する`);
+    if(ev4)uns.push(`【${++no}】得意先C社が手形交換所の取引停止処分を受けたため、同社に対する売掛金 ${fmt(a4)}円 を破産更生債権等に振り替える（未処理）`);
+    q.rows=`<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${y}年4月1日〜X${y+1}年3月31日</span></div>`
+      +`<div class="q-row"><span class="q-key">整理前T/B</span><span class="q-val">受取手形 ${fmt(R)}円／売掛金 ${fmt(U)}円／貸倒引当金 ${fmt(Z)}円</span></div>`
+      +`<div class="q-note"><strong>未処理事項</strong><br>${uns.join('<br>')}</div>`
+      +`<div class="q-note"><strong>決算整理事項</strong><br>`
+      +`・得意先A社は債務の弁済に重大な問題が生じており、同社に対する売掛金 ${fmt(k)}円 は貸倒懸念債権に区分する<br>`
+      +`・一般債権：貸倒実績率 ${p}%<br>`
+      +`・貸倒懸念債権：担保処分・保証回収見込額 ${fmt(sd)}円 を控除した残額の ${qr}%<br>`
+      +(ev4?`・破産更生債権等：担保処分見込額 ${fmt(sb)}円 を控除した残額の全額（貸倒引当金を設定）<br>`:'')
+      +`・貸倒引当金は差額補充法による</div>`
+      +`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">下の解答欄をすべて埋める（該当がない項目は空欄）</span></div>`;
+
+    // ---- 解説 ----
+    const uEnd=U-a1-a2-a4;                     // 修正後の売掛金残高
+    let exp=`<div class="step">⓪ 期中修正（ここがゲート。引っかけは全部ここ）</div>`;
+    if(ev1)exp+=`・当期発生分 ${fmt(a1)}円 → 前期末の貸引はこの債権を見積もっていない → <strong>全額 貸倒損失</strong><br>`;
+    if(ev2)exp+=`・前期以前分 ${fmt(a2)}円 → まず貸引を充当 ${fmt(juto)}円${shortfall>0?`、不足 ${fmt(shortfall)}円 は貸倒損失`:'（全額充当できた）'}<br>`;
+    if(ev3)exp+=`・不渡り → 受取手形 ${fmt(a3)}円 ＋ 諸費用 ${fmt(fee)}円 ＝ <strong>不渡手形 ${fmt(nf)}円</strong>（遡求できる金額まで含める）<br>`;
+    if(ev4)exp+=`・取引停止処分 → 売掛金 ${fmt(a4)}円 を<strong>破産更生債権等へ振替</strong>（B/Sは投資その他の資産）<br>`;
+    exp+=(loss>0?`貸倒損失 合計 ＝ <strong>${fmt(loss)}円</strong>`:`貸倒損失は生じない（該当なし）`);
+    exp+=`<div class="step">① 残高の振り分け（行合計＝B/S、列合計＝②へ）</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><th>科目</th><th>修正後残高</th><th>一般</th><th>懸念</th><th>破産更生</th></tr>`
+      +`<tr><td>受取手形</td><td class="num">${fmt(genR)}</td><td class="num">${fmt(genR)}</td><td class="num">—</td><td class="num">—</td></tr>`
+      +`<tr><td>売掛金</td><td class="num">${fmt(uEnd)}</td><td class="num">${fmt(genU)}</td><td class="num">${fmt(k)}</td><td class="num">—</td></tr>`
+      +(ev3?`<tr><td>不渡手形</td><td class="num">${fmt(nf)}</td><td class="num">—</td><td class="num">${fmt(nf)}</td><td class="num">—</td></tr>`:'')
+      +(ev4?`<tr><td>破産更生債権等</td><td class="num">${fmt(B)}</td><td class="num">—</td><td class="num">—</td><td class="num">${fmt(B)}</td></tr>`:'')
+      +`<tr><td>計</td><td class="num">${fmt(genR+uEnd+nf+B)}</td><td class="num"><strong>${fmt(G)}</strong></td><td class="num"><strong>${fmt(D)}</strong></td><td class="num"><strong>${fmt(B)}</strong></td></tr>`
+      +`</table></div>`
+      +`※懸念になっても売掛金の<strong>科目はそのまま</strong>。科目まで動くのは不渡手形と破産更生債権等だけ。`
+      +`<div class="step">② 要設定額（全区分「−担保 → ×率」の同じ型）</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><th>区分</th><th>債権額</th><th>−担保等</th><th>対象額</th><th>×率</th><th>設定額</th></tr>`
+      +`<tr><td>一般</td><td class="num">${fmt(G)}</td><td class="num">—</td><td class="num">${fmt(G)}</td><td class="num">${p}%</td><td class="num"><strong>${fmt(sgen)}</strong></td></tr>`
+      +`<tr><td>懸念</td><td class="num">${fmt(D)}</td><td class="num">${fmt(sd)}</td><td class="num">${fmt(D-sd)}</td><td class="num">${qr}%</td><td class="num"><strong>${fmt(sdoubt)}</strong></td></tr>`
+      +(ev4?`<tr><td>破産更生</td><td class="num">${fmt(B)}</td><td class="num">${fmt(sb)}</td><td class="num">${fmt(B-sb)}</td><td class="num">100%</td><td class="num"><strong>${fmt(sbank)}</strong></td></tr>`:'')
+      +`<tr><td>計</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"><strong>${fmt(total)}</strong></td></tr>`
+      +`</table></div>`
+      +`<div class="step">③ 貸引の増減（差額補充法）</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><td>前期末残高（T/B）</td><td class="num">${fmt(Z)}</td></tr>`
+      +`<tr><td>−）期中の貸倒充当（⓪）</td><td class="num">${juto>0?'△'+fmt(juto):'—'}</td></tr>`
+      +`<tr><td>＝ 決算整理前残高</td><td class="num"><strong>${fmt(pre)}</strong></td></tr>`
+      +`<tr><td>要設定額（②の計）</td><td class="num">${fmt(total)}</td></tr>`
+      +`<tr><td>${prov>=0?'繰入額（差額）':'戻入額（差額）'}</td><td class="num"><strong>${fmtS(prov)}</strong></td></tr>`
+      +`</table></div>`
+      +`※営業債権に対する繰入は<strong>販管費</strong>。過年度償却済み債権の回収があっても<strong>償却債権取立益</strong>でありこの表には入らない。`;
+    q.exp=exp;
+    q.badge=`<span class="type-badge type-d">貸倒引当金ワークシート</span>`;
+    return q;
+  }
+  return null;
+}
+
+// ============ 出題・採点 ============
+function newQ(){
+  const q=gen();
+  if(!q)return;
+  state.q=q;
+  state.startTime=Date.now();
+  for(const f of FIELDS){
+    const inp=document.getElementById('a-'+f.id);
+    inp.value='';inp.disabled=false;
+    inp.classList.remove('cell-ok','cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='none';c.textContent='';
+  }
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('type-badge-wrap').innerHTML=q.badge;
+  document.getElementById('q-body').innerHTML=q.rows;
+}
+
+// 空欄は 0（該当なし）として扱う
+function parseCell(id){
+  const raw=document.getElementById('a-'+id).value
+    .replace(/[,，\s円]/g,'').replace(/[−－▲△]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(raw===''||raw==='-')return 0;
+  const n=parseInt(raw,10);
+  return isNaN(n)?null:n;
+}
+function corrStr(id,v){
+  if(v===0)return '正解: 0（該当なし）';
+  return '正解: '+(id==='prov'?fmtS(v):fmt(v))+'円';
+}
+
+function checkAnswer(){
+  const q=state.q;
+  let allOk=true;
+  for(const f of FIELDS){
+    const correct=q.answers[f.id]||0;
+    const user=parseCell(f.id);
+    const ok=user===correct;
+    if(!ok)allOk=false;
+    const inp=document.getElementById('a-'+f.id);
+    inp.disabled=true;
+    inp.classList.remove('cell-ok','cell-ng');
+    inp.classList.add(ok?'cell-ok':'cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='block';
+    c.textContent=corrStr(f.id,correct);
+  }
+  state.total++;
+  if(allOk)state.correct++;
+  document.getElementById('s-total').textContent=state.total;
+  document.getElementById('s-correct').textContent=state.correct;
+  document.getElementById('result-area').innerHTML=`
+    <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全欄正解！':'✗ 赤い欄が不正解（各欄の下に正解を表示）'}</div>
+    <div class="explain">所要時間：${fmtElapsed(Date.now()-state.startTime)}<br>${q.exp}</div>
+  `;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){
+  document.getElementById('btn-check').style.display='block';
+  newQ();
+}
+
+newQ();
+for(const f of FIELDS){
+  document.getElementById('a-'+f.id).addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+}
+
+// ============ 電卓 ============
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.'; }
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtDisp(s.disp);
+}
+function calcFromQ(){
+  const q=state.q;if(!q)return;
+  cs.disp=String(q.pullVal);cs.fresh=true;cs.prev=null;cs.op=null;
+  document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
+}
+// 数字が入っている最後の欄の「次の欄」へ反映（すべて空なら先頭へ。
+// 末尾まで埋まっていたら残っている空欄の先頭へ）
+function calcToAns(){
+  const n=parseFloat(cs.disp);
+  if(isNaN(n))return;
+  let lastFilled=-1;
+  FIELDS.forEach((f,i)=>{
+    if(document.getElementById('a-'+f.id).value.trim()!=='')lastFilled=i;
+  });
+  let idx=lastFilled+1;
+  if(idx>=FIELDS.length){
+    idx=FIELDS.findIndex(f=>document.getElementById('a-'+f.id).value.trim()==='');
+    if(idx<0)return;   // 全欄埋まっている
+  }
+  const el=document.getElementById('a-'+FIELDS[idx].id);
+  if(el.disabled)return;
+  el.value=String(Math.round(n));
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtDisp(s){const neg=s.startsWith('-');const body=neg?s.slice(1):s;const[i,d]=body.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return (neg?'-':'')+(d!==undefined?f+'.'+d:f);}
+
+// PWA: service worker 登録
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

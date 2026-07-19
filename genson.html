@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>減損会計ワークシートドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:480px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+input[type=text]{width:100%;margin-bottom:8px;font-size:16px;padding:12px;border:1px solid var(--color-border2);border-radius:var(--radius-md);background:var(--color-card)}
+.ans-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:7px}
+.ans-row label{flex:1;font-size:12.5px;color:var(--color-text2);line-height:1.45;padding-top:9px}
+.ans-row label .sub{font-size:10.5px;color:var(--color-text2);opacity:0.8}
+.ans-cell{width:46%;flex-shrink:0}
+.ans-cell input{width:100%;margin-bottom:0;font-size:15px;padding:9px 10px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=text].cell-ok{border-color:#7FB04A;background:#F2F8EA}
+input[type=text].cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-cell .corr{font-size:11px;color:var(--color-text2);text-align:right;margin-top:2px;display:none}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.q-row{display:flex;gap:8px;margin-bottom:8px;align-items:baseline}
+.q-key{font-size:13px;color:var(--color-text2);min-width:100px;flex-shrink:0}
+.q-val{font-size:15px;font-weight:500;color:var(--color-text)}
+.q-ask{font-size:15px;font-weight:500;color:var(--color-info)}
+.q-note{font-size:13px;color:var(--color-text2);margin:2px 0 8px;line-height:1.7}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.step{font-weight:500;color:var(--color-text);font-size:13px;margin-top:6px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+.calc-btn-pull{background:#0F6E56;color:#fff;font-size:13px}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px}
+.type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;margin-right:4px}
+.type-d{background:#E3EEF7;color:#185FA5}
+details.basics{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:0.85rem 1.25rem;margin-bottom:1rem}
+details.basics summary{font-size:13px;font-weight:500;color:var(--color-text2);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.basics summary::after{content:'＋';font-size:15px;color:var(--color-text2)}
+details.basics[open] summary::after{content:'−'}
+details.basics summary::-webkit-details-marker{display:none}
+.basics-body{margin-top:10px;font-size:13px;color:var(--color-text2);line-height:1.9}
+.basics-body h3{font-size:13px;color:var(--color-text);margin:10px 0 2px;font-weight:600}
+.k-wrap{overflow-x:auto}
+.k-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+.k-tbl th,.k-tbl td{border:1px solid var(--color-border2);padding:5px 7px;text-align:center}
+.k-tbl th{background:var(--color-bg-secondary);font-weight:600;color:var(--color-text2);font-size:11px}
+.k-tbl td:first-child{text-align:left;font-weight:500;color:var(--color-text);white-space:nowrap}
+.k-tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.a-tbl{margin:2px 0 8px}
+.a-tbl td{padding:4px 4px}
+.a-tbl input[type=text]{margin:0;font-size:14px;padding:8px 6px;text-align:right;font-variant-numeric:tabular-nums}
+.a-tbl .corr{font-size:10.5px;color:var(--color-text2);text-align:right;margin-top:2px;display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>減損会計ワークシートドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a>
+    <a href="pension.html">退職給付</a>
+    <a href="purchases.html">仕入</a>
+    <a href="lease.html">リース</a>
+    <a href="trade.html">買換え</a>
+    <a href="wip.html">仕掛品</a>
+    <a href="hedge.html">為替予約</a>
+    <a href="cash.html">現金預金</a>
+    <a href="interest.html">利息</a>
+    <a href="stockoption.html">ストックオプション</a>
+    <a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html">貸倒</a><a href="genson.html" class="nav-on">減損</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-correct">0</span><span class="l">正解</span></div>
+  </div>
+
+  <details class="basics">
+    <summary>基礎知識まとめ</summary>
+    <div class="basics-body">
+      <h3>減損の3ステップ（比較相手が毎回変わるのがキモ）</h3>
+      <div class="k-wrap">
+      <table class="k-tbl">
+        <tr><th>ステップ</th><th>やること</th><th>使う金額</th></tr>
+        <tr><td>① 兆候</td><td>減損の兆候があるか</td><td>—</td></tr>
+        <tr><td>② 認識の判定</td><td>帳簿価額と比較</td><td><strong>割引前</strong>将来CF総額</td></tr>
+        <tr><td>③ 測定</td><td>回収可能価額まで切下げ</td><td>回収可能価額（<strong>割引後</strong>）</td></tr>
+      </table>
+      </div>
+      <strong>回収可能価額 ＝ 使用価値と正味売却価額の高い方</strong>（「使い続ける」か「売る」か、有利な方まで下げれば足りる）。<br>
+      判定は割引前・測定は割引後。判定で使った割引前CFを測定に使わないこと。
+      <h3>対象範囲とグルーピング</h3>
+      減損会計の対象は<strong>固定資産</strong>。差入保証金・売掛金などの<strong>金融資産は対象外</strong>（金融商品会計で扱う）。合計欄に混ざっていても抜き出して除く。
+      <h3>配分と表示</h3>
+      減損損失は資産グループ内の各資産に<strong>帳簿価額比で配分</strong>。直接控除方式なら<strong>取得原価から</strong>減損損失を控除し、控除後の額をその後の取得原価とする（減価償却累計額はそのまま）。
+      <h3>税効果</h3>
+      減損損失は税務上<strong>損金不算入</strong> → 将来減算一時差異 → 繰延税金資産。ただし<strong>回収可能性がある分だけ</strong>計上（土地分だけ回収不能、のような指示に注意）。
+    </div>
+  </details>
+
+  <div class="card">
+    <div id="type-badge-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" style="margin-top:8px"></div>
+  </div>
+
+  <div id="answer-area">
+    <div class="label">解答欄（単位：千円。該当がない項目は空欄のままでOK）</div>
+    <div class="ans-row"><label>① 減損会計の対象となる資産の帳簿価額合計<br><span class="sub">対象外の資産に注意</span></label>
+      <div class="ans-cell"><input type="text" id="a-bvsum" inputmode="text" placeholder="千円"><div class="corr" id="c-bvsum"></div></div></div>
+    <div class="ans-row"><label>② 回収可能価額<br><span class="sub">減損を認識しない場合は空欄</span></label>
+      <div class="ans-cell"><input type="text" id="a-rec" inputmode="text" placeholder="千円"><div class="corr" id="c-rec"></div></div></div>
+    <div class="ans-row"><label>③ 減損損失（P/L）</label>
+      <div class="ans-cell"><input type="text" id="a-loss" inputmode="text" placeholder="千円"><div class="corr" id="c-loss"></div></div></div>
+    <div class="label" style="margin-top:10px">④ 減損損失の配分（帳簿価額比）と減損後の帳簿価額<br>
+      <span class="sub" style="font-size:10.5px">認識しない場合、配分額は空欄・減損後は期末帳簿価額のまま</span></div>
+    <div class="k-wrap"><table class="k-tbl a-tbl">
+      <tr><th>資産</th><th>帳簿価額</th><th>配分額</th><th>減損後</th></tr>
+      <tr><td>建物</td><td class="num" id="t-bvb"></td>
+        <td><input type="text" id="a-ab" inputmode="text" placeholder="千円"><div class="corr" id="c-ab"></div></td>
+        <td><input type="text" id="a-rb" inputmode="text" placeholder="千円"><div class="corr" id="c-rb"></div></td></tr>
+      <tr><td>器具備品</td><td class="num" id="t-bvk"></td>
+        <td><input type="text" id="a-ak" inputmode="text" placeholder="千円"><div class="corr" id="c-ak"></div></td>
+        <td><input type="text" id="a-rk" inputmode="text" placeholder="千円"><div class="corr" id="c-rk"></div></td></tr>
+      <tr><td>土地</td><td class="num" id="t-bvt"></td>
+        <td><input type="text" id="a-at" inputmode="text" placeholder="千円"><div class="corr" id="c-at"></div></td>
+        <td><input type="text" id="a-rt" inputmode="text" placeholder="千円"><div class="corr" id="c-rt"></div></td></tr>
+    </table></div>
+    <div class="ans-row"><label>⑤ 減損に係る繰延税金資産<br><span class="sub">回収可能性に注意</span></label>
+      <div class="ans-cell"><input type="text" id="a-dta" inputmode="text" placeholder="千円"><div class="corr" id="c-dta"></div></div></div>
+    <div class="ans-row"><label>⑥ 減損処理後の建物の「取得原価」<br><span class="sub">直接控除方式のB/S表示</span></label>
+      <div class="ans-cell"><input type="text" id="a-costb" inputmode="text" placeholder="千円"><div class="corr" id="c-costb"></div></div></div>
+    <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
+  </div>
+  <div id="result-area"></div>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-pull calc-btn-wide" onclick="calcFromQ()">↓ 問題から引用</button>
+      <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state={total:0,correct:0,q:null,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){return n.toLocaleString('ja-JP');}
+
+const FIELDS=[
+  {id:'bvsum'},{id:'rec'},{id:'loss'},
+  {id:'ab'},{id:'rb'},{id:'ak'},{id:'rk'},{id:'at'},{id:'rt'},
+  {id:'dta'},{id:'costb'},
+];
+
+// ============ 問題生成 ============
+// 帳簿価額 BV_i = w_i × u、減損損失 L = m × W（W=Σw_i）とすれば
+// 配分額 = L × BV_i/BV合計 = m × w_i で必ず整数になる基数設計。
+// m は10の倍数なので税効果（×30%・40%）も割り切れる。
+function gen(){
+  for(let t=0;t<500;t++){
+    const wB=rand(2,9), wK=rand(2,9), wT=rand(2,9);   // 建物・器具備品・土地の比
+    const W=wB+wK+wT;
+    const u=rand(15,60)*100;                          // 比1あたりの帳簿価額（千円）
+    const noImp=Math.random()<0.2;                    // 2割は「減損なし」パターン
+    const m=noImp?0:rand(Math.ceil(u*0.3/10),Math.floor(u*0.7/10))*10;
+    const bvB=wB*u, bvK=wK*u, bvT=wT*u;
+    const bvTotal=W*u;                                // 減損対象の帳簿価額合計
+    const L=m*W;                                      // 減損損失総額
+    const R=bvTotal-L;                                // 回収可能価額（減損ありのとき）
+
+    // 使用価値・正味売却価額・割引前CF
+    let viu,nsp,cf;
+    const gap2=rand(5,50)*100;
+    if(noImp){
+      cf=bvTotal+rand(0,80)*100;                      // CF ≥ 帳簿価額 → 認識しない
+      viu=cf-rand(10,80)*100; nsp=viu-gap2;
+      if(viu<=0||nsp<=0)continue;
+    }else{
+      const gap1=rand(1,Math.floor(L/100)-1)*100;
+      const nspHigher=Math.random()<0.3;              // 3割は正味売却価額の方が高い
+      if(nspHigher){nsp=R; viu=R-gap2;}
+      else{viu=R; nsp=R-gap2;}
+      cf=viu+gap1;                                    // 使用価値 < 割引前CF < 帳簿価額
+      if(cf>=bvTotal)continue;
+      if(nsp<=0||viu<=0)continue;
+    }
+
+    // 取得原価・減価償却累計額（土地は累計額0）
+    const adB=rand(20,80)*u/20, adK=rand(20,80)*u/20;
+    const costB=bvB+adB, costK=bvK+adK;
+
+    // 差入保証金（金融資産・対象外の引っかけ）
+    const hasDep=Math.random()<0.7;
+    const dep=hasDep?rand(10,60)*1000:0;
+
+    // 税効果
+    const rate=pick([30,40]);
+    const landNG=Math.random()<0.6;                   // 土地分の繰延税金資産は回収不能
+    const aB=m*wB, aK=m*wK, aT=m*wT;                  // 配分額
+    const dta=(landNG?aB+aK:L)*rate/100;
+
+    const q={noImp,bvB,bvK,bvT,bvTotal,L,R,viu,nsp,cf,
+      adB,adK,costB,costK,hasDep,dep,rate,landNG,aB,aK,aT,dta,
+      pullVal:cf,
+      answers:{
+        bvsum:bvTotal,
+        rec:noImp?0:R,
+        loss:L,
+        ab:aB, rb:bvB-aB,
+        ak:aK, rk:bvK-aK,
+        at:aT, rt:bvT-aT,
+        dta:noImp?0:dta,
+        costb:costB-aB,
+      }};
+
+    // ---- 問題文 ----
+    const dCol=hasDep;
+    const grand=(r1,r2,r3,r4)=>r1+r2+r3+r4;
+    q.rows=`<div class="q-note">当社のMM事業部において減損の兆候がみられた。資産のグルーピングは事業部ごとに行っており、減損損失を計上する場合は資産の種類ごとに<strong>期末現在の帳簿価額に基づき配分</strong>する。</div>`
+      +`<div class="q-note"><strong>MM事業部の所有資産の当期末の状況</strong>（単位：千円）${dCol?'<br>なお、差入保証金は金融資産に該当する。':''}</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><th>区分</th><th>建物</th><th>器具備品</th><th>土地</th>${dCol?'<th>差入保証金</th>':''}<th>合計</th></tr>`
+      +`<tr><td>取得原価</td><td class="num">${fmt(costB)}</td><td class="num">${fmt(costK)}</td><td class="num">${fmt(bvT)}</td>${dCol?`<td class="num">${fmt(dep)}</td>`:''}<td class="num">${fmt(grand(costB,costK,bvT,dep))}</td></tr>`
+      +`<tr><td>減価償却累計額</td><td class="num">${fmt(adB)}</td><td class="num">${fmt(adK)}</td><td class="num">0</td>${dCol?'<td class="num">0</td>':''}<td class="num">${fmt(adB+adK)}</td></tr>`
+      +`<tr><td>期末帳簿価額</td><td class="num">${fmt(bvB)}</td><td class="num">${fmt(bvK)}</td><td class="num">${fmt(bvT)}</td>${dCol?`<td class="num">${fmt(dep)}</td>`:''}<td class="num">${fmt(grand(bvB,bvK,bvT,dep))}</td></tr>`
+      +`</table></div>`
+      +`<div class="q-note"><strong>MM事業部から得られる将来キャッシュ・フロー等</strong>（単位：千円）</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><td>割引前将来キャッシュ・フローの総額</td><td class="num">${fmt(cf)}</td></tr>`
+      +`<tr><td>資産グループの使用価値</td><td class="num">${fmt(viu)}</td></tr>`
+      +`<tr><td>資産グループの正味売却価額</td><td class="num">${fmt(nsp)}</td></tr>`
+      +`</table></div>`
+      +`<div class="q-note"><strong>決算整理事項</strong><br>`
+      +`・貸借対照表の表示は、取得原価から減損損失を直接控除し、控除後の金額をその後の取得原価とする（直接控除方式）<br>`
+      +`・減損損失は税務上損金不算入であり、税効果会計を適用する（法定実効税率 ${rate}%）<br>`
+      +(landNG
+        ?`・繰延税金資産の回収可能性：建物・器具備品に係る分は回収可能、<strong>土地に係る分は回収不能</strong>とする</div>`
+        :`・繰延税金資産の回収可能性：減損損失に係る分は全額回収可能とする</div>`)
+      +`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">下の解答欄をすべて埋める（該当がない項目は空欄）</span></div>`;
+
+    // ---- 解説 ----
+    let exp=`<div class="step">① 対象範囲（金融資産を除くゲート）</div>`;
+    if(dCol)exp+=`・差入保証金 ${fmt(dep)} は<strong>金融資産 → 減損会計の対象外</strong>。合計欄 ${fmt(grand(bvB,bvK,bvT,dep))} をそのまま使わないこと<br>`;
+    exp+=`対象の帳簿価額合計 ＝ 建物 ${fmt(bvB)} ＋ 器具備品 ${fmt(bvK)} ＋ 土地 ${fmt(bvT)} ＝ <strong>${fmt(bvTotal)}</strong>`;
+    exp+=`<div class="step">② 認識の判定（割引前CFと比較）</div>`
+      +`割引前将来CF総額 ${fmt(cf)} ${noImp?'≥':'＜'} 帳簿価額合計 ${fmt(bvTotal)} → <strong>減損損失を認識${noImp?'しない':'する'}</strong>`;
+    if(noImp){
+      exp+=`<br>認識しないので測定（②以降）には進まない。仕訳なし。回収可能価額・減損損失・配分・税効果はすべて「該当なし」。減損後の帳簿価額は期末帳簿価額のまま。`
+        +`<div class="step">⑥ B/S表示</div>減損処理を行わないため建物の取得原価は <strong>${fmt(costB)}</strong> のまま。`;
+    }else{
+      exp+=`<div class="step">③ 測定（回収可能価額まで切下げ）</div>`
+        +`回収可能価額 ＝ 使用価値 ${fmt(viu)} と 正味売却価額 ${fmt(nsp)} の<strong>高い方</strong> ＝ <strong>${fmt(R)}</strong>${nsp===R?'（今回は正味売却価額の方が高い）':''}<br>`
+        +`減損損失 ＝ ${fmt(bvTotal)} − ${fmt(R)} ＝ <strong>${fmt(L)}</strong>`
+        +`<div class="step">④ 帳簿価額比で配分</div>`
+        +`<div class="k-wrap"><table class="k-tbl">`
+        +`<tr><th>資産</th><th>帳簿価額</th><th>配分計算</th><th>配分額</th><th>減損後</th></tr>`
+        +`<tr><td>建物</td><td class="num">${fmt(bvB)}</td><td class="num">${fmt(L)}×${fmt(bvB)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aB)}</strong></td><td class="num">${fmt(bvB-aB)}</td></tr>`
+        +`<tr><td>器具備品</td><td class="num">${fmt(bvK)}</td><td class="num">${fmt(L)}×${fmt(bvK)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aK)}</strong></td><td class="num">${fmt(bvK-aK)}</td></tr>`
+        +`<tr><td>土地</td><td class="num">${fmt(bvT)}</td><td class="num">${fmt(L)}×${fmt(bvT)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aT)}</strong></td><td class="num">${fmt(bvT-aT)}</td></tr>`
+        +`<tr><td>計</td><td class="num">${fmt(bvTotal)}</td><td class="num"></td><td class="num"><strong>${fmt(L)}</strong></td><td class="num">${fmt(R)}</td></tr>`
+        +`</table></div>`
+        +`仕訳：（借）減損損失 ${fmt(L)} ／（貸）建物 ${fmt(aB)}・器具備品 ${fmt(aK)}・土地 ${fmt(aT)}`
+        +`<div class="step">⑤ 税効果（損金不算入 → 将来減算一時差異）</div>`
+        +(landNG
+          ?`土地分は回収不能なので<strong>建物・器具備品分のみ</strong>：（${fmt(aB)} ＋ ${fmt(aK)}）× ${rate}% ＝ <strong>${fmt(dta)}</strong>`
+          :`全額回収可能：${fmt(L)} × ${rate}% ＝ <strong>${fmt(dta)}</strong>`)
+        +`<br>仕訳：（借）繰延税金資産 ${fmt(dta)} ／（貸）法人税等調整額 ${fmt(dta)}`
+        +`<div class="step">⑥ B/S表示（直接控除方式）</div>`
+        +`減損損失は<strong>取得原価から</strong>控除する（減価償却累計額 ${fmt(adB)} はそのまま）：<br>`
+        +`建物の取得原価 ＝ ${fmt(costB)} − ${fmt(aB)} ＝ <strong>${fmt(costB-aB)}</strong>（帳簿価額 ${fmt(bvB-aB)}）`;
+    }
+    q.exp=exp;
+    q.badge=`<span class="type-badge type-d">減損会計ワークシート</span>`;
+    return q;
+  }
+  return null;
+}
+
+// ============ 出題・採点 ============
+function newQ(){
+  const q=gen();
+  if(!q)return;
+  state.q=q;
+  state.startTime=Date.now();
+  for(const f of FIELDS){
+    const inp=document.getElementById('a-'+f.id);
+    inp.value='';inp.disabled=false;
+    inp.classList.remove('cell-ok','cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='none';c.textContent='';
+  }
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('type-badge-wrap').innerHTML=q.badge;
+  document.getElementById('q-body').innerHTML=q.rows;
+  document.getElementById('t-bvb').textContent=fmt(q.bvB);
+  document.getElementById('t-bvk').textContent=fmt(q.bvK);
+  document.getElementById('t-bvt').textContent=fmt(q.bvT);
+}
+
+// 空欄は 0（該当なし）として扱う
+function parseCell(id){
+  const raw=document.getElementById('a-'+id).value
+    .replace(/[,，\s円]/g,'').replace(/[−－▲△]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(raw===''||raw==='-')return 0;
+  const n=parseInt(raw,10);
+  return isNaN(n)?null:n;
+}
+function corrStr(v){
+  if(v===0)return '正解: 0（該当なし）';
+  return '正解: '+fmt(v)+'千円';
+}
+
+function checkAnswer(){
+  const q=state.q;
+  let allOk=true;
+  for(const f of FIELDS){
+    const correct=q.answers[f.id]||0;
+    const user=parseCell(f.id);
+    const ok=user===correct;
+    if(!ok)allOk=false;
+    const inp=document.getElementById('a-'+f.id);
+    inp.disabled=true;
+    inp.classList.remove('cell-ok','cell-ng');
+    inp.classList.add(ok?'cell-ok':'cell-ng');
+    const c=document.getElementById('c-'+f.id);
+    c.style.display='block';
+    c.textContent=corrStr(correct);
+  }
+  state.total++;
+  if(allOk)state.correct++;
+  document.getElementById('s-total').textContent=state.total;
+  document.getElementById('s-correct').textContent=state.correct;
+  document.getElementById('result-area').innerHTML=`
+    <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全欄正解！':'✗ 赤い欄が不正解（各欄の下に正解を表示）'}</div>
+    <div class="explain">所要時間：${fmtElapsed(Date.now()-state.startTime)}<br>${q.exp}</div>
+  `;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){
+  document.getElementById('btn-check').style.display='block';
+  newQ();
+}
+
+newQ();
+for(const f of FIELDS){
+  document.getElementById('a-'+f.id).addEventListener('keydown',e=>{if(e.key==='Enter')checkAnswer();});
+}
+
+// ============ 電卓 ============
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.'; }
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtDisp(s.disp);
+}
+function calcFromQ(){
+  const q=state.q;if(!q)return;
+  cs.disp=String(q.pullVal);cs.fresh=true;cs.prev=null;cs.op=null;
+  document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
+}
+// 数字が入っている最後の欄の「次の欄」へ反映（すべて空なら先頭へ。
+// 末尾まで埋まっていたら残っている空欄の先頭へ）
+function calcToAns(){
+  const n=parseFloat(cs.disp);
+  if(isNaN(n))return;
+  let lastFilled=-1;
+  FIELDS.forEach((f,i)=>{
+    if(document.getElementById('a-'+f.id).value.trim()!=='')lastFilled=i;
+  });
+  let idx=lastFilled+1;
+  if(idx>=FIELDS.length){
+    idx=FIELDS.findIndex(f=>document.getElementById('a-'+f.id).value.trim()==='');
+    if(idx<0)return;   // 全欄埋まっている
+  }
+  const el=document.getElementById('a-'+FIELDS[idx].id);
+  if(el.disabled)return;
+  el.value=String(Math.round(n));
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtDisp(s){const neg=s.startsWith('-');const body=neg?s.slice(1):s;const[i,d]=body.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return (neg?'-':'')+(d!==undefined?f+'.'+d:f);}
+
+// PWA: service worker 登録
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
