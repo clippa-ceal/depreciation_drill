@@ -80,6 +80,10 @@ details.basics summary::-webkit-details-marker{display:none}
 .k-tbl th{background:var(--color-bg-secondary);font-weight:600;color:var(--color-text2);font-size:11px}
 .k-tbl td:first-child{text-align:left;font-weight:500;color:var(--color-text);white-space:nowrap}
 .k-tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.a-tbl{margin:2px 0 8px}
+.a-tbl td{padding:4px 4px}
+.a-tbl input[type=text]{margin:0;font-size:14px;padding:8px 6px;text-align:right;font-variant-numeric:tabular-nums}
+.a-tbl .corr{font-size:10.5px;color:var(--color-text2);text-align:right;margin-top:2px;display:none}
 </style>
 </head>
 <body>
@@ -140,12 +144,20 @@ details.basics summary::-webkit-details-marker{display:none}
       <div class="ans-cell"><input type="text" id="a-rec" inputmode="text" placeholder="千円"><div class="corr" id="c-rec"></div></div></div>
     <div class="ans-row"><label>③ 減損損失（P/L）</label>
       <div class="ans-cell"><input type="text" id="a-loss" inputmode="text" placeholder="千円"><div class="corr" id="c-loss"></div></div></div>
-    <div class="ans-row"><label>④ 減損損失の配分額：建物</label>
-      <div class="ans-cell"><input type="text" id="a-ab" inputmode="text" placeholder="千円"><div class="corr" id="c-ab"></div></div></div>
-    <div class="ans-row"><label>④ 減損損失の配分額：器具備品</label>
-      <div class="ans-cell"><input type="text" id="a-ak" inputmode="text" placeholder="千円"><div class="corr" id="c-ak"></div></div></div>
-    <div class="ans-row"><label>④ 減損損失の配分額：土地</label>
-      <div class="ans-cell"><input type="text" id="a-at" inputmode="text" placeholder="千円"><div class="corr" id="c-at"></div></div></div>
+    <div class="label" style="margin-top:10px">④ 減損損失の配分（帳簿価額比）と減損後の帳簿価額<br>
+      <span class="sub" style="font-size:10.5px">認識しない場合、配分額は空欄・減損後は期末帳簿価額のまま</span></div>
+    <div class="k-wrap"><table class="k-tbl a-tbl">
+      <tr><th>資産</th><th>帳簿価額</th><th>配分額</th><th>減損後</th></tr>
+      <tr><td>建物</td><td class="num" id="t-bvb"></td>
+        <td><input type="text" id="a-ab" inputmode="text" placeholder="千円"><div class="corr" id="c-ab"></div></td>
+        <td><input type="text" id="a-rb" inputmode="text" placeholder="千円"><div class="corr" id="c-rb"></div></td></tr>
+      <tr><td>器具備品</td><td class="num" id="t-bvk"></td>
+        <td><input type="text" id="a-ak" inputmode="text" placeholder="千円"><div class="corr" id="c-ak"></div></td>
+        <td><input type="text" id="a-rk" inputmode="text" placeholder="千円"><div class="corr" id="c-rk"></div></td></tr>
+      <tr><td>土地</td><td class="num" id="t-bvt"></td>
+        <td><input type="text" id="a-at" inputmode="text" placeholder="千円"><div class="corr" id="c-at"></div></td>
+        <td><input type="text" id="a-rt" inputmode="text" placeholder="千円"><div class="corr" id="c-rt"></div></td></tr>
+    </table></div>
     <div class="ans-row"><label>⑤ 減損に係る繰延税金資産<br><span class="sub">回収可能性に注意</span></label>
       <div class="ans-cell"><input type="text" id="a-dta" inputmode="text" placeholder="千円"><div class="corr" id="c-dta"></div></div></div>
     <div class="ans-row"><label>⑥ 減損処理後の建物の「取得原価」<br><span class="sub">直接控除方式のB/S表示</span></label>
@@ -193,7 +205,8 @@ function fmt(n){return n.toLocaleString('ja-JP');}
 
 const FIELDS=[
   {id:'bvsum'},{id:'rec'},{id:'loss'},
-  {id:'ab'},{id:'ak'},{id:'at'},{id:'dta'},{id:'costb'},
+  {id:'ab'},{id:'rb'},{id:'ak'},{id:'rk'},{id:'at'},{id:'rt'},
+  {id:'dta'},{id:'costb'},
 ];
 
 // ============ 問題生成 ============
@@ -250,7 +263,9 @@ function gen(){
         bvsum:bvTotal,
         rec:noImp?0:R,
         loss:L,
-        ab:aB, ak:aK, at:aT,
+        ab:aB, rb:bvB-aB,
+        ak:aK, rk:bvK-aK,
+        at:aT, rt:bvT-aT,
         dta:noImp?0:dta,
         costb:costB-aB,
       }};
@@ -287,7 +302,7 @@ function gen(){
     exp+=`<div class="step">② 認識の判定（割引前CFと比較）</div>`
       +`割引前将来CF総額 ${fmt(cf)} ${noImp?'≥':'＜'} 帳簿価額合計 ${fmt(bvTotal)} → <strong>減損損失を認識${noImp?'しない':'する'}</strong>`;
     if(noImp){
-      exp+=`<br>認識しないので測定（②以降）には進まない。仕訳なし。回収可能価額・減損損失・配分・税効果はすべて「該当なし」。`
+      exp+=`<br>認識しないので測定（②以降）には進まない。仕訳なし。回収可能価額・減損損失・配分・税効果はすべて「該当なし」。減損後の帳簿価額は期末帳簿価額のまま。`
         +`<div class="step">⑥ B/S表示</div>減損処理を行わないため建物の取得原価は <strong>${fmt(costB)}</strong> のまま。`;
     }else{
       exp+=`<div class="step">③ 測定（回収可能価額まで切下げ）</div>`
@@ -336,6 +351,9 @@ function newQ(){
   document.getElementById('btn-check').style.display='block';
   document.getElementById('type-badge-wrap').innerHTML=q.badge;
   document.getElementById('q-body').innerHTML=q.rows;
+  document.getElementById('t-bvb').textContent=fmt(q.bvB);
+  document.getElementById('t-bvk').textContent=fmt(q.bvK);
+  document.getElementById('t-bvt').textContent=fmt(q.bvT);
 }
 
 // 空欄は 0（該当なし）として扱う
