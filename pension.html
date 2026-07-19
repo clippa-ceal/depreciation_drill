@@ -257,7 +257,7 @@ function renderTable(e){
         }
       }
       h+='</tr><tr>';
-      h+=`<td class="ws-cell"><input type="text" id="c_yoso2_E" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('E')">→横計</button><span class="ws-ans" id="ans_c_yoso_E"></span></td>`;
+      h+=`<td class="ws-cell"><input type="text" id="c_yoso2_E" autocomplete="off"><button class="ws-sumbtn" onclick="fillYoko('E')">→横計</button><span class="ws-note">※退職給付引当金</span><span class="ws-ans" id="ans_c_yoso_E"></span></td>`;
       h+='</tr>';
       continue;
     }
@@ -278,8 +278,10 @@ function renderTable(e){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoHiyo()">→横計</button><span class="ws-note">※退職給付費用</span><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(c==='C'&&(r==='kishu'||r==='jissai')){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoC('${r}')">→横計</button><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }else if(r==='jissai'&&c==='D'){
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-note">※期末時点未認識差異</span><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(r==='kishu'&&c==='D'){
-        h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span><span class="ws-note">※当期発生</span><input type="text" id="c_shin_D" autocomplete="off"><span class="ws-ans" id="ans_c_shin_D"></span></td>`;
+        h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span><span class="ws-note">※↓当期発生</span><input type="text" id="c_shin_D" autocomplete="off"><span class="ws-ans" id="ans_c_shin_D"></span></td>`;
       }else{
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }
