@@ -133,6 +133,12 @@ details.basics summary::-webkit-details-marker{display:none}
       <strong>2年目以降</strong>は、期首の円帳簿価額＝前期末の外貨償却原価×<strong>前期末CR</strong>（＝前期末B/S）。取得時のHRはもう使わない。
       <h3>その他有価証券の債券（金利調整差額あり）</h3>
       償却原価法を適用したうえで時価評価するハイブリッド。①償却額×AR→有価証券利息 ②期末B/S＝外貨時価×CR ③B/Sと償却原価の円換算額との差額は、<strong>原則</strong>すべて評価差額金、<strong>容認</strong>なら（外貨時価−外貨償却原価）×CR分だけ評価差額金にして残りを為替差損益にする。
+      <h3>クーポン利息の換算（満期保有＋クーポン）</h3>
+      利息の換算レートは<strong>「点は利払日レート、線はAR、残高はCR」</strong>で使い分ける。<br>
+      ・<strong>クーポン受取</strong>＝外貨が実際に動いた「点」の取引 → <strong>利払日のレート</strong>で確定<br>
+      ・<strong>未収利息</strong>＝これから円で回収する貨幣性の債権 → <strong>CR</strong><br>
+      ・<strong>償却額</strong>＝期間全体でじわっと発生する「線」の収益 → <strong>AR</strong><br>
+      為替差損益が出るのは<strong>債券本体（CR換算）だけ</strong>。クーポン・未収利息は計上時のレートのままなので為替差損益は出ない。定額法でも利息法でも、この使い分けは同じ（変わるのは外貨ベースの償却額の計算方法だけ）。
       <h3>減損（強制評価減）</h3>
       時価が著しく下落（おおむね50%以上）し回復見込み不明なら、保有目的によらず<strong>時価×CR</strong>まで切り下げ、評価損はP/L（切放し）。
     </div>
@@ -158,6 +164,10 @@ details.basics summary::-webkit-details-marker{display:none}
       <div class="ans-cell"><input type="text" id="a-yen" inputmode="text" placeholder="円"><div class="corr" id="c-yen"></div></div></div>
     <div class="ans-row"><label>有価証券利息（償却額）<br><span class="sub">減額はマイナス</span></label>
       <div class="ans-cell"><input type="text" id="a-int" inputmode="text" placeholder="円"><div class="corr" id="c-int"></div></div></div>
+    <div class="ans-row"><label>有価証券利息（クーポン分）<br><span class="sub">当期受取分＋未収分</span></label>
+      <div class="ans-cell"><input type="text" id="a-cpn" inputmode="text" placeholder="円"><div class="corr" id="c-cpn"></div></div></div>
+    <div class="ans-row"><label>未収有価証券利息（B/S）</label>
+      <div class="ans-cell"><input type="text" id="a-accr" inputmode="text" placeholder="円"><div class="corr" id="c-accr"></div></div></div>
     <div class="ans-row"><label>有価証券評価損益<br><span class="sub">損はマイナス</span></label>
       <div class="ans-cell"><input type="text" id="a-pl" inputmode="text" placeholder="円"><div class="corr" id="c-pl"></div></div></div>
     <div class="ans-row"><label>その他有価証券評価差額金<br><span class="sub">借方はマイナス</span></label>
@@ -232,7 +242,7 @@ function askRow(text){
 }
 const ASK_ALL='期末評価について、下の解答欄をすべて埋める（該当がない項目は空欄）';
 const FIELDS=[
-  {id:'usd'},{id:'yen'},{id:'int'},{id:'pl'},{id:'oci'},{id:'fx'},
+  {id:'usd'},{id:'yen'},{id:'int'},{id:'cpn'},{id:'accr'},{id:'pl'},{id:'oci'},{id:'fx'},
 ];
 function periodRow(y){
   return `<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${y}年4月1日〜X${y+1}年3月31日</span></div>`;
@@ -466,6 +476,77 @@ function gen3Y2(){
   return null;
 }
 
+// ============ タイプ⑤：満期保有＋クーポン利息（クーポン＝利払日レート／未収＝CR／償却額＝AR） ============
+function gen5(){
+  for(let t=0;t<500;t++){
+    const y=rand(5,12);
+    const HR=rand(90,150);
+    const CR=HR+(rand(0,1)?1:-1)*rand(4,15);
+    const AR=HR+Math.round((CR-HR)*rand(3,7)/10);
+    const R1=HR+Math.round((CR-HR)*rand(2,8)/10);   // 利払時レート
+    if(AR===HR||AR===CR||R1===HR||R1===CR||R1===AR)continue;  // 4つのレートを全部区別する
+    const years=pick([2,3,4,5]);
+    const M=years*12;
+    const u=rand(10,40);
+    const F=u*1200;                                 // 外貨額面（月割クーポンが割り切れる基数）
+    const c=rand(2,6);                              // クーポン年利％
+    const cpm=u*c;                                  // 月あたりクーポン（ドル）＝F×c%÷12
+    const d=rand(1,40)*5;                           // 月あたり償却額（ドル）
+    if(d*M>F*0.2)continue;                          // 金利調整差額として現実的な範囲に
+    const C=F-d*M;                                  // 外貨取得原価（割引取得）
+    const f0=rand(1,5);                             // 取得月（5〜9月の月初・発行と同時に取得）
+    const n=12-f0;
+    const payF=f0+5;                                // 利払月（発行の6か月後の月末）
+    const am=d*n;                                   // 当期の外貨償却額
+    const amortYen=am*AR;
+    const cp1=cpm*6;                                // 半年分クーポン（ドル）
+    const cp1Yen=cp1*R1;
+    const accrM=6-f0;                               // 利払日の翌月〜3月の月数
+    const accr=cpm*accrM;                           // 未収利息（ドル）
+    const accrYen=accr*CR;
+    const endBook=C+am;                             // 期末の外貨償却原価
+    const bs=endBook*CR;
+    const fx=bs-(C*HR+amortYen);                    // 為替差損益（債券本体からのみ生じる）
+    if(fx===0)continue;
+    const q={type:5,y,HR,CR,AR,f0,n,payF,pullVal:C,tl:true,spanS:f0,spanE:11,
+      answers:{usd:endBook,yen:bs,int:amortYen,cpn:cp1Yen+accrYen,accr:accrYen,pl:0,oci:0,fx:fx}};
+    q.rows=periodRow(y)
+      +`<div class="q-row"><span class="q-key">銘柄</span><span class="q-val">E社社債（満期保有目的）</span></div>`
+      +`<div class="q-row"><span class="q-key">取得日</span><span class="q-val">${dStr(y,f0)}1日（発行と同時に取得。満期：${dStr(y,f0+M-1)}末日・${M}か月後）</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨額面</span><span class="q-val">${fmtD(F)}</span></div>`
+      +`<div class="q-row"><span class="q-key">外貨取得原価</span><span class="q-val">${fmtD(C)}</span></div>`
+      +`<div class="q-row"><span class="q-key">クーポン</span><span class="q-val">年利${c}%・年2回半年ごと後払い（当期の利払日は${cm(payF)}月末日）</span></div>`
+      +`<div class="q-row"><span class="q-key">処理方法</span><span class="q-val">償却原価法（定額法・月割）。差額は金利調整差額</span></div>`
+      +`<div class="q-row"><span class="q-key">取得時レート</span><span class="q-val">1ドル ${HR}円（HR）</span></div>`
+      +`<div class="q-row"><span class="q-key">利払時レート</span><span class="q-val">1ドル ${R1}円（${cm(payF)}月末日）</span></div>`
+      +`<div class="q-row"><span class="q-key">期中平均レート</span><span class="q-val">1ドル ${AR}円（AR）</span></div>`
+      +`<div class="q-row"><span class="q-key">決算時レート</span><span class="q-val">1ドル ${CR}円（CR）</span></div>`
+      +askRow(ASK_ALL);
+    q.exp=`<div class="step">① クーポン受取（${cm(payF)}月末日の利払日）→ 利払時レート</div>`
+      +`額面${fmtD(F)} × ${c}% × 6/12 ＝ ${fmtD(cp1)} × 利払時 ${R1}円 ＝ <strong>${fmt(cp1Yen)}円</strong>（有価証券利息）<br>`
+      +`※実際に外貨が動いた「点」の取引 → その日のレートで確定。以後は動かさない`
+      +`<div class="step">② 未収利息（${cm(payF+1)}月〜3月の${accrM}か月分）→ CR</div>`
+      +`額面${fmtD(F)} × ${c}% × ${accrM}/12 ＝ ${fmtD(accr)} × CR ${CR}円 ＝ <strong>${fmt(accrYen)}円</strong>（未収有価証券利息／有価証券利息）<br>`
+      +`※これから円で回収する貨幣性の債権 → 決算時レート`
+      +`<div class="step">③ 償却額（月割）→ AR</div>`
+      +`（額面${fmtD(F)} − 取得原価${fmtD(C)}）÷ ${M}か月 ＝ 月${fmtD(d)} × ${n}か月 ＝ ${fmtD(am)}<br>`
+      +`${fmtD(am)} × AR ${AR}円 ＝ <strong>${fmt(amortYen)}円</strong>（有価証券利息を増額）<br>`
+      +`※期間全体でじわっと発生する「線」の収益 → 平均レート`
+      +`<div class="step">④ 期末の外貨償却原価とB/S計上額 → CR</div>`
+      +`${fmtD(C)} ＋ ${fmtD(am)} ＝ ${fmtD(endBook)}<br>`
+      +`${fmtD(endBook)} × CR ${CR}円 ＝ <strong>${fmt(bs)}円</strong>（B/S計上額）`
+      +`<div class="step">⑤ 為替差損益（債券本体からのみ）</div>`
+      +`帳簿側：取得 ${fmt(C*HR)}円 ＋ 償却 ${fmt(amortYen)}円 ＝ ${fmt(C*HR+amortYen)}円<br>`
+      +`${fmt(bs)} − ${fmt(C*HR+amortYen)} ＝ <strong>${fmtS(fx)}円</strong>（${fx>0?'為替差益':'為替差損'}）<br>`
+      +`※クーポンと未収利息は計上時のレートのまま → 為替差損益は出ない`
+      +`<div class="step">（参考）P/Lの有価証券利息 合計</div>`
+      +`償却 ${fmt(amortYen)} ＋ クーポン ${fmt(cp1Yen)} ＋ 未収 ${fmt(accrYen)} ＝ ${fmt(amortYen+cp1Yen+accrYen)}円`;
+    q.badge=`<span class="type-badge type-d">満期保有＋クーポン利息</span>`;
+    return q;
+  }
+  return null;
+}
+
 // ============ タイプ④：子会社・関連会社株式／減損 ============
 function gen4(){
   const y=rand(5,12);
@@ -520,9 +601,10 @@ const CATS=[
   {key:'trading',label:'売買目的',gen:gen1,w:1},
   {key:'other',label:'その他有価証券',gen:gen2,w:4},
   {key:'htm',label:'満期保有（償却原価法）',gen:gen3,w:4},
+  {key:'coupon',label:'満期保有＋クーポン利息',gen:gen5,w:4},
   {key:'subsid',label:'子会社・関連／減損',gen:gen4,w:1},
 ];
-const enabled={trading:true,other:true,htm:true,subsid:true};
+const enabled={trading:true,other:true,htm:true,coupon:true,subsid:true};
 function renderToggles(){
   document.getElementById('cat-toggles').innerHTML=CATS.map(c=>
     `<button type="button" class="toggle-chip ${enabled[c.key]?'on':''}" onclick="toggleCat('${c.key}')">${c.label}</button>`
@@ -577,6 +659,10 @@ function drawTimeline(q,reveal){
   mk('text',{x:xOf(12)-2,y:y0-27,'text-anchor':'end','font-size':'9',fill:red,'font-weight':'500'},'決算 3/31');
   mk('circle',{cx:xOf(q.f0),cy:y0,r:'4.5',fill:blue});
   mk('text',{x:xOf(q.f0),y:y0-13,'text-anchor':'middle','font-size':'9',fill:blue,'font-weight':'500'},'取得');
+  if(q.payF!=null){
+    mk('circle',{cx:xOf(q.payF+1),cy:y0,r:'4.5',fill:'#854F0B'});
+    mk('text',{x:xOf(q.payF+1),y:y0-13,'text-anchor':'middle','font-size':'9',fill:'#854F0B','font-weight':'500'},'利払');
+  }
 }
 
 // ============ 出題・採点 ============
@@ -620,7 +706,7 @@ function checkAnswer(){
   const q=state.q;
   let allOk=true;
   for(const f of FIELDS){
-    const correct=q.answers[f.id];
+    const correct=q.answers[f.id]||0;
     const user=parseCell(f.id);
     const ok=user===correct;
     if(!ok)allOk=false;
