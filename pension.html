@@ -52,12 +52,12 @@ td.rowlabel{background:var(--color-bg-secondary);font-size:11px;font-weight:600;
 .ws-static{font-size:14px;font-weight:600}
 .ws-given{background:#F4F3EF}
 .ws-zero{color:#BBB8AE;font-size:14px}
-.ws-cell input{width:58px;font-size:15px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;margin:0;background:var(--color-card)}
+.ws-cell input{width:58px;font-size:15px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;margin:0 auto;display:block;background:var(--color-card)}
 .ws-triple input{margin-bottom:3px;display:block}
 .ws-triple input:last-of-type{margin-bottom:0}
 input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
-.ws-sumbtn{width:58px;margin:4px 0 0;font-size:10px;padding:3px 4px;border-radius:6px;background:var(--color-bg-secondary);color:var(--color-info);border:0.5px solid var(--color-border2);font-weight:600;display:block}
+.ws-sumbtn{width:58px;margin:4px auto 0;font-size:10px;padding:3px 4px;border-radius:6px;background:var(--color-bg-secondary);color:var(--color-info);border:0.5px solid var(--color-border2);font-weight:600;display:block}
 .ws-note{display:block;font-size:9px;color:var(--color-text2);margin-top:2px;line-height:1.3}
 .ws-ans{font-size:11px;color:#A32D2D;display:none;margin-top:2px;font-weight:600}
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
@@ -279,7 +279,7 @@ function renderTable(e){
       }else if(c==='C'&&(r==='kishu'||r==='jissai')){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoC('${r}')">→横計</button><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(r==='jissai'&&c==='D'){
-        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-note">※期末時点未認識差異</span><span class="ws-ans" id="ans_${base}"></span></td>`;
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-note">※期末未認識差異</span><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(r==='kishu'&&c==='D'){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span><span class="ws-note">※↓当期発生</span><input type="text" id="c_shin_D" autocomplete="off"><span class="ws-ans" id="ans_c_shin_D"></span></td>`;
       }else{
