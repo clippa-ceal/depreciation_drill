@@ -275,6 +275,8 @@ function renderTable(e){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(r==='hiyo'&&c==='E'){
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoHiyo()">→横計</button><span class="ws-note">※退職給付費用</span><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }else if(c==='C'&&(r==='kishu'||r==='jissai')){
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoC('${r}')">→横計</button><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else{
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }
@@ -311,6 +313,10 @@ function fillYoko(c){
 function fillYokoHiyo(){
   const v=readCell('hiyo','C')+readCell('hiyo','D');
   document.getElementById('c_hiyo_E').value=String(v);
+}
+function fillYokoC(r){
+  const v=readCell(r,'B')-readCell(r,'A');
+  document.getElementById(`c_${r}_C`).value=String(v);
 }
 
 function newQ(){
