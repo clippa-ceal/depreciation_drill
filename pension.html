@@ -58,6 +58,7 @@ td.rowlabel{background:var(--color-bg-secondary);font-size:11px;font-weight:600;
 input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
 input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
 .ws-sumbtn{width:58px;margin:4px 0 0;font-size:10px;padding:3px 4px;border-radius:6px;background:var(--color-bg-secondary);color:var(--color-info);border:0.5px solid var(--color-border2);font-weight:600;display:block}
+.ws-note{display:block;font-size:9px;color:var(--color-text2);margin-top:2px;line-height:1.3}
 .ws-ans{font-size:11px;color:#A32D2D;display:none;margin-top:2px;font-weight:600}
 .result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
 .result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
@@ -273,6 +274,8 @@ function renderTable(e){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><input type="text" id="${base}_2" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else if(tp==='double'){
         h+=`<td class="ws-cell ws-triple"><input type="text" id="${base}_0" autocomplete="off"><input type="text" id="${base}_1" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
+      }else if(r==='hiyo'&&c==='E'){
+        h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><button class="ws-sumbtn" onclick="fillYokoHiyo()">→横計</button><span class="ws-note">※退職給付費用</span><span class="ws-ans" id="ans_${base}"></span></td>`;
       }else{
         h+=`<td class="ws-cell"><input type="text" id="${base}" autocomplete="off"><span class="ws-ans" id="ans_${base}"></span></td>`;
       }
@@ -305,6 +308,10 @@ function yosoVal(c){
 function fillYoko(c){
   const v=c==='C'?yosoVal('B')-yosoVal('A'):yosoVal('C')+yosoVal('D');
   document.getElementById(`c_yoso2_${c}`).value=String(v);
+}
+function fillYokoHiyo(){
+  const v=readCell('hiyo','C')+readCell('hiyo','D');
+  document.getElementById('c_hiyo_E').value=String(v);
 }
 
 function newQ(){
