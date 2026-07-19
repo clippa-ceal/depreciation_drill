@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0F6E56">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>貸倒引当金ワークシートドリル</title>
+<title>減損会計ワークシートドリル</title>
 <style>
 :root{
   --color-bg:#F7F6F3;
@@ -84,7 +84,7 @@ details.basics summary::-webkit-details-marker{display:none}
 </head>
 <body>
 <div id="app">
-  <h1>貸倒引当金ワークシートドリル</h1>
+  <h1>減損会計ワークシートドリル</h1>
   <div class="nav">
     <a href="index.html">減価償却</a>
     <a href="pension.html">退職給付</a>
@@ -96,7 +96,7 @@ details.basics summary::-webkit-details-marker{display:none}
     <a href="cash.html">現金預金</a>
     <a href="interest.html">利息</a>
     <a href="stockoption.html">ストックオプション</a>
-    <a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html" class="nav-on">貸倒</a><a href="genson.html">減損</a>
+    <a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html">貸倒</a><a href="genson.html" class="nav-on">減損</a>
   </div>
   <div class="stat-grid">
     <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
@@ -106,25 +106,23 @@ details.basics summary::-webkit-details-marker{display:none}
   <details class="basics">
     <summary>基礎知識まとめ</summary>
     <div class="basics-body">
-      <h3>債権の3分類と見積り方法（ここを覚える）</h3>
+      <h3>減損の3ステップ（比較相手が毎回変わるのがキモ）</h3>
       <div class="k-wrap">
       <table class="k-tbl">
-        <tr><th>区分</th><th>状態</th><th>方法</th><th>計算</th></tr>
-        <tr><td>一般債権</td><td>正常</td><td>貸倒実績率法</td><td>残高×実績率</td></tr>
-        <tr><td>貸倒懸念債権</td><td>弁済に重大な問題</td><td>財務内容評価法<br>（またはCF見積法）</td><td>（債権−担保等）×見積率</td></tr>
-        <tr><td>破産更生債権等</td><td>破産・取引停止処分など</td><td>財務内容評価法のみ</td><td>（債権−担保等）の<strong>全額</strong></td></tr>
+        <tr><th>ステップ</th><th>やること</th><th>使う金額</th></tr>
+        <tr><td>① 兆候</td><td>減損の兆候があるか</td><td>—</td></tr>
+        <tr><td>② 認識の判定</td><td>帳簿価額と比較</td><td><strong>割引前</strong>将来CF総額</td></tr>
+        <tr><td>③ 測定</td><td>回収可能価額まで切下げ</td><td>回収可能価額（<strong>割引後</strong>）</td></tr>
       </table>
       </div>
-      悪化するほど「個別に・厳しく」見積もる。破産更生債権等はB/Sで<strong>投資その他の資産</strong>へ振替。
-      <h3>解く順番（ワークシート）</h3>
-      <strong>⓪期中修正 → ①残高の振り分け → ②区分ごとの要設定額 → ③貸引の増減（差額補充）</strong><br>
-      ⓪のゲートに引っかけが集中する：<br>
-      ・<strong>当期発生</strong>債権の貸倒 → 貸引は使えない。<strong>全額貸倒損失</strong>（前期末の貸引はこの債権を見積もっていない）<br>
-      ・<strong>前期以前</strong>債権の貸倒 → まず<strong>貸引を充当</strong>、不足分だけ貸倒損失<br>
-      ・<strong>不渡り</strong> → 受取手形から<strong>不渡手形</strong>へ振替。額面＋拒絶証書作成費等（相手に遡求できる金額）<br>
-      ・過年度償却済み債権の回収 → <strong>償却債権取立益</strong>。ワークシートには出てこない
-      <h3>③の締め方</h3>
-      前期末残高 − 期中充当 ＝ 整理前残高。要設定額との差が<strong>繰入</strong>（マイナスなら戻入）。営業債権分は販管費。
+      <strong>回収可能価額 ＝ 使用価値と正味売却価額の高い方</strong>（「使い続ける」か「売る」か、有利な方まで下げれば足りる）。<br>
+      判定は割引前・測定は割引後。判定で使った割引前CFを測定に使わないこと。
+      <h3>対象範囲とグルーピング</h3>
+      減損会計の対象は<strong>固定資産</strong>。差入保証金・売掛金などの<strong>金融資産は対象外</strong>（金融商品会計で扱う）。合計欄に混ざっていても抜き出して除く。
+      <h3>配分と表示</h3>
+      減損損失は資産グループ内の各資産に<strong>帳簿価額比で配分</strong>。直接控除方式なら<strong>取得原価から</strong>減損損失を控除し、控除後の額をその後の取得原価とする（減価償却累計額はそのまま）。
+      <h3>税効果</h3>
+      減損損失は税務上<strong>損金不算入</strong> → 将来減算一時差異 → 繰延税金資産。ただし<strong>回収可能性がある分だけ</strong>計上（土地分だけ回収不能、のような指示に注意）。
     </div>
   </details>
 
@@ -135,25 +133,23 @@ details.basics summary::-webkit-details-marker{display:none}
   </div>
 
   <div id="answer-area">
-    <div class="label">解答欄（該当がない項目は空欄のままでOK）</div>
-    <div class="ans-row"><label>⓪ 貸倒損失（P/L）<br><span class="sub">未処理事項から生じる分</span></label>
-      <div class="ans-cell"><input type="text" id="a-loss" inputmode="text" placeholder="円"><div class="corr" id="c-loss"></div></div></div>
-    <div class="ans-row"><label>① 一般債権 計（期末）</label>
-      <div class="ans-cell"><input type="text" id="a-gen" inputmode="text" placeholder="円"><div class="corr" id="c-gen"></div></div></div>
-    <div class="ans-row"><label>① 貸倒懸念債権 計（期末）</label>
-      <div class="ans-cell"><input type="text" id="a-doubt" inputmode="text" placeholder="円"><div class="corr" id="c-doubt"></div></div></div>
-    <div class="ans-row"><label>① 破産更生債権等 計（期末）</label>
-      <div class="ans-cell"><input type="text" id="a-bank" inputmode="text" placeholder="円"><div class="corr" id="c-bank"></div></div></div>
-    <div class="ans-row"><label>② 要設定額（一般）</label>
-      <div class="ans-cell"><input type="text" id="a-sgen" inputmode="text" placeholder="円"><div class="corr" id="c-sgen"></div></div></div>
-    <div class="ans-row"><label>② 要設定額（懸念）</label>
-      <div class="ans-cell"><input type="text" id="a-sdoubt" inputmode="text" placeholder="円"><div class="corr" id="c-sdoubt"></div></div></div>
-    <div class="ans-row"><label>② 要設定額（破産更生）</label>
-      <div class="ans-cell"><input type="text" id="a-sbank" inputmode="text" placeholder="円"><div class="corr" id="c-sbank"></div></div></div>
-    <div class="ans-row"><label>③ 決算整理前の貸引残高<br><span class="sub">期中充当を反映した後</span></label>
-      <div class="ans-cell"><input type="text" id="a-pre" inputmode="text" placeholder="円"><div class="corr" id="c-pre"></div></div></div>
-    <div class="ans-row"><label>③ 貸倒引当金繰入額<br><span class="sub">戻入はマイナス</span></label>
-      <div class="ans-cell"><input type="text" id="a-prov" inputmode="text" placeholder="円"><div class="corr" id="c-prov"></div></div></div>
+    <div class="label">解答欄（単位：千円。該当がない項目は空欄のままでOK）</div>
+    <div class="ans-row"><label>① 減損会計の対象となる資産の帳簿価額合計<br><span class="sub">対象外の資産に注意</span></label>
+      <div class="ans-cell"><input type="text" id="a-bvsum" inputmode="text" placeholder="千円"><div class="corr" id="c-bvsum"></div></div></div>
+    <div class="ans-row"><label>② 回収可能価額<br><span class="sub">減損を認識しない場合は空欄</span></label>
+      <div class="ans-cell"><input type="text" id="a-rec" inputmode="text" placeholder="千円"><div class="corr" id="c-rec"></div></div></div>
+    <div class="ans-row"><label>③ 減損損失（P/L）</label>
+      <div class="ans-cell"><input type="text" id="a-loss" inputmode="text" placeholder="千円"><div class="corr" id="c-loss"></div></div></div>
+    <div class="ans-row"><label>④ 減損損失の配分額：建物</label>
+      <div class="ans-cell"><input type="text" id="a-ab" inputmode="text" placeholder="千円"><div class="corr" id="c-ab"></div></div></div>
+    <div class="ans-row"><label>④ 減損損失の配分額：器具備品</label>
+      <div class="ans-cell"><input type="text" id="a-ak" inputmode="text" placeholder="千円"><div class="corr" id="c-ak"></div></div></div>
+    <div class="ans-row"><label>④ 減損損失の配分額：土地</label>
+      <div class="ans-cell"><input type="text" id="a-at" inputmode="text" placeholder="千円"><div class="corr" id="c-at"></div></div></div>
+    <div class="ans-row"><label>⑤ 減損に係る繰延税金資産<br><span class="sub">回収可能性に注意</span></label>
+      <div class="ans-cell"><input type="text" id="a-dta" inputmode="text" placeholder="千円"><div class="corr" id="c-dta"></div></div></div>
+    <div class="ans-row"><label>⑥ 減損処理後の建物の「取得原価」<br><span class="sub">直接控除方式のB/S表示</span></label>
+      <div class="ans-cell"><input type="text" id="a-costb" inputmode="text" placeholder="千円"><div class="corr" id="c-costb"></div></div></div>
     <button id="btn-check" onclick="checkAnswer()">答え合わせ</button>
   </div>
   <div id="result-area"></div>
@@ -194,112 +190,129 @@ function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;re
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function pick(arr){return arr[rand(0,arr.length-1)];}
 function fmt(n){return n.toLocaleString('ja-JP');}
-function fmtS(n){return (n>0?'＋':n<0?'−':'')+fmt(Math.abs(n));}
 
 const FIELDS=[
-  {id:'loss'},{id:'gen'},{id:'doubt'},{id:'bank'},
-  {id:'sgen'},{id:'sdoubt'},{id:'sbank'},{id:'pre'},{id:'prov'},
+  {id:'bvsum'},{id:'rec'},{id:'loss'},
+  {id:'ab'},{id:'ak'},{id:'at'},{id:'dta'},{id:'costb'},
 ];
 
 // ============ 問題生成 ============
-// ⓪期中修正 → ①振り分け → ②要設定額 → ③差額補充 を1問で通すワークシート型。
-// 全金額を100の倍数、率を1〜3%／40・50・60%にして必ず割り切れる基数設計。
+// 帳簿価額 BV_i = w_i × u、減損損失 L = m × W（W=Σw_i）とすれば
+// 配分額 = L × BV_i/BV合計 = m × w_i で必ず整数になる基数設計。
+// m は10の倍数なので税効果（×30%・40%）も割り切れる。
 function gen(){
   for(let t=0;t<500;t++){
-    const y=rand(5,12);
-    const R=rand(200,600)*100;                 // T/B 受取手形
-    const U=rand(400,900)*100;                 // T/B 売掛金
-    const Z=rand(5,30)*100;                    // T/B 貸倒引当金（前期末残高）
-    const ev1=Math.random()<0.7;               // 当期発生分の貸倒
-    const ev2=Math.random()<0.7;               // 前期以前分の貸倒
-    const ev3=Math.random()<0.6;               // 不渡り
-    const ev4=Math.random()<0.6;               // 破産更生へ振替
-    if(ev1+ev2+ev3+ev4<2)continue;             // 未処理事項は2件以上
-    const a1=ev1?rand(5,30)*100:0;
-    const a2=ev2?rand(5,30)*100:0;
-    const a3=ev3?rand(5,20)*100:0;
-    const fee=ev3?rand(1,5)*100:0;             // 拒絶証書作成費等
-    const a4=ev4?rand(5,25)*100:0;
-    const k=rand(10,40)*100;                   // A社売掛金（懸念に区分）
-    const genU=U-a1-a2-a4-k;                   // 売掛金のうち一般債権
-    if(genU<5000)continue;
-    const genR=R-a3;                           // 受取手形のうち一般債権
-    const G=genR+genU;                         // 一般 計
-    const nf=a3+fee;                           // 不渡手形（額面＋諸費用）
-    const D=k+nf;                              // 懸念 計
-    const B=a4;                                // 破産更生 計
-    const p=rand(1,3);                         // 実績率％
-    const qr=pick([40,50,60]);                 // 懸念の見積率％
-    const sd=rand(1,Math.floor(D/100)-1)*100;  // 担保等（懸念）
-    const sb=ev4?rand(1,Math.floor(B/100)-1)*100:0;  // 担保等（破産更生）
-    const sgen=G*p/100;
-    const sdoubt=(D-sd)*qr/100;
-    const sbank=B-sb;
-    const juto=Math.min(Z,a2);                 // 貸引への充当
-    const shortfall=a2-juto;                   // 貸引不足→貸倒損失
-    const loss=a1+shortfall;
-    const pre=Z-juto;                          // 決算整理前の貸引残高
-    const total=sgen+sdoubt+sbank;
-    const prov=total-pre;
-    const q={y,pullVal:U,ev1,ev2,ev3,ev4,
-      dbg:{R,U,Z,a1,a2,a3,fee,a4,k,p,qr,sd,sb,juto},
-      answers:{loss,gen:G,doubt:D,bank:B,sgen,sdoubt,sbank,pre,prov}};
+    const wB=rand(2,9), wK=rand(2,9), wT=rand(2,9);   // 建物・器具備品・土地の比
+    const W=wB+wK+wT;
+    const u=rand(15,60)*100;                          // 比1あたりの帳簿価額（千円）
+    const noImp=Math.random()<0.2;                    // 2割は「減損なし」パターン
+    const m=noImp?0:rand(Math.ceil(u*0.3/10),Math.floor(u*0.7/10))*10;
+    const bvB=wB*u, bvK=wK*u, bvT=wT*u;
+    const bvTotal=W*u;                                // 減損対象の帳簿価額合計
+    const L=m*W;                                      // 減損損失総額
+    const R=bvTotal-L;                                // 回収可能価額（減損ありのとき）
+
+    // 使用価値・正味売却価額・割引前CF
+    let viu,nsp,cf;
+    const gap2=rand(5,50)*100;
+    if(noImp){
+      cf=bvTotal+rand(0,80)*100;                      // CF ≥ 帳簿価額 → 認識しない
+      viu=cf-rand(10,80)*100; nsp=viu-gap2;
+      if(viu<=0||nsp<=0)continue;
+    }else{
+      const gap1=rand(1,Math.floor(L/100)-1)*100;
+      const nspHigher=Math.random()<0.3;              // 3割は正味売却価額の方が高い
+      if(nspHigher){nsp=R; viu=R-gap2;}
+      else{viu=R; nsp=R-gap2;}
+      cf=viu+gap1;                                    // 使用価値 < 割引前CF < 帳簿価額
+      if(cf>=bvTotal)continue;
+      if(nsp<=0||viu<=0)continue;
+    }
+
+    // 取得原価・減価償却累計額（土地は累計額0）
+    const adB=rand(20,80)*u/20, adK=rand(20,80)*u/20;
+    const costB=bvB+adB, costK=bvK+adK;
+
+    // 差入保証金（金融資産・対象外の引っかけ）
+    const hasDep=Math.random()<0.7;
+    const dep=hasDep?rand(10,60)*1000:0;
+
+    // 税効果
+    const rate=pick([30,40]);
+    const landNG=Math.random()<0.6;                   // 土地分の繰延税金資産は回収不能
+    const aB=m*wB, aK=m*wK, aT=m*wT;                  // 配分額
+    const dta=(landNG?aB+aK:L)*rate/100;
+
+    const q={noImp,bvB,bvK,bvT,bvTotal,L,R,viu,nsp,cf,
+      adB,adK,costB,costK,hasDep,dep,rate,landNG,aB,aK,aT,dta,
+      pullVal:cf,
+      answers:{
+        bvsum:bvTotal,
+        rec:noImp?0:R,
+        loss:L,
+        ab:aB, ak:aK, at:aT,
+        dta:noImp?0:dta,
+        costb:costB-aB,
+      }};
 
     // ---- 問題文 ----
-    let no=0;
-    const uns=[];
-    if(ev1)uns.push(`【${++no}】当期に発生した売掛金 ${fmt(a1)}円 が貸倒れた（未処理）`);
-    if(ev2)uns.push(`【${++no}】前期以前に発生した売掛金 ${fmt(a2)}円 が貸倒れた（未処理）`);
-    if(ev3)uns.push(`【${++no}】受取手形 ${fmt(a3)}円 が不渡りとなり、支払拒絶証書作成費等 ${fmt(fee)}円 を現金で支払った（未処理）。この債権は貸倒懸念債権に区分する`);
-    if(ev4)uns.push(`【${++no}】得意先C社が手形交換所の取引停止処分を受けたため、同社に対する売掛金 ${fmt(a4)}円 を破産更生債権等に振り替える（未処理）`);
-    q.rows=`<div class="q-row"><span class="q-key">当期</span><span class="q-val">X${y}年4月1日〜X${y+1}年3月31日</span></div>`
-      +`<div class="q-row"><span class="q-key">整理前T/B</span><span class="q-val">受取手形 ${fmt(R)}円／売掛金 ${fmt(U)}円／貸倒引当金 ${fmt(Z)}円</span></div>`
-      +`<div class="q-note"><strong>未処理事項</strong><br>${uns.join('<br>')}</div>`
+    const dCol=hasDep;
+    const grand=(r1,r2,r3,r4)=>r1+r2+r3+r4;
+    q.rows=`<div class="q-note">当社のMM事業部において減損の兆候がみられた。資産のグルーピングは事業部ごとに行っており、減損損失を計上する場合は資産の種類ごとに<strong>期末現在の帳簿価額に基づき配分</strong>する。</div>`
+      +`<div class="q-note"><strong>MM事業部の所有資産の当期末の状況</strong>（単位：千円）${dCol?'<br>なお、差入保証金は金融資産に該当する。':''}</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><th>区分</th><th>建物</th><th>器具備品</th><th>土地</th>${dCol?'<th>差入保証金</th>':''}<th>合計</th></tr>`
+      +`<tr><td>取得原価</td><td class="num">${fmt(costB)}</td><td class="num">${fmt(costK)}</td><td class="num">${fmt(bvT)}</td>${dCol?`<td class="num">${fmt(dep)}</td>`:''}<td class="num">${fmt(grand(costB,costK,bvT,dep))}</td></tr>`
+      +`<tr><td>減価償却累計額</td><td class="num">${fmt(adB)}</td><td class="num">${fmt(adK)}</td><td class="num">0</td>${dCol?'<td class="num">0</td>':''}<td class="num">${fmt(adB+adK)}</td></tr>`
+      +`<tr><td>期末帳簿価額</td><td class="num">${fmt(bvB)}</td><td class="num">${fmt(bvK)}</td><td class="num">${fmt(bvT)}</td>${dCol?`<td class="num">${fmt(dep)}</td>`:''}<td class="num">${fmt(grand(bvB,bvK,bvT,dep))}</td></tr>`
+      +`</table></div>`
+      +`<div class="q-note"><strong>MM事業部から得られる将来キャッシュ・フロー等</strong>（単位：千円）</div>`
+      +`<div class="k-wrap"><table class="k-tbl">`
+      +`<tr><td>割引前将来キャッシュ・フローの総額</td><td class="num">${fmt(cf)}</td></tr>`
+      +`<tr><td>資産グループの使用価値</td><td class="num">${fmt(viu)}</td></tr>`
+      +`<tr><td>資産グループの正味売却価額</td><td class="num">${fmt(nsp)}</td></tr>`
+      +`</table></div>`
       +`<div class="q-note"><strong>決算整理事項</strong><br>`
-      +`・得意先A社は債務の弁済に重大な問題が生じており、同社に対する売掛金 ${fmt(k)}円 は貸倒懸念債権に区分する<br>`
-      +`・一般債権：貸倒実績率 ${p}%<br>`
-      +`・貸倒懸念債権：担保処分・保証回収見込額 ${fmt(sd)}円 を控除した残額の ${qr}%<br>`
-      +(ev4?`・破産更生債権等：担保処分見込額 ${fmt(sb)}円 を控除した残額の全額（貸倒引当金を設定）<br>`:'')
-      +`・貸倒引当金は差額補充法による</div>`
+      +`・貸借対照表の表示は、取得原価から減損損失を直接控除し、控除後の金額をその後の取得原価とする（直接控除方式）<br>`
+      +`・減損損失は税務上損金不算入であり、税効果会計を適用する（法定実効税率 ${rate}%）<br>`
+      +(landNG
+        ?`・繰延税金資産の回収可能性：建物・器具備品に係る分は回収可能、<strong>土地に係る分は回収不能</strong>とする</div>`
+        :`・繰延税金資産の回収可能性：減損損失に係る分は全額回収可能とする</div>`)
       +`<div class="q-row"><span class="q-key">求めるもの</span><span class="q-ask">下の解答欄をすべて埋める（該当がない項目は空欄）</span></div>`;
 
     // ---- 解説 ----
-    const uEnd=U-a1-a2-a4;                     // 修正後の売掛金残高
-    let exp=`<div class="step">⓪ 期中修正（ここがゲート。引っかけは全部ここ）</div>`;
-    if(ev1)exp+=`・当期発生分 ${fmt(a1)}円 → 前期末の貸引はこの債権を見積もっていない → <strong>全額 貸倒損失</strong><br>`;
-    if(ev2)exp+=`・前期以前分 ${fmt(a2)}円 → まず貸引を充当 ${fmt(juto)}円${shortfall>0?`、不足 ${fmt(shortfall)}円 は貸倒損失`:'（全額充当できた）'}<br>`;
-    if(ev3)exp+=`・不渡り → 受取手形 ${fmt(a3)}円 ＋ 諸費用 ${fmt(fee)}円 ＝ <strong>不渡手形 ${fmt(nf)}円</strong>（遡求できる金額まで含める）<br>`;
-    if(ev4)exp+=`・取引停止処分 → 売掛金 ${fmt(a4)}円 を<strong>破産更生債権等へ振替</strong>（B/Sは投資その他の資産）<br>`;
-    exp+=(loss>0?`貸倒損失 合計 ＝ <strong>${fmt(loss)}円</strong>`:`貸倒損失は生じない（該当なし）`);
-    exp+=`<div class="step">① 残高の振り分け（行合計＝B/S、列合計＝②へ）</div>`
-      +`<div class="k-wrap"><table class="k-tbl">`
-      +`<tr><th>科目</th><th>修正後残高</th><th>一般</th><th>懸念</th><th>破産更生</th></tr>`
-      +`<tr><td>受取手形</td><td class="num">${fmt(genR)}</td><td class="num">${fmt(genR)}</td><td class="num">—</td><td class="num">—</td></tr>`
-      +`<tr><td>売掛金</td><td class="num">${fmt(uEnd)}</td><td class="num">${fmt(genU)}</td><td class="num">${fmt(k)}</td><td class="num">—</td></tr>`
-      +(ev3?`<tr><td>不渡手形</td><td class="num">${fmt(nf)}</td><td class="num">—</td><td class="num">${fmt(nf)}</td><td class="num">—</td></tr>`:'')
-      +(ev4?`<tr><td>破産更生債権等</td><td class="num">${fmt(B)}</td><td class="num">—</td><td class="num">—</td><td class="num">${fmt(B)}</td></tr>`:'')
-      +`<tr><td>計</td><td class="num">${fmt(genR+uEnd+nf+B)}</td><td class="num"><strong>${fmt(G)}</strong></td><td class="num"><strong>${fmt(D)}</strong></td><td class="num"><strong>${fmt(B)}</strong></td></tr>`
-      +`</table></div>`
-      +`※懸念になっても売掛金の<strong>科目はそのまま</strong>。科目まで動くのは不渡手形と破産更生債権等だけ。`
-      +`<div class="step">② 要設定額（全区分「−担保 → ×率」の同じ型）</div>`
-      +`<div class="k-wrap"><table class="k-tbl">`
-      +`<tr><th>区分</th><th>債権額</th><th>−担保等</th><th>対象額</th><th>×率</th><th>設定額</th></tr>`
-      +`<tr><td>一般</td><td class="num">${fmt(G)}</td><td class="num">—</td><td class="num">${fmt(G)}</td><td class="num">${p}%</td><td class="num"><strong>${fmt(sgen)}</strong></td></tr>`
-      +`<tr><td>懸念</td><td class="num">${fmt(D)}</td><td class="num">${fmt(sd)}</td><td class="num">${fmt(D-sd)}</td><td class="num">${qr}%</td><td class="num"><strong>${fmt(sdoubt)}</strong></td></tr>`
-      +(ev4?`<tr><td>破産更生</td><td class="num">${fmt(B)}</td><td class="num">${fmt(sb)}</td><td class="num">${fmt(B-sb)}</td><td class="num">100%</td><td class="num"><strong>${fmt(sbank)}</strong></td></tr>`:'')
-      +`<tr><td>計</td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num"><strong>${fmt(total)}</strong></td></tr>`
-      +`</table></div>`
-      +`<div class="step">③ 貸引の増減（差額補充法）</div>`
-      +`<div class="k-wrap"><table class="k-tbl">`
-      +`<tr><td>前期末残高（T/B）</td><td class="num">${fmt(Z)}</td></tr>`
-      +`<tr><td>−）期中の貸倒充当（⓪）</td><td class="num">${juto>0?'△'+fmt(juto):'—'}</td></tr>`
-      +`<tr><td>＝ 決算整理前残高</td><td class="num"><strong>${fmt(pre)}</strong></td></tr>`
-      +`<tr><td>要設定額（②の計）</td><td class="num">${fmt(total)}</td></tr>`
-      +`<tr><td>${prov>=0?'繰入額（差額）':'戻入額（差額）'}</td><td class="num"><strong>${fmtS(prov)}</strong></td></tr>`
-      +`</table></div>`
-      +`※営業債権に対する繰入は<strong>販管費</strong>。過年度償却済み債権の回収があっても<strong>償却債権取立益</strong>でありこの表には入らない。`;
+    let exp=`<div class="step">① 対象範囲（金融資産を除くゲート）</div>`;
+    if(dCol)exp+=`・差入保証金 ${fmt(dep)} は<strong>金融資産 → 減損会計の対象外</strong>。合計欄 ${fmt(grand(bvB,bvK,bvT,dep))} をそのまま使わないこと<br>`;
+    exp+=`対象の帳簿価額合計 ＝ 建物 ${fmt(bvB)} ＋ 器具備品 ${fmt(bvK)} ＋ 土地 ${fmt(bvT)} ＝ <strong>${fmt(bvTotal)}</strong>`;
+    exp+=`<div class="step">② 認識の判定（割引前CFと比較）</div>`
+      +`割引前将来CF総額 ${fmt(cf)} ${noImp?'≥':'＜'} 帳簿価額合計 ${fmt(bvTotal)} → <strong>減損損失を認識${noImp?'しない':'する'}</strong>`;
+    if(noImp){
+      exp+=`<br>認識しないので測定（②以降）には進まない。仕訳なし。回収可能価額・減損損失・配分・税効果はすべて「該当なし」。`
+        +`<div class="step">⑥ B/S表示</div>減損処理を行わないため建物の取得原価は <strong>${fmt(costB)}</strong> のまま。`;
+    }else{
+      exp+=`<div class="step">③ 測定（回収可能価額まで切下げ）</div>`
+        +`回収可能価額 ＝ 使用価値 ${fmt(viu)} と 正味売却価額 ${fmt(nsp)} の<strong>高い方</strong> ＝ <strong>${fmt(R)}</strong>${nsp===R?'（今回は正味売却価額の方が高い）':''}<br>`
+        +`減損損失 ＝ ${fmt(bvTotal)} − ${fmt(R)} ＝ <strong>${fmt(L)}</strong>`
+        +`<div class="step">④ 帳簿価額比で配分</div>`
+        +`<div class="k-wrap"><table class="k-tbl">`
+        +`<tr><th>資産</th><th>帳簿価額</th><th>配分計算</th><th>配分額</th><th>減損後</th></tr>`
+        +`<tr><td>建物</td><td class="num">${fmt(bvB)}</td><td class="num">${fmt(L)}×${fmt(bvB)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aB)}</strong></td><td class="num">${fmt(bvB-aB)}</td></tr>`
+        +`<tr><td>器具備品</td><td class="num">${fmt(bvK)}</td><td class="num">${fmt(L)}×${fmt(bvK)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aK)}</strong></td><td class="num">${fmt(bvK-aK)}</td></tr>`
+        +`<tr><td>土地</td><td class="num">${fmt(bvT)}</td><td class="num">${fmt(L)}×${fmt(bvT)}/${fmt(bvTotal)}</td><td class="num"><strong>${fmt(aT)}</strong></td><td class="num">${fmt(bvT-aT)}</td></tr>`
+        +`<tr><td>計</td><td class="num">${fmt(bvTotal)}</td><td class="num"></td><td class="num"><strong>${fmt(L)}</strong></td><td class="num">${fmt(R)}</td></tr>`
+        +`</table></div>`
+        +`仕訳：（借）減損損失 ${fmt(L)} ／（貸）建物 ${fmt(aB)}・器具備品 ${fmt(aK)}・土地 ${fmt(aT)}`
+        +`<div class="step">⑤ 税効果（損金不算入 → 将来減算一時差異）</div>`
+        +(landNG
+          ?`土地分は回収不能なので<strong>建物・器具備品分のみ</strong>：（${fmt(aB)} ＋ ${fmt(aK)}）× ${rate}% ＝ <strong>${fmt(dta)}</strong>`
+          :`全額回収可能：${fmt(L)} × ${rate}% ＝ <strong>${fmt(dta)}</strong>`)
+        +`<br>仕訳：（借）繰延税金資産 ${fmt(dta)} ／（貸）法人税等調整額 ${fmt(dta)}`
+        +`<div class="step">⑥ B/S表示（直接控除方式）</div>`
+        +`減損損失は<strong>取得原価から</strong>控除する（減価償却累計額 ${fmt(adB)} はそのまま）：<br>`
+        +`建物の取得原価 ＝ ${fmt(costB)} − ${fmt(aB)} ＝ <strong>${fmt(costB-aB)}</strong>（帳簿価額 ${fmt(bvB-aB)}）`;
+    }
     q.exp=exp;
-    q.badge=`<span class="type-badge type-d">貸倒引当金ワークシート</span>`;
+    q.badge=`<span class="type-badge type-d">減損会計ワークシート</span>`;
     return q;
   }
   return null;
@@ -334,9 +347,9 @@ function parseCell(id){
   const n=parseInt(raw,10);
   return isNaN(n)?null:n;
 }
-function corrStr(id,v){
+function corrStr(v){
   if(v===0)return '正解: 0（該当なし）';
-  return '正解: '+(id==='prov'?fmtS(v):fmt(v))+'円';
+  return '正解: '+fmt(v)+'千円';
 }
 
 function checkAnswer(){
@@ -353,7 +366,7 @@ function checkAnswer(){
     inp.classList.add(ok?'cell-ok':'cell-ng');
     const c=document.getElementById('c-'+f.id);
     c.style.display='block';
-    c.textContent=corrStr(f.id,correct);
+    c.textContent=corrStr(correct);
   }
   state.total++;
   if(allOk)state.correct++;
