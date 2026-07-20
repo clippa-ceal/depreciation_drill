@@ -93,8 +93,15 @@ button:active{opacity:0.85}
   </div>
 
   <div class="card">
-    <div class="label">棚卸高の修正（単位：千円）</div>
+    <div class="label">① 記帳の不備の修正（単位：千円）</div>
     <div class="ans-grid">
+      <span class="ans-label">修正後仕入高</span>
+      <div class="ans-cell">
+        <input type="text" id="a-cpurch" autocomplete="off" spellcheck="false" placeholder="例: 1470-20" aria-label="修正後仕入高の計算式">
+        <span class="expr-eq">＝</span>
+        <input type="text" id="r-cpurch" class="expr-result" readonly tabindex="-1" aria-label="修正後仕入高の計算結果">
+        <span class="ans-ng-msg" id="ng-cpurch"></span>
+      </div>
       <span class="ans-label">修正後帳簿棚卸高</span>
       <div class="ans-cell">
         <input type="text" id="a-cbook" autocomplete="off" spellcheck="false" placeholder="例: 605-20+30" aria-label="修正後帳簿棚卸高の計算式">
@@ -110,10 +117,11 @@ button:active{opacity:0.85}
         <span class="ans-ng-msg" id="ng-cphysical"></span>
       </div>
     </div>
+    <div class="hint">期中の記帳ミスをここで直す。仕入返品・見本品は仕入から控除して<b>修正後仕入高</b>に、売上返品・未着は棚卸高に反映する。商品評価損は決算仕訳なのでここには含めない。</div>
   </div>
 
   <div class="card">
-    <div class="label">決算整理後の各勘定残高（単位：千円）</div>
+    <div class="label">② 決算仕訳後の各勘定残高（単位：千円）</div>
     <div class="ans-grid">
       <span class="ans-label">繰越商品</span>
       <div class="ans-cell">
@@ -144,7 +152,7 @@ button:active{opacity:0.85}
         <span class="ans-ng-msg" id="ng-sample"></span>
       </div>
     </div>
-    <div class="hint" id="ans-hint">三分法。棚卸減耗損は別科目、商品評価損は仕入に含める。<br>仕入の期末商品は「修正後帳簿棚卸高」を使い、繰越商品はそこから減耗損・評価損を控除する。<br>未処理事項は、帳簿棚卸高・実地棚卸高のどちらを修正するかを先に判定。売上返品が実地に含まれるときは帳簿のみ、未着で当社所有のときは両方に反映。</div>
+    <div class="hint" id="ans-hint">三分法。棚卸減耗損は別科目、商品評価損は仕入に含める。<br>仕入 ＝ 修正後仕入高 ＋ 期首商品 − 修正後帳簿棚卸高 ＋ 評価損。繰越商品は修正後実地棚卸高から減耗損・評価損を控除する。<br>未処理事項は、帳簿棚卸高・実地棚卸高のどちらを修正するかを先に判定。売上返品が実地に含まれるときは帳簿のみ、未着で当社所有のときは両方に反映。</div>
   </div>
 
   <div id="result-area"></div>
@@ -215,7 +223,7 @@ function updateExpressionPreview(inputId,resultId){
 }
 function bindExpressionInputs(){
   const pairs=[
-    ['a-cbook','r-cbook'],['a-cphysical','r-cphysical'],
+    ['a-cpurch','r-cpurch'],['a-cbook','r-cbook'],['a-cphysical','r-cphysical'],
     ['a-inv','r-inv'],['a-cogs','r-cogs'],['a-wear','r-wear'],['a-sample','r-sample']
   ];
   for(const[inputId,resultId]of pairs){
@@ -225,7 +233,7 @@ function bindExpressionInputs(){
 }
 function resetExpressionPreviews(){
   for(const[inputId,resultId] of [
-    ['a-cbook','r-cbook'],['a-cphysical','r-cphysical'],
+    ['a-cpurch','r-cpurch'],['a-cbook','r-cbook'],['a-cphysical','r-cphysical'],
     ['a-inv','r-inv'],['a-cogs','r-cogs'],['a-wear','r-wear'],['a-sample','r-sample']
   ])updateExpressionPreview(inputId,resultId);
 }
@@ -265,8 +273,11 @@ function genQ(){
     // 見本品・仕入返品は帳簿に残っており、売上返品は商品有高帳に未記帳である。
     const book=correctedBook+sampleAmt+returnAmt-salesReturnCost;
     const inv=correctedPhysical-valuationLoss;
+    // 修正後仕入高：期中の記帳ミス（仕入返品・見本品）を仕入から控除した金額。
+    // 商品評価損の振替は決算仕訳なのでここには含めない。
+    const correctedPurchases=purchases-returnAmt-sampleAmt;
     const cogs=openingInv+purchases-returnAmt-sampleAmt-correctedBook+valuationLoss;
-    if(book<=0||cogs<=0||inv<=0)continue;
+    if(book<=0||cogs<=0||inv<=0||correctedPurchases<=0)continue;
 
     // 恒等式：期首+当期仕入 = 仕入残+繰越+減耗+見本+仕入返品
     console.assert(cogs+inv+wear+sampleAmt+returnAmt===openingInv+purchases,'BUG:conservation');
@@ -274,7 +285,7 @@ function genQ(){
     console.assert(book-returnAmt-sampleAmt+salesReturnCost===correctedBook,'BUG:book correction');
 
     return{openingInv,purchases,book,physical,returnAmt,valuationLoss,sampleAmt,
-           correctedBook,correctedPhysical,inv,wear,cogs,salesReturnType,salesReturnCost,
+           correctedBook,correctedPhysical,correctedPurchases,inv,wear,cogs,salesReturnType,salesReturnCost,
            srInPhysical,srNotInPhysical};
   }
   return null;
@@ -314,11 +325,11 @@ function newQ(){
   STATE.graded=false;
   STATE.startTime=Date.now();
   renderGiven(g);
-  for(const id of ['a-cbook','a-cphysical','a-inv','a-cogs','a-wear','a-sample']){
+  for(const id of ['a-cpurch','a-cbook','a-cphysical','a-inv','a-cogs','a-wear','a-sample']){
     const el=document.getElementById(id);
     el.value='';el.classList.remove('cell-ok','cell-ng');
   }
-  for(const id of ['ng-cbook','ng-cphysical','ng-inv','ng-cogs','ng-wear','ng-sample']){
+  for(const id of ['ng-cpurch','ng-cbook','ng-cphysical','ng-inv','ng-cogs','ng-wear','ng-sample']){
     const el=document.getElementById(id);el.style.display='none';el.textContent='';
   }
   resetExpressionPreviews();
@@ -331,6 +342,7 @@ function grade(){
   if(!STATE.g||STATE.graded)return;
   const g=STATE.g;
   const fields=[
+    ['a-cpurch','ng-cpurch',g.correctedPurchases],
     ['a-cbook','ng-cbook',g.correctedBook],
     ['a-cphysical','ng-cphysical',g.correctedPhysical],
     ['a-inv','ng-inv',g.inv],
@@ -374,6 +386,11 @@ function grade(){
     lines.push(`${i++}. 見本品: (借)見本品費 ${fmt(g.sampleAmt)} / (貸)仕入 ${fmt(g.sampleAmt)}`);
   }
 
+  const purchTerms=[`当期仕入${fmt(g.purchases)}`];
+  if(g.returnAmt>0)purchTerms.push(`− 仕入返品${fmt(g.returnAmt)}`);
+  if(g.sampleAmt>0)purchTerms.push(`− 見本品${fmt(g.sampleAmt)}`);
+  lines.push(`${i++}. 修正後仕入高 ＝ ${purchTerms.join(' ')} ＝ ${fmt(g.correctedPurchases)}`);
+
   const bookTerms=[`帳簿${fmt(g.book)}`];
   if(g.returnAmt>0)bookTerms.push(`− 仕入返品${fmt(g.returnAmt)}`);
   if(g.sampleAmt>0)bookTerms.push(`− 見本品${fmt(g.sampleAmt)}`);
@@ -393,10 +410,8 @@ function grade(){
   }
 
   const invFormula=`修正後実地${fmt(correctedPhysical)} − 評価損${fmt(g.valuationLoss)}`;
-  const cogsTerms=[`期首${fmt(g.openingInv)}`,`＋ 当期仕入${fmt(g.purchases)}`];
-  if(g.returnAmt>0)cogsTerms.push(`− 仕入返品${fmt(g.returnAmt)}`);
-  if(g.sampleAmt>0)cogsTerms.push(`− 見本品${fmt(g.sampleAmt)}`);
-  cogsTerms.push(`− 修正後帳簿${fmt(correctedBook)}`,`＋ 評価損${fmt(g.valuationLoss)}`);
+  const cogsTerms=[`修正後仕入高${fmt(g.correctedPurchases)}`,`＋ 期首${fmt(g.openingInv)}`,`− 修正後帳簿${fmt(correctedBook)}`];
+  if(g.valuationLoss>0)cogsTerms.push(`＋ 評価損${fmt(g.valuationLoss)}`);
   const cogsFormula=cogsTerms.join(' ');
   lines.push(`<b>繰越商品</b> ＝ ${invFormula} ＝ ${fmt(g.inv)}`);
   lines.push(`<b>仕入</b> ＝ ${cogsFormula} ＝ ${fmt(g.cogs)}`);
@@ -503,10 +518,13 @@ function nextQ(){newQ();}
     const srNotInPhysical=salesReturnType===2?salesReturnCost:0;
     const correctedBook=t.book-t.returnAmt-t.sampleAmt+salesReturnCost;
     const correctedPhysical=t.physical+srNotInPhysical;
+    const correctedPurchases=t.purchases-t.returnAmt-t.sampleAmt;
     const inv=correctedPhysical-t.valuationLoss;
     const cogs=t.openingInv+t.purchases-t.returnAmt-t.sampleAmt-correctedBook+t.valuationLoss;
     const wear=correctedBook-correctedPhysical;
-    return{correctedBook,correctedPhysical,inv,cogs,wear};
+    // 第2ステップの式：仕入 ＝ 修正後仕入高 ＋ 期首 − 修正後帳簿 ＋ 評価損
+    console.assert(cogs===correctedPurchases+t.openingInv-correctedBook+t.valuationLoss,'selfTest:cogs via correctedPurchases');
+    return{correctedBook,correctedPhysical,correctedPurchases,inv,cogs,wear};
   }
 
   // ケース1：売上返品なし。帳簿605=実地580+減耗5+見本品20。
@@ -514,6 +532,7 @@ function nextQ(){newQ();}
   const a1=solve(t1);
   console.assert(a1.correctedBook===585,'selfTest1:corrected book');
   console.assert(a1.correctedPhysical===580,'selfTest1:corrected physical');
+  console.assert(a1.correctedPurchases===1450,'selfTest1:corrected purchases');
   console.assert(a1.inv===570,'selfTest1:inv');
   console.assert(a1.cogs===1295,'selfTest1:cogs');
   console.assert(a1.wear===5,'selfTest1:wear');
@@ -523,6 +542,7 @@ function nextQ(){newQ();}
   const a2=solve(t1,2,30);
   console.assert(a2.correctedBook===615,'selfTest2:corrected book');
   console.assert(a2.correctedPhysical===610,'selfTest2:corrected physical');
+  console.assert(a2.correctedPurchases===1450,'selfTest2:corrected purchases unchanged by sales return');
   console.assert(a2.inv===600,'selfTest2:inv');
   console.assert(a2.cogs===1265,'selfTest2:cogs');
   console.assert(a2.wear===5,'selfTest2:wear');
@@ -532,6 +552,7 @@ function nextQ(){newQ();}
   const a3=solve(t3,1,30);
   console.assert(a3.correctedBook===585,'selfTest3:corrected book');
   console.assert(a3.correctedPhysical===580,'selfTest3:corrected physical');
+  console.assert(a3.correctedPurchases===1450,'selfTest3:corrected purchases');
   console.assert(a3.inv===570,'selfTest3:inv unchanged');
   console.assert(a3.cogs===1295,'selfTest3:cogs unchanged');
   console.assert(a3.wear===5,'selfTest3:wear');
