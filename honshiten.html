@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>本支店会計ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:520px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;background:#EAF3DE;color:#3B6D11}
+.q-num{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;margin-right:6px;font-weight:600;background:var(--color-text);color:#fff;font-variant-numeric:tabular-nums}
+.cat-kihon{background:#EAF3DE;color:#3B6D11}
+.cat-mitatsu{background:#FAEEDA;color:#854F0B}
+.cat-branch{background:#E1EEF8;color:#185FA5}
+.cat-settle{background:#E8E1F0;color:#5A3D8A}
+.q-text{font-size:15px;line-height:1.75;color:var(--color-text);white-space:pre-line}
+
+.je-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.je-slot{padding:10px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:#FAFAF8;text-align:center;transition:border-color .15s,background .15s}
+.je-slot.active{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.je-slot.filled{border-color:var(--color-text);background:var(--color-card)}
+.je-slot.ok{border-color:#7FB04A;background:#F2F8EA}
+.je-slot.ng{border-color:#D98A8A;background:#FCF0F0}
+.je-slot-label{font-size:11px;color:var(--color-text2);font-weight:600;margin-bottom:3px;letter-spacing:0.05em}
+.je-slot-val{font-size:16px;font-weight:600;min-height:22px;color:var(--color-text)}
+.je-slot-val.empty{color:#BBB8AE;font-weight:400}
+.je-status{font-size:12px;color:var(--color-info);text-align:center;margin:10px 0 6px;font-weight:500;min-height:18px}
+.je-status.done{color:var(--color-text2)}
+.je-status.warn{color:#A32D2D}
+
+.acct-label{font-size:11px;color:var(--color-text2);font-weight:600;margin:6px 0 6px;letter-spacing:0.05em}
+.acct-chips{display:flex;flex-wrap:wrap;gap:6px}
+.acct-chip{width:auto;margin:0;padding:8px 12px;border:1px solid var(--color-border2);border-radius:999px;background:var(--color-card);font-size:13px;color:var(--color-text);font-weight:500;cursor:pointer;line-height:1.2}
+.acct-chip:hover{background:var(--color-bg-secondary)}
+.acct-chip:active{opacity:0.7}
+.acct-chip:disabled{opacity:0.4;cursor:not-allowed}
+
+.side-wrap{margin:4px 0 12px}
+.side-chips{display:flex;gap:8px}
+.side-chip{flex:1;margin:0;padding:10px;border:1.5px solid var(--color-border2);border-radius:10px;background:var(--color-card);font-size:14px;font-weight:600;color:var(--color-text);cursor:pointer}
+.side-chip.sel{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+.side-chip.ok{border-color:#7FB04A;background:#F2F8EA}
+.side-chip.ng{border-color:#D98A8A;background:#FCF0F0}
+
+.acct-actions{display:flex;gap:8px;margin-top:10px}
+.acct-actions button{flex:1;margin:0;background:var(--color-bg-secondary);color:var(--color-text);font-size:13px;padding:10px;font-weight:500;border:0.5px solid var(--color-border2)}
+
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.explain{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:var(--color-text2);margin-bottom:8px;line-height:1.8}
+.explain .ans-line{font-weight:600;color:var(--color-text);margin-bottom:6px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>本支店会計ドリル</h1>
+  <div class="nav"><a href="index.html">減価償却</a><a href="pension.html">退職給付</a><a href="purchases.html">仕入</a><a href="lease.html">リース</a><a href="trade.html">買換え</a><a href="wip.html">仕掛品</a><a href="hedge.html">為替予約</a><a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html">貸倒</a><a href="genson.html">減損</a><a href="honshiten.html" class="nav-on">本支店</a></div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-correct">0</span><span class="l">正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="cat-wrap"></div>
+    <div class="label">問題</div>
+    <div id="q-body" class="q-text" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">仕訳（科目を借方→貸方の順にタップ）</div>
+    <div class="side-wrap" id="side-wrap" style="display:none">
+      <div class="acct-label">記帳する帳簿（未達の側で仕訳する）</div>
+      <div class="side-chips">
+        <button type="button" class="side-chip" id="side-honten" onclick="pickSide('本店')">本店側</button>
+        <button type="button" class="side-chip" id="side-shiten" onclick="pickSide('支店')">支店側</button>
+      </div>
+    </div>
+    <div class="je-slots">
+      <div class="je-slot" id="slot-dr">
+        <div class="je-slot-label">借方</div>
+        <div class="je-slot-val empty" id="dr-val">—</div>
+      </div>
+      <div class="je-slot" id="slot-cr">
+        <div class="je-slot-label">貸方</div>
+        <div class="je-slot-val empty" id="cr-val">—</div>
+      </div>
+    </div>
+    <div class="je-status" id="je-status">借方の科目を選んでください</div>
+    <div class="acct-label">科目</div>
+    <div class="acct-chips" id="acct-chips"></div>
+    <div class="acct-actions">
+      <button onclick="setNoEntry()">仕訳なし</button>
+      <button onclick="clearSelection()">クリア</button>
+    </div>
+    <div class="hint">「営業費」には販売管理費・通信費等を含みます。未達取引では、通知や商品がまだ届いていない側（＝問題文で「〜に未達」とされた側）の帳簿で仕訳します。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+</div>
+
+<script>
+// === 科目リスト（存在チェック用の全科目） ===
+const ACCOUNTS = [
+  '現金','当座預金','売掛金','買掛金','仕入','営業費',
+  '本店','支店','本店より仕入','支店へ売上',
+  '大阪支店','神戸支店',
+  '損益','総合損益','繰延内部利益','繰延内部利益控除','繰延内部利益戻入'
+];
+
+// === カテゴリごとに表示する科目チップ ===
+const CHIPS = {
+  '基本取引':['現金','売掛金','買掛金','仕入','営業費','本店','支店','本店より仕入','支店へ売上'],
+  '未達取引':['現金','当座預金','売掛金','買掛金','営業費','本店','支店','本店より仕入','支店へ売上'],
+  '支店間取引':['現金','仕入','本店','大阪支店','神戸支店'],
+  '決算整理':['損益','総合損益','本店','支店','繰延内部利益','繰延内部利益控除','繰延内部利益戻入']
+};
+
+// === 金額生成（すべて整数になる基数設計） ===
+function ri(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function yen(n){return n.toLocaleString('en-US')+'円';}
+function genAmounts(type){
+  if(type==='cash')return {A:10000*ri(5,30)};
+  if(type==='goods_cost')return {A:1000*ri(2,8)*10*ri(1,5)};
+  if(type==='goods_transfer'){const cost=1000*ri(2,8)*10*ri(1,5);return {A:cost,B:cost*1.2};}
+  if(type==='profit'){const X=1000*ri(3,12);return {X:X,S:6*X};}
+  return {};
+}
+function resolve(e,am){return typeof e==='function'?e(am):e;}
+
+// === 論点 ===
+const CONCEPTS = [
+  // ---------- 基本取引（問題文で記帳側を指定。1論点から本店側・支店側の2問が生成される） ----------
+  {id:'A1',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`本店は支店に現金${yen(am.A)}を送付した。`,
+    honten:{dr:'支店',cr:'現金'}, shiten:{dr:'現金',cr:'本店'},
+    explain:'本店勘定と支店勘定は互いに貸借逆・残高一致の照合勘定。現金を送った側は相手勘定を借方（相手への債権の増加）、受け取った側は相手勘定を貸方（債務の増加）に記帳する。'},
+  {id:'A2',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`支店は本店に現金${yen(am.A)}を送金した。`,
+    honten:{dr:'現金',cr:'支店'}, shiten:{dr:'本店',cr:'現金'},
+    explain:'現金を受け取った本店は相手勘定「支店」を貸方に、送金した支店は相手勘定「本店」を借方に記帳する。本店・支店勘定は貸借逆で対応する。'},
+  {id:'A3',cat:'基本取引',type:'basic',amt:'goods_cost',
+    txn:am=>`本店は支店に商品（原価${yen(am.A)}）を原価で発送した。`,
+    honten:{dr:'支店',cr:'仕入'}, shiten:{dr:'仕入',cr:'本店'},
+    explain:'原価で発送する場合は内部利益が生じない。本店は「仕入」を貸方に立てて原価を支店へ振り替え、支店は「仕入」を借方で受け入れる。'},
+  {id:'A4',cat:'基本取引',type:'basic',amt:'goods_transfer',
+    txn:am=>`本店は支店に商品（原価${yen(am.A)}）を、原価に20％の利益を加算した価格で発送した。`,
+    honten:{dr:'支店',cr:'支店へ売上'}, shiten:{dr:'本店より仕入',cr:'本店'},
+    explain:am=>`振替価格で発送する場合、本店は「支店へ売上」、支店は「本店より仕入」という内部取引専用の勘定を用いる。振替価格 = 原価 × 1.2 = ${yen(am.B)}。両勘定は決算で相殺され、含まれる内部利益は繰延処理の対象となる。`},
+  {id:'A5',cat:'基本取引',type:'basic',amt:'goods_transfer',
+    txn:am=>`支店は、本店から振替価格${yen(am.B)}で仕入れた商品を本店に返送（返品）した。`,
+    honten:{dr:'支店へ売上',cr:'支店'}, shiten:{dr:'本店',cr:'本店より仕入'},
+    explain:'返品は発送時の仕訳を貸借逆にする。本店は「支店へ売上」を借方で取り消し、支店は「本店より仕入」を貸方で取り消す。'},
+  {id:'A6',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`支店は、本店の売掛金${yen(am.A)}を本店に代わって現金で回収した。`,
+    honten:{dr:'支店',cr:'売掛金'}, shiten:{dr:'現金',cr:'本店'},
+    explain:'本店の債権（売掛金）を支店が回収した。本店は売掛金を減らし相手勘定「支店」を借方に、支店は現金を受け取り相手勘定「本店」を貸方に記帳する。'},
+  {id:'A7',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`本店は、支店の売掛金${yen(am.A)}を支店に代わって現金で回収した。`,
+    honten:{dr:'現金',cr:'支店'}, shiten:{dr:'本店',cr:'売掛金'},
+    explain:'支店の債権（売掛金）を本店が回収した。本店は現金を受け取り相手勘定「支店」を貸方に、支店は売掛金を減らし相手勘定「本店」を借方に記帳する。'},
+  {id:'A8',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`本店は、支店の買掛金${yen(am.A)}を支店に代わって現金で支払った。`,
+    honten:{dr:'支店',cr:'現金'}, shiten:{dr:'買掛金',cr:'本店'},
+    explain:'支店の債務（買掛金）を本店が立替払いした。本店は現金を減らし相手勘定「支店」を借方に、支店は買掛金を減らし相手勘定「本店」を貸方に記帳する。'},
+  {id:'A9',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`支店は、本店の買掛金${yen(am.A)}を本店に代わって現金で支払った。`,
+    honten:{dr:'買掛金',cr:'支店'}, shiten:{dr:'本店',cr:'現金'},
+    explain:'本店の債務（買掛金）を支店が立替払いした。本店は買掛金を減らし相手勘定「支店」を貸方に、支店は現金を減らし相手勘定「本店」を借方に記帳する。'},
+  {id:'A10',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`本店は、支店の営業費${yen(am.A)}を現金で立替払いした。`,
+    honten:{dr:'支店',cr:'現金'}, shiten:{dr:'営業費',cr:'本店'},
+    explain:'費用はそれが帰属する店で計上する。支店の営業費を本店が立て替えたので、費用は支店側で「営業費」として計上し、本店は相手勘定「支店」で処理する。'},
+  {id:'A11',cat:'基本取引',type:'basic',amt:'cash',
+    txn:am=>`支店は、本店の営業費${yen(am.A)}を現金で立替払いした。`,
+    honten:{dr:'営業費',cr:'支店'}, shiten:{dr:'本店',cr:'現金'},
+    explain:'本店の営業費を支店が立て替えたので、費用は本店側で「営業費」として計上し、支店は相手勘定「本店」で処理する。'},
+
+  // ---------- 未達取引（記帳側の選択が回答必須。未達＝まだ知らない側で仕訳する） ----------
+  {id:'B1',cat:'未達取引',type:'mitatsu',amt:'profit',correctSide:'支店',
+    dr:'本店より仕入',cr:'本店',
+    txn:am=>`本店は支店に商品${yen(am.S)}（振替価格。原価に20％の利益を加算）を発送したが、決算日現在、支店に未達である。`,
+    explain:'商品が届いていない支店側で「本店より仕入」を計上する。未達商品は支店の期末商品棚卸高にも含める（内部利益控除の対象になる）。本店側は発送時に処理済みで仕訳不要。'},
+  {id:'B2',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'本店',
+    dr:'当座預金',cr:'支店',
+    txn:am=>`支店は本店の当座預金口座に${yen(am.A)}を入金したが、本店に未達である。`,
+    explain:'入金の連絡が届いていない本店側で、当座預金の増加と相手勘定「支店」を計上する。支店側は入金時に処理済みで仕訳不要。'},
+  {id:'B3',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'支店',
+    dr:'現金',cr:'本店',
+    txn:am=>`本店は支店に現金${yen(am.A)}を送付したが、支店に未達である。`,
+    explain:'現金が届いていない支店側で、現金の増加と相手勘定「本店」を計上する。本店側は送付時に処理済みで仕訳不要。'},
+  {id:'B4',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'本店',
+    dr:'支店',cr:'売掛金',
+    txn:am=>`支店は、本店の売掛金${yen(am.A)}を本店に代わって小切手で回収したが、本店に未達である。`,
+    explain:'回収の連絡が届いていない本店側で、売掛金の減少と相手勘定「支店」を計上する。支店側は回収時に処理済みで仕訳不要。'},
+  {id:'B5',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'支店',
+    dr:'本店',cr:'売掛金',
+    txn:am=>`本店は、支店の売掛金${yen(am.A)}を支店に代わって回収したが、支店に未達である。`,
+    explain:'回収の連絡が届いていない支店側で、売掛金の減少と相手勘定「本店」を計上する。本店側は回収時に処理済みで仕訳不要。'},
+  {id:'B6',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'支店',
+    dr:'営業費',cr:'本店',
+    txn:am=>`本店は、支店の営業費${yen(am.A)}を立替払いしたが、支店に未達である。`,
+    explain:'立替の連絡が届いていない支店側で、費用「営業費」と相手勘定「本店」を計上する。本店側は立替時に処理済みで仕訳不要。'},
+  {id:'B7',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'本店',
+    dr:'営業費',cr:'支店',
+    txn:am=>`支店は、本店の営業費${yen(am.A)}を立替払いしたが、本店に未達である。`,
+    explain:'立替の連絡が届いていない本店側で、費用「営業費」と相手勘定「支店」を計上する。支店側は立替時に処理済みで仕訳不要。'},
+  {id:'B8',cat:'未達取引',type:'mitatsu',amt:'goods_transfer',correctSide:'本店',
+    dr:'支店へ売上',cr:'支店',
+    txn:am=>`支店は、本店から振替価格${yen(am.B)}で仕入れた商品を本店に返送したが、本店に未達である。`,
+    explain:'返送品が届いていない本店側で、発送時の仕訳を貸借逆にして「支店へ売上」を取り消す。支店側は返送時に処理済みで仕訳不要。'},
+  {id:'B9',cat:'未達取引',type:'mitatsu',amt:'cash',correctSide:'支店',
+    dr:'買掛金',cr:'本店',
+    txn:am=>`本店は支店の買掛金${yen(am.A)}を支払ったが、支店に未達である。`,
+    explain:'支払の連絡が届いていない支店側で、買掛金の減少と相手勘定「本店」を計上する。本店側は支払時に処理済みで仕訳不要。'},
+
+  // ---------- 支店間取引（計算制度と記帳側を指定。分散制度の本店は「仕訳なし」） ----------
+  {id:'C_cash_bunsan',cat:'支店間取引',type:'branch',item:'cash',seido:'分散'},
+  {id:'C_cash_shuchu',cat:'支店間取引',type:'branch',item:'cash',seido:'集中'},
+  {id:'C_goods_bunsan',cat:'支店間取引',type:'branch',item:'goods',seido:'分散'},
+  {id:'C_goods_shuchu',cat:'支店間取引',type:'branch',item:'goods',seido:'集中'},
+
+  // ---------- 決算整理（問題文で記帳側を明示） ----------
+  {id:'D1',cat:'決算整理',type:'settle',amt:'profit',
+    dr:'繰延内部利益控除',cr:'繰延内部利益',
+    txn:am=>`決算にあたり、支店の期末商品のうち本店から仕入れた分は${yen(am.S)}（振替価格）であった。本店は支店への発送時に原価に20％の利益を加算している。内部利益を控除する。\n\n本店側で行う仕訳を示しなさい。`,
+    explain:am=>`期末商品に含まれる内部利益 = 振替価格 × 0.2/1.2 = ${yen(am.X)}。当期の利益から控除するとともに「繰延内部利益」として次期へ繰り延べる。`},
+  {id:'D2',cat:'決算整理',type:'settle',amt:'profit',
+    dr:'繰延内部利益',cr:'繰延内部利益戻入',
+    txn:am=>`決算にあたり、支店の期首商品に含まれていた内部利益${yen(am.X)}を戻し入れる。\n\n本店側で行う仕訳を示しなさい。`,
+    explain:'期首商品の内部利益は前期末に控除済みなので、当期は戻し入れて当期の利益に加算する。'},
+  {id:'D3',cat:'決算整理',type:'settle',amt:'cash',
+    dr:'損益',cr:'本店',
+    txn:am=>`支店は当期純利益${yen(am.A)}を計上した。\n\n支店側で行う損益振替の仕訳を示しなさい。`,
+    explain:'支店の当期純利益は、支店の損益勘定から相手勘定「本店」へ振り替える。'},
+  {id:'D4',cat:'決算整理',type:'settle',amt:'cash',
+    dr:'支店',cr:'総合損益',
+    txn:am=>`本店は、支店から当期純利益${yen(am.A)}の報告を受けた。総合損益勘定を設けている。\n\n本店側で行う仕訳を示しなさい。`,
+    explain:'本店は支店の純利益を相手勘定「支店」で受け入れ、総合損益勘定に集計する。'},
+  {id:'D5',cat:'決算整理',type:'settle',amt:'cash',
+    dr:'本店',cr:'損益',
+    txn:am=>`支店は当期純損失${yen(am.A)}を計上した。\n\n支店側で行う損益振替の仕訳を示しなさい。`,
+    explain:'純損失の場合は純利益と貸借が逆になる。支店の損益勘定の借方残高を相手勘定「本店」へ振り替える。'},
+  {id:'D6',cat:'決算整理',type:'settle',amt:'cash',
+    dr:'総合損益',cr:'支店',
+    txn:am=>`本店は、支店から当期純損失${yen(am.A)}の報告を受けた。総合損益勘定を設けている。\n\n本店側で行う仕訳を示しなさい。`,
+    explain:'純損失は総合損益勘定の借方に、相手勘定「支店」を貸方に計上する（純利益とは貸借が逆）。'}
+];
+
+// === 問題ビルダー ===
+function buildBasic(c){
+  const am=genAmounts(c.amt);
+  const side=pick(['本店','支店']);
+  const e=side==='本店'?c.honten:c.shiten;
+  return {cat:c.cat,wording:c.txn(am)+`\n\nこのとき、${side}側の仕訳を示しなさい。`,
+    dr:e.dr,cr:e.cr,noEntry:false,requireSide:false,explain:resolve(c.explain,am)};
+}
+function buildMitatsu(c){
+  const am=genAmounts(c.amt);
+  return {cat:c.cat,wording:c.txn(am)+`\n\n記帳する側（本店側／支店側）を選び、仕訳を示しなさい。`,
+    dr:c.dr,cr:c.cr,noEntry:false,requireSide:true,correctSide:c.correctSide,explain:resolve(c.explain,am)};
+}
+function buildBranch(c){
+  const am=genAmounts(c.item==='cash'?'cash':'goods_cost');
+  const side=pick(['大阪支店','神戸支店','本店']);
+  const acct=c.item==='cash'?'現金':'仕入';
+  const txn=c.item==='cash'
+    ?`大阪支店は神戸支店に現金${yen(am.A)}を送付した。`
+    :`大阪支店は神戸支店に商品（原価${yen(am.A)}）を原価で発送した。`;
+  const seidoName=c.seido==='分散'?'支店分散計算制度':'本店集中計算制度';
+  let dr=null,cr=null,noEntry=false;
+  if(c.seido==='分散'){
+    if(side==='大阪支店'){dr='神戸支店';cr=acct;}
+    else if(side==='神戸支店'){dr=acct;cr='大阪支店';}
+    else{noEntry=true;}
+  }else{
+    if(side==='大阪支店'){dr='本店';cr=acct;}
+    else if(side==='神戸支店'){dr=acct;cr='本店';}
+    else{dr='神戸支店';cr='大阪支店';}
+  }
+  const explain=c.seido==='分散'
+    ?'支店分散計算制度では、各支店が相手支店の勘定を直接設けて記帳する。本店は取引に関与しないため仕訳なし。'
+    :'本店集中計算制度では、各支店は本店を相手に取引したとみなして「本店」勘定で記帳し、本店が両支店の勘定を付け替える（借方：受取側＝神戸支店、貸方：発送側＝大阪支店）。';
+  return {cat:c.cat,wording:`${seidoName}を採用している。${txn}\n\n${side}で行う仕訳を示しなさい。`,
+    dr:dr,cr:cr,noEntry:noEntry,requireSide:false,explain:explain};
+}
+function buildSettle(c){
+  const am=genAmounts(c.amt);
+  return {cat:c.cat,wording:c.txn(am),dr:c.dr,cr:c.cr,noEntry:false,requireSide:false,explain:resolve(c.explain,am)};
+}
+function buildQuestion(c){
+  if(c.type==='basic')return buildBasic(c);
+  if(c.type==='mitatsu')return buildMitatsu(c);
+  if(c.type==='branch')return buildBranch(c);
+  if(c.type==='settle')return buildSettle(c);
+}
+
+// === 状態 ===
+const STATE = {total:0,correct:0,q:null,history:[],graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+const SEL = {dr:null,cr:null,next:'dr',side:null};
+
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+const catCls={'基本取引':'cat-kihon','未達取引':'cat-mitatsu','支店間取引':'cat-branch','決算整理':'cat-settle'};
+
+function renderChips(cat){
+  const list=CHIPS[cat]||ACCOUNTS;
+  const html=list.map(a=>`<button type="button" class="acct-chip" data-acct="${a}" onclick="pickAcct('${a}')">${a}</button>`).join('');
+  document.getElementById('acct-chips').innerHTML=html;
+}
+
+function pickAcct(acct){
+  if(STATE.graded)return;
+  if(SEL.next==='dr'){SEL.dr=acct;SEL.next='cr';}
+  else if(SEL.next==='cr'){SEL.cr=acct;SEL.next=null;}
+  else{SEL.cr=acct;}
+  updateSlots();
+}
+
+function pickSide(side){
+  if(STATE.graded)return;
+  SEL.side=side;
+  updateSlots();
+}
+
+function updateSlots(){
+  const drVal=document.getElementById('dr-val');
+  const crVal=document.getElementById('cr-val');
+  const drSlot=document.getElementById('slot-dr');
+  const crSlot=document.getElementById('slot-cr');
+  const status=document.getElementById('je-status');
+
+  const disp=v=>v?v:'—';
+  drVal.textContent=disp(SEL.dr);
+  drVal.classList.toggle('empty',!SEL.dr);
+  crVal.textContent=disp(SEL.cr);
+  crVal.classList.toggle('empty',!SEL.cr);
+
+  for(const el of[drSlot,crSlot])el.classList.remove('active','filled','ok','ng');
+  if(!STATE.graded){
+    if(SEL.next==='dr')drSlot.classList.add('active');
+    else if(SEL.next==='cr')crSlot.classList.add('active');
+    if(SEL.dr)drSlot.classList.add('filled');
+    if(SEL.cr)crSlot.classList.add('filled');
+  }
+
+  // 記帳側セレクタ（未達取引のときだけ表示）
+  const sw=document.getElementById('side-wrap');
+  const showSide=!!(STATE.q&&STATE.q.requireSide);
+  sw.style.display=showSide?'block':'none';
+  const sh=document.getElementById('side-honten'),ss=document.getElementById('side-shiten');
+  for(const el of[sh,ss])el.classList.remove('sel','ok','ng');
+  if(showSide&&!STATE.graded){
+    if(SEL.side==='本店')sh.classList.add('sel');
+    if(SEL.side==='支店')ss.classList.add('sel');
+  }
+
+  status.classList.remove('done','warn');
+  if(STATE.graded){
+    status.textContent='';
+  }else if(SEL.next==='dr'){
+    status.textContent='借方の科目を選んでください';
+  }else if(SEL.next==='cr'){
+    status.textContent='貸方の科目を選んでください';
+  }else if(showSide&&SEL.side===null){
+    status.textContent='記帳側（本店側／支店側）を選んでください';
+  }else{
+    status.textContent='答え合わせを押してください';
+    status.classList.add('done');
+  }
+}
+
+function clearSelection(){
+  if(STATE.graded)return;
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.side=null;
+  updateSlots();
+}
+
+function setNoEntry(){
+  if(STATE.graded)return;
+  SEL.dr='仕訳なし';SEL.cr='仕訳なし';SEL.next=null;
+  updateSlots();
+}
+
+function setChipsDisabled(disabled){
+  for(const el of document.querySelectorAll('.acct-chip'))el.disabled=disabled;
+}
+
+function newQ(){
+  const recent=STATE.history.slice(-5);
+  const pool=CONCEPTS.filter(c=>!recent.includes(c.id));
+  const c=pick(pool.length?pool:CONCEPTS);
+  STATE.q=buildQuestion(c);
+  STATE.q.conceptId=c.id;
+  STATE.history.push(c.id);
+  STATE.graded=false;
+  STATE.startTime=Date.now();
+  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.side=null;
+
+  const qNum=CONCEPTS.indexOf(c)+1;
+  document.getElementById('cat-wrap').innerHTML=`<span class="q-num">${qNum} / ${CONCEPTS.length}</span><span class="cat-badge ${catCls[STATE.q.cat]||''}">${STATE.q.cat}</span>`;
+  document.getElementById('q-body').textContent=STATE.q.wording;
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+  renderChips(STATE.q.cat);
+  setChipsDisabled(false);
+  updateSlots();
+}
+
+function grade(){
+  if(STATE.graded)return;
+  const q=STATE.q;
+  const status=document.getElementById('je-status');
+  if(SEL.dr===null||SEL.cr===null){
+    status.textContent='借方と貸方を両方選んでから答え合わせしてください';
+    status.classList.remove('done');status.classList.add('warn');return;
+  }
+  if(q.requireSide&&SEL.side===null){
+    status.textContent='記帳側（本店側／支店側）を選んでください';
+    status.classList.remove('done');status.classList.add('warn');return;
+  }
+
+  let drOk,crOk;
+  if(q.noEntry){drOk=(SEL.dr==='仕訳なし');crOk=(SEL.cr==='仕訳なし');}
+  else{drOk=(SEL.dr===q.dr);crOk=(SEL.cr===q.cr);}
+  let sideOk=true;
+  if(q.requireSide)sideOk=(SEL.side===q.correctSide);
+  const allOk=drOk&&crOk&&sideOk;
+
+  STATE.graded=true;
+  STATE.total++;
+  if(allOk)STATE.correct++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-correct').textContent=STATE.correct;
+
+  const drSlot=document.getElementById('slot-dr');
+  const crSlot=document.getElementById('slot-cr');
+  for(const el of[drSlot,crSlot])el.classList.remove('active','filled');
+  drSlot.classList.add(drOk?'ok':'ng');
+  crSlot.classList.add(crOk?'ok':'ng');
+  status.textContent='';
+
+  if(q.requireSide){
+    const sh=document.getElementById('side-honten'),ss=document.getElementById('side-shiten');
+    for(const el of[sh,ss])el.classList.remove('sel','ok','ng');
+    const chosen=SEL.side==='本店'?sh:ss;
+    const correct=q.correctSide==='本店'?sh:ss;
+    if(chosen)chosen.classList.add(sideOk?'ok':'ng');
+    if(!sideOk)correct.classList.add('ok');
+  }
+
+  setChipsDisabled(true);
+  let ansText=q.noEntry?'仕訳なし':`(借) ${q.dr} ／ (貸) ${q.cr}`;
+  if(q.requireSide)ansText=`【${q.correctSide}側】 `+ansText;
+  document.getElementById('result-area').innerHTML=`
+    <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 正解！':'✗ 不正解'}</div>
+    <div class="explain"><div class="ans-line">正解：${ansText}</div>所要時間：${fmtElapsed(Date.now()-STATE.startTime)}<br>${q.explain}</div>
+  `;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+
+// セルフテスト
+(function selfTest(){
+  const inAcc=a=>ACCOUNTS.includes(a)||a==='仕訳なし';
+  for(const c of CONCEPTS){
+    for(let i=0;i<80;i++){
+      const q=buildQuestion(c);
+      if(!q.noEntry){
+        console.assert(inAcc(q.dr),`dr not in ACCOUNTS: ${q.dr} (${c.id})`);
+        console.assert(inAcc(q.cr),`cr not in ACCOUNTS: ${q.cr} (${c.id})`);
+      }
+      if(q.requireSide)console.assert(q.correctSide==='本店'||q.correctSide==='支店',`bad side (${c.id})`);
+      // チップに正解科目が含まれているか（noEntry・仕訳なしボタンは別途あり）
+      if(!q.noEntry){
+        console.assert(CHIPS[q.cat].includes(q.dr),`chip missing dr: ${q.dr} (${c.id})`);
+        console.assert(CHIPS[q.cat].includes(q.cr),`chip missing cr: ${q.cr} (${c.id})`);
+      }
+    }
+  }
+  for(const t of ['cash','goods_cost','goods_transfer','profit']){
+    for(let i=0;i<2000;i++){
+      const am=genAmounts(t);
+      for(const k in am)console.assert(Number.isInteger(am[k]),`non-integer ${t}.${k}=${am[k]}`);
+    }
+  }
+})();
+
+renderChips('基本取引');
+newQ();
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
