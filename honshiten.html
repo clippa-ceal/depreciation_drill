@@ -43,10 +43,13 @@ button:active{opacity:0.85}
 .cat-mitatsu{background:#FAEEDA;color:#854F0B}
 .cat-branch{background:#E1EEF8;color:#185FA5}
 .cat-settle{background:#E8E1F0;color:#5A3D8A}
+.cat-ryoten{background:#DCEFEA;color:#0F6E56}
 .q-text{font-size:15px;line-height:1.75;color:var(--color-text);white-space:pre-line}
 
+.je-block+.je-block{margin-top:12px;padding-top:12px;border-top:1px dashed var(--color-border2)}
+.je-block-label{font-size:12px;font-weight:700;color:var(--color-text);margin-bottom:6px}
 .je-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
-.je-slot{padding:10px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:#FAFAF8;text-align:center;transition:border-color .15s,background .15s}
+.je-slot{padding:10px 12px;border:1.5px solid var(--color-border2);border-radius:10px;background:#FAFAF8;text-align:center;transition:border-color .15s,background .15s;cursor:pointer}
 .je-slot.active{border-color:var(--color-info);background:#EAF3FB;box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
 .je-slot.filled{border-color:var(--color-text);background:var(--color-card)}
 .je-slot.ok{border-color:#7FB04A;background:#F2F8EA}
@@ -97,7 +100,7 @@ button:active{opacity:0.85}
   </div>
 
   <div class="card">
-    <div class="label">仕訳（科目を借方→貸方の順にタップ）</div>
+    <div class="label">仕訳（科目を借方→貸方の順にタップ。行が複数あるときは順に埋まります）</div>
     <div class="side-wrap" id="side-wrap" style="display:none">
       <div class="acct-label">記帳する帳簿（未達の側で仕訳する）</div>
       <div class="side-chips">
@@ -105,16 +108,7 @@ button:active{opacity:0.85}
         <button type="button" class="side-chip" id="side-shiten" onclick="pickSide('支店')">支店側</button>
       </div>
     </div>
-    <div class="je-slots">
-      <div class="je-slot" id="slot-dr">
-        <div class="je-slot-label">借方</div>
-        <div class="je-slot-val empty" id="dr-val">—</div>
-      </div>
-      <div class="je-slot" id="slot-cr">
-        <div class="je-slot-label">貸方</div>
-        <div class="je-slot-val empty" id="cr-val">—</div>
-      </div>
-    </div>
+    <div id="entries-wrap"></div>
     <div class="je-status" id="je-status">借方の科目を選んでください</div>
     <div class="acct-label">科目</div>
     <div class="acct-chips" id="acct-chips"></div>
@@ -122,7 +116,7 @@ button:active{opacity:0.85}
       <button onclick="setNoEntry()">仕訳なし</button>
       <button onclick="clearSelection()">クリア</button>
     </div>
-    <div class="hint">「営業費」には販売管理費・通信費等を含みます。未達取引では、通知や商品がまだ届いていない側（＝問題文で「〜に未達」とされた側）の帳簿で仕訳します。</div>
+    <div class="hint">「営業費」には販売管理費・通信費等を含みます。複数行のときは各行のスロットをタップして選び直せます。「仕訳なし」は現在アクティブな行に適用されます。</div>
   </div>
 
   <div id="result-area"></div>
@@ -144,7 +138,8 @@ const CHIPS = {
   '基本取引':['現金','売掛金','買掛金','仕入','営業費','本店','支店','本店より仕入','支店へ売上'],
   '未達取引':['現金','当座預金','売掛金','買掛金','営業費','本店','支店','本店より仕入','支店へ売上'],
   '支店間取引':['現金','仕入','本店','大阪支店','神戸支店'],
-  '決算整理':['損益','総合損益','本店','支店','繰延内部利益','繰延内部利益控除','繰延内部利益戻入']
+  '決算整理':['損益','総合損益','本店','支店','繰延内部利益','繰延内部利益控除','繰延内部利益戻入'],
+  '両店仕訳':['現金','当座預金','売掛金','買掛金','営業費','本店','支店']
 };
 
 // === 金額生成（すべて整数になる基数設計） ===
@@ -157,11 +152,20 @@ function genAmounts(type){
   if(type==='profit'){const X=1000*ri(3,12);return {X:X,S:6*X};}
   return {};
 }
+// 誤記帳（正しい額と誤った額。すべて5,000円の倍数で整数） ===
+function genCorrection(){
+  const correct=5000*ri(6,30);
+  const over=Math.random()<0.5;
+  let wrong;
+  if(over){wrong=correct+5000*ri(1,8);}
+  else{const maxDown=Math.min(8,Math.floor(correct/5000)-1);wrong=correct-5000*ri(1,maxDown);}
+  return {correct:correct,wrong:wrong,over:over,diff:Math.abs(wrong-correct)};
+}
 function resolve(e,am){return typeof e==='function'?e(am):e;}
 
 // === 論点 ===
 const CONCEPTS = [
-  // ---------- 基本取引（問題文で記帳側を指定。1論点から本店側・支店側の2問が生成される） ----------
+  // ---------- 基本取引（本店側・支店側・両店の3通りをランダム出題） ----------
   {id:'A1',cat:'基本取引',type:'basic',amt:'cash',
     txn:am=>`本店は支店に現金${yen(am.A)}を送付した。`,
     honten:{dr:'支店',cr:'現金'}, shiten:{dr:'現金',cr:'本店'},
@@ -275,21 +279,62 @@ const CONCEPTS = [
   {id:'D6',cat:'決算整理',type:'settle',amt:'cash',
     dr:'総合損益',cr:'支店',
     txn:am=>`本店は、支店から当期純損失${yen(am.A)}の報告を受けた。総合損益勘定を設けている。\n\n本店側で行う仕訳を示しなさい。`,
-    explain:'純損失は総合損益勘定の借方に、相手勘定「支店」を貸方に計上する（純利益とは貸借が逆）。'}
+    explain:'純損失は総合損益勘定の借方に、相手勘定「支店」を貸方に計上する（純利益とは貸借が逆）。'},
+
+  // ---------- 両店仕訳（本店側・支店側の2組を同時に解答） ----------
+  {id:'E1',cat:'両店仕訳',type:'dual',gen:function(){
+    const m=genCorrection();
+    const shiten=m.over?{dr:'本店',cr:'現金'}:{dr:'現金',cr:'本店'};
+    return {
+      cat:'両店仕訳',
+      wording:`支店は、本店の売掛金${yen(m.correct)}を本店に代わって小切手で回収したが、本店に未達である。なお、支店ではこの取引を誤って${yen(m.wrong)}で記帳していた。\n\n本店側（未達整理）と支店側（誤記帳の訂正）の両方の仕訳を示しなさい。`,
+      entries:[{label:'本店側',dr:'支店',cr:'売掛金'},{label:'支店側',dr:shiten.dr,cr:shiten.cr}],
+      requireSide:false,
+      explain:`本店側：回収の連絡が未達なので、売掛金の減少と相手勘定「支店」を計上する（${yen(m.correct)}）。／支店側：正しくは${yen(m.correct)}だが${yen(m.wrong)}で記帳しているため、差額${yen(m.diff)}を訂正する。${m.over?'過大計上なので (借)本店／(貸)現金 で減額する。':'過小計上なので (借)現金／(貸)本店 で不足分を追加する。'}`
+    };
+  }},
+  {id:'E2',cat:'両店仕訳',type:'dual',gen:function(){
+    const m=genCorrection();
+    const honten=m.over?{dr:'現金',cr:'支店'}:{dr:'支店',cr:'現金'};
+    return {
+      cat:'両店仕訳',
+      wording:`本店は、支店の買掛金${yen(m.correct)}を支店に代わって現金で支払ったが、支店に未達である。なお、本店ではこの取引を誤って${yen(m.wrong)}で記帳していた。\n\n本店側（誤記帳の訂正）と支店側（未達整理）の両方の仕訳を示しなさい。`,
+      entries:[{label:'本店側',dr:honten.dr,cr:honten.cr},{label:'支店側',dr:'買掛金',cr:'本店'}],
+      requireSide:false,
+      explain:`支店側：支払の連絡が未達なので、買掛金の減少と相手勘定「本店」を計上する（${yen(m.correct)}）。／本店側：正しくは${yen(m.correct)}だが${yen(m.wrong)}で記帳しているため、差額${yen(m.diff)}を訂正する。${m.over?'過大計上なので (借)現金／(貸)支店 で減額する。':'過小計上なので (借)支店／(貸)現金 で不足分を追加する。'}`
+    };
+  }},
+  {id:'E3',cat:'両店仕訳',type:'dual',gen:function(){
+    const am=genAmounts('cash');
+    return {
+      cat:'両店仕訳',
+      wording:`本店集中計算制度を採用している。大阪支店は神戸支店に現金${yen(am.A)}を送付した。\n\n大阪支店と神戸支店の両方の仕訳を示しなさい（本店の仕訳は不要）。`,
+      entries:[{label:'大阪支店',dr:'本店',cr:'現金'},{label:'神戸支店',dr:'現金',cr:'本店'}],
+      requireSide:false,
+      explain:'本店集中計算制度では各支店は本店を相手に取引したとみなす。大阪支店は (借)本店／(貸)現金、神戸支店は (借)現金／(貸)本店。なお付け替えを行う本店の仕訳は (借)神戸支店／(貸)大阪支店 となる。'
+    };
+  }}
 ];
 
-// === 問題ビルダー ===
+// === 問題ビルダー（すべて q.entries[] を返す） ===
 function buildBasic(c){
   const am=genAmounts(c.amt);
-  const side=pick(['本店','支店']);
-  const e=side==='本店'?c.honten:c.shiten;
-  return {cat:c.cat,wording:c.txn(am)+`\n\nこのとき、${side}側の仕訳を示しなさい。`,
-    dr:e.dr,cr:e.cr,noEntry:false,requireSide:false,explain:resolve(c.explain,am)};
+  const mode=pick(['本店','支店','両店']);
+  let entries,tail;
+  if(mode==='両店'){
+    entries=[{label:'本店側',dr:c.honten.dr,cr:c.honten.cr},{label:'支店側',dr:c.shiten.dr,cr:c.shiten.cr}];
+    tail='このとき、本店側と支店側の両方の仕訳を示しなさい。';
+  }else{
+    const e=mode==='本店'?c.honten:c.shiten;
+    entries=[{dr:e.dr,cr:e.cr}];
+    tail=`このとき、${mode}側の仕訳を示しなさい。`;
+  }
+  return {cat:c.cat,wording:c.txn(am)+`\n\n${tail}`,entries:entries,requireSide:false,explain:resolve(c.explain,am)};
 }
 function buildMitatsu(c){
   const am=genAmounts(c.amt);
   return {cat:c.cat,wording:c.txn(am)+`\n\n記帳する側（本店側／支店側）を選び、仕訳を示しなさい。`,
-    dr:c.dr,cr:c.cr,noEntry:false,requireSide:true,correctSide:c.correctSide,explain:resolve(c.explain,am)};
+    entries:[{dr:c.dr,cr:c.cr}],requireSide:true,correctSide:c.correctSide,explain:resolve(c.explain,am)};
 }
 function buildBranch(c){
   const am=genAmounts(c.item==='cash'?'cash':'goods_cost');
@@ -312,28 +357,31 @@ function buildBranch(c){
   const explain=c.seido==='分散'
     ?'支店分散計算制度では、各支店が相手支店の勘定を直接設けて記帳する。本店は取引に関与しないため仕訳なし。'
     :'本店集中計算制度では、各支店は本店を相手に取引したとみなして「本店」勘定で記帳し、本店が両支店の勘定を付け替える（借方：受取側＝神戸支店、貸方：発送側＝大阪支店）。';
+  const entry=noEntry?{dr:'仕訳なし',cr:'仕訳なし',noEntry:true}:{dr:dr,cr:cr};
   return {cat:c.cat,wording:`${seidoName}を採用している。${txn}\n\n${side}で行う仕訳を示しなさい。`,
-    dr:dr,cr:cr,noEntry:noEntry,requireSide:false,explain:explain};
+    entries:[entry],requireSide:false,explain:explain};
 }
 function buildSettle(c){
   const am=genAmounts(c.amt);
-  return {cat:c.cat,wording:c.txn(am),dr:c.dr,cr:c.cr,noEntry:false,requireSide:false,explain:resolve(c.explain,am)};
+  return {cat:c.cat,wording:c.txn(am),entries:[{dr:c.dr,cr:c.cr}],requireSide:false,explain:resolve(c.explain,am)};
 }
 function buildQuestion(c){
   if(c.type==='basic')return buildBasic(c);
   if(c.type==='mitatsu')return buildMitatsu(c);
   if(c.type==='branch')return buildBranch(c);
   if(c.type==='settle')return buildSettle(c);
+  if(c.type==='dual')return c.gen();
 }
 
 // === 状態 ===
 const STATE = {total:0,correct:0,q:null,history:[],graded:false,startTime:0};
 function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
-const SEL = {dr:null,cr:null,next:'dr',side:null};
+// SEL.entries: [{dr,cr,noEntry}]  SEL.active: フラットなスロット番号(block*2 + 0=借方/1=貸方)
+const SEL = {entries:[],active:0,side:null};
 
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 
-const catCls={'基本取引':'cat-kihon','未達取引':'cat-mitatsu','支店間取引':'cat-branch','決算整理':'cat-settle'};
+const catCls={'基本取引':'cat-kihon','未達取引':'cat-mitatsu','支店間取引':'cat-branch','決算整理':'cat-settle','両店仕訳':'cat-ryoten'};
 
 function renderChips(cat){
   const list=CHIPS[cat]||ACCOUNTS;
@@ -341,11 +389,34 @@ function renderChips(cat){
   document.getElementById('acct-chips').innerHTML=html;
 }
 
+function renderBlocks(q){
+  const wrap=document.getElementById('entries-wrap');
+  wrap.innerHTML=q.entries.map((e,i)=>{
+    const label=e.label?`<div class="je-block-label">${e.label}</div>`:'';
+    return `<div class="je-block">${label}<div class="je-slots">
+      <div class="je-slot" data-b="${i}" data-s="dr" onclick="focusSlot(${i},'dr')"><div class="je-slot-label">借方</div><div class="je-slot-val empty">—</div></div>
+      <div class="je-slot" data-b="${i}" data-s="cr" onclick="focusSlot(${i},'cr')"><div class="je-slot-label">貸方</div><div class="je-slot-val empty">—</div></div>
+    </div></div>`;
+  }).join('');
+}
+
+function nSlots(){return SEL.entries.length*2;}
+function seekActive(start){let a=start;const n=nSlots();while(a<n&&SEL.entries[a>>1].noEntry)a++;return a;}
+
 function pickAcct(acct){
   if(STATE.graded)return;
-  if(SEL.next==='dr'){SEL.dr=acct;SEL.next='cr';}
-  else if(SEL.next==='cr'){SEL.cr=acct;SEL.next=null;}
-  else{SEL.cr=acct;}
+  if(SEL.active>=nSlots())return; // 全て埋まっている → スロットをタップして選び直す
+  const b=SEL.active>>1, s=(SEL.active&1)?'cr':'dr';
+  SEL.entries[b].noEntry=false;
+  SEL.entries[b][s]=acct;
+  SEL.active=seekActive(SEL.active+1);
+  updateSlots();
+}
+
+function focusSlot(b,s){
+  if(STATE.graded)return;
+  if(SEL.entries[b].noEntry){SEL.entries[b]={dr:null,cr:null,noEntry:false};}
+  SEL.active=b*2+(s==='dr'?0:1);
   updateSlots();
 }
 
@@ -355,30 +426,44 @@ function pickSide(side){
   updateSlots();
 }
 
+function setNoEntry(){
+  if(STATE.graded)return;
+  const n=nSlots();
+  const b=SEL.active>=n?SEL.entries.length-1:(SEL.active>>1);
+  SEL.entries[b]={dr:'仕訳なし',cr:'仕訳なし',noEntry:true};
+  SEL.active=seekActive(b*2);
+  updateSlots();
+}
+
+function clearSelection(){
+  if(STATE.graded)return;
+  SEL.entries=STATE.q.entries.map(()=>({dr:null,cr:null,noEntry:false}));
+  SEL.active=0;SEL.side=null;
+  updateSlots();
+}
+
+function setChipsDisabled(disabled){
+  for(const el of document.querySelectorAll('.acct-chip'))el.disabled=disabled;
+}
+
 function updateSlots(){
-  const drVal=document.getElementById('dr-val');
-  const crVal=document.getElementById('cr-val');
-  const drSlot=document.getElementById('slot-dr');
-  const crSlot=document.getElementById('slot-cr');
-  const status=document.getElementById('je-status');
+  const q=STATE.q;
+  document.querySelectorAll('#entries-wrap .je-slot').forEach(slot=>{
+    const b=+slot.dataset.b, s=slot.dataset.s;
+    const val=SEL.entries[b][s];
+    const valEl=slot.querySelector('.je-slot-val');
+    valEl.textContent=val?val:'—';
+    valEl.classList.toggle('empty',!val);
+    slot.classList.remove('active','filled','ok','ng');
+    if(!STATE.graded){
+      const flat=b*2+(s==='dr'?0:1);
+      if(flat===SEL.active)slot.classList.add('active');
+      if(val)slot.classList.add('filled');
+    }
+  });
 
-  const disp=v=>v?v:'—';
-  drVal.textContent=disp(SEL.dr);
-  drVal.classList.toggle('empty',!SEL.dr);
-  crVal.textContent=disp(SEL.cr);
-  crVal.classList.toggle('empty',!SEL.cr);
-
-  for(const el of[drSlot,crSlot])el.classList.remove('active','filled','ok','ng');
-  if(!STATE.graded){
-    if(SEL.next==='dr')drSlot.classList.add('active');
-    else if(SEL.next==='cr')crSlot.classList.add('active');
-    if(SEL.dr)drSlot.classList.add('filled');
-    if(SEL.cr)crSlot.classList.add('filled');
-  }
-
-  // 記帳側セレクタ（未達取引のときだけ表示）
   const sw=document.getElementById('side-wrap');
-  const showSide=!!(STATE.q&&STATE.q.requireSide);
+  const showSide=!!(q&&q.requireSide);
   sw.style.display=showSide?'block':'none';
   const sh=document.getElementById('side-honten'),ss=document.getElementById('side-shiten');
   for(const el of[sh,ss])el.classList.remove('sel','ok','ng');
@@ -387,35 +472,19 @@ function updateSlots(){
     if(SEL.side==='支店')ss.classList.add('sel');
   }
 
+  const status=document.getElementById('je-status');
   status.classList.remove('done','warn');
-  if(STATE.graded){
-    status.textContent='';
-  }else if(SEL.next==='dr'){
-    status.textContent='借方の科目を選んでください';
-  }else if(SEL.next==='cr'){
-    status.textContent='貸方の科目を選んでください';
+  if(STATE.graded){status.textContent='';return;}
+  const n=nSlots();
+  if(SEL.active<n){
+    const b=SEL.active>>1, s=(SEL.active&1)?'貸方':'借方';
+    const lab=(SEL.entries.length>1&&q.entries[b].label)?q.entries[b].label+'の':'';
+    status.textContent=`${lab}${s}の科目を選んでください`;
   }else if(showSide&&SEL.side===null){
     status.textContent='記帳側（本店側／支店側）を選んでください';
   }else{
-    status.textContent='答え合わせを押してください';
-    status.classList.add('done');
+    status.textContent='答え合わせを押してください';status.classList.add('done');
   }
-}
-
-function clearSelection(){
-  if(STATE.graded)return;
-  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.side=null;
-  updateSlots();
-}
-
-function setNoEntry(){
-  if(STATE.graded)return;
-  SEL.dr='仕訳なし';SEL.cr='仕訳なし';SEL.next=null;
-  updateSlots();
-}
-
-function setChipsDisabled(disabled){
-  for(const el of document.querySelectorAll('.acct-chip'))el.disabled=disabled;
 }
 
 function newQ(){
@@ -427,7 +496,8 @@ function newQ(){
   STATE.history.push(c.id);
   STATE.graded=false;
   STATE.startTime=Date.now();
-  SEL.dr=null;SEL.cr=null;SEL.next='dr';SEL.side=null;
+  SEL.entries=STATE.q.entries.map(()=>({dr:null,cr:null,noEntry:false}));
+  SEL.active=0;SEL.side=null;
 
   const qNum=CONCEPTS.indexOf(c)+1;
   document.getElementById('cat-wrap').innerHTML=`<span class="q-num">${qNum} / ${CONCEPTS.length}</span><span class="cat-badge ${catCls[STATE.q.cat]||''}">${STATE.q.cat}</span>`;
@@ -435,6 +505,7 @@ function newQ(){
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';
   document.getElementById('btn-next').style.display='none';
+  renderBlocks(STATE.q);
   renderChips(STATE.q.cat);
   setChipsDisabled(false);
   updateSlots();
@@ -444,8 +515,9 @@ function grade(){
   if(STATE.graded)return;
   const q=STATE.q;
   const status=document.getElementById('je-status');
-  if(SEL.dr===null||SEL.cr===null){
-    status.textContent='借方と貸方を両方選んでから答え合わせしてください';
+  const filled=SEL.entries.every(e=>e.noEntry||(e.dr&&e.cr));
+  if(!filled){
+    status.textContent='各行の借方・貸方を選んでから答え合わせしてください';
     status.classList.remove('done');status.classList.add('warn');return;
   }
   if(q.requireSide&&SEL.side===null){
@@ -453,12 +525,17 @@ function grade(){
     status.classList.remove('done');status.classList.add('warn');return;
   }
 
-  let drOk,crOk;
-  if(q.noEntry){drOk=(SEL.dr==='仕訳なし');crOk=(SEL.cr==='仕訳なし');}
-  else{drOk=(SEL.dr===q.dr);crOk=(SEL.cr===q.cr);}
+  let allOk=true;
+  const results=q.entries.map((qe,i)=>{
+    const se=SEL.entries[i];
+    let drOk,crOk;
+    if(qe.noEntry){drOk=se.noEntry;crOk=se.noEntry;}
+    else{drOk=(se.dr===qe.dr);crOk=(se.cr===qe.cr);}
+    if(!(drOk&&crOk))allOk=false;
+    return {drOk:drOk,crOk:crOk};
+  });
   let sideOk=true;
-  if(q.requireSide)sideOk=(SEL.side===q.correctSide);
-  const allOk=drOk&&crOk&&sideOk;
+  if(q.requireSide){sideOk=(SEL.side===q.correctSide);if(!sideOk)allOk=false;}
 
   STATE.graded=true;
   STATE.total++;
@@ -466,11 +543,12 @@ function grade(){
   document.getElementById('s-total').textContent=STATE.total;
   document.getElementById('s-correct').textContent=STATE.correct;
 
-  const drSlot=document.getElementById('slot-dr');
-  const crSlot=document.getElementById('slot-cr');
-  for(const el of[drSlot,crSlot])el.classList.remove('active','filled');
-  drSlot.classList.add(drOk?'ok':'ng');
-  crSlot.classList.add(crOk?'ok':'ng');
+  document.querySelectorAll('#entries-wrap .je-slot').forEach(slot=>{
+    const b=+slot.dataset.b, s=slot.dataset.s;
+    slot.classList.remove('active','filled');
+    const ok=(s==='dr')?results[b].drOk:results[b].crOk;
+    slot.classList.add(ok?'ok':'ng');
+  });
   status.textContent='';
 
   if(q.requireSide){
@@ -483,11 +561,14 @@ function grade(){
   }
 
   setChipsDisabled(true);
-  let ansText=q.noEntry?'仕訳なし':`(借) ${q.dr} ／ (貸) ${q.cr}`;
-  if(q.requireSide)ansText=`【${q.correctSide}側】 `+ansText;
+  const ansBody=q.entries.map(qe=>{
+    const body=qe.noEntry?'仕訳なし':`(借) ${qe.dr} ／ (貸) ${qe.cr}`;
+    return qe.label?`【${qe.label}】 ${body}`:body;
+  }).join('<br>');
+  const sidePrefix=q.requireSide?`【${q.correctSide}側で記帳】<br>`:'';
   document.getElementById('result-area').innerHTML=`
     <div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 正解！':'✗ 不正解'}</div>
-    <div class="explain"><div class="ans-line">正解：${ansText}</div>所要時間：${fmtElapsed(Date.now()-STATE.startTime)}<br>${q.explain}</div>
+    <div class="explain"><div class="ans-line">正解：<br>${sidePrefix}${ansBody}</div>所要時間：${fmtElapsed(Date.now()-STATE.startTime)}<br>${q.explain}</div>
   `;
   document.getElementById('btn-check').style.display='none';
   document.getElementById('btn-next').style.display='block';
@@ -501,16 +582,14 @@ function nextQ(){newQ();}
   for(const c of CONCEPTS){
     for(let i=0;i<80;i++){
       const q=buildQuestion(c);
-      if(!q.noEntry){
-        console.assert(inAcc(q.dr),`dr not in ACCOUNTS: ${q.dr} (${c.id})`);
-        console.assert(inAcc(q.cr),`cr not in ACCOUNTS: ${q.cr} (${c.id})`);
+      for(const e of q.entries){
+        if(e.noEntry)continue;
+        console.assert(inAcc(e.dr),`dr not in ACCOUNTS: ${e.dr} (${c.id})`);
+        console.assert(inAcc(e.cr),`cr not in ACCOUNTS: ${e.cr} (${c.id})`);
+        console.assert(CHIPS[q.cat].includes(e.dr),`chip missing dr: ${e.dr} (${c.id})`);
+        console.assert(CHIPS[q.cat].includes(e.cr),`chip missing cr: ${e.cr} (${c.id})`);
       }
       if(q.requireSide)console.assert(q.correctSide==='本店'||q.correctSide==='支店',`bad side (${c.id})`);
-      // チップに正解科目が含まれているか（noEntry・仕訳なしボタンは別途あり）
-      if(!q.noEntry){
-        console.assert(CHIPS[q.cat].includes(q.dr),`chip missing dr: ${q.dr} (${c.id})`);
-        console.assert(CHIPS[q.cat].includes(q.cr),`chip missing cr: ${q.cr} (${c.id})`);
-      }
     }
   }
   for(const t of ['cash','goods_cost','goods_transfer','profit']){
@@ -519,9 +598,12 @@ function nextQ(){newQ();}
       for(const k in am)console.assert(Number.isInteger(am[k]),`non-integer ${t}.${k}=${am[k]}`);
     }
   }
+  for(let i=0;i<2000;i++){
+    const m=genCorrection();
+    console.assert(Number.isInteger(m.correct)&&Number.isInteger(m.wrong)&&m.wrong>0&&m.correct!==m.wrong,`bad correction ${JSON.stringify(m)}`);
+  }
 })();
 
-renderChips('基本取引');
 newQ();
 
 // PWA

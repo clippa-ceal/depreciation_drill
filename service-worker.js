@@ -1,4 +1,4 @@
-const CACHE = 'shokyaku-drill-v56';
+const CACHE = 'shokyaku-drill-v57';
 const ASSETS = [
   './',
   './numclick.js',
