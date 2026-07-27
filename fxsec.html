@@ -64,8 +64,7 @@ svg.timeline{display:block;min-width:340px}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
-.calc-btn-pull{background:#0F6E56;color:#fff;font-size:13px}
-.calc-btn-push{background:#185FA5;color:#fff;font-size:13px}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px;grid-column:span 4}
 .type-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:10px;font-weight:500;margin-right:4px}
 .type-b{background:#EAF3DE;color:#3B6D11}
 .type-c{background:#FAEEDA;color:#854F0B}
@@ -183,8 +182,7 @@ details.basics summary::-webkit-details-marker{display:none}
     <div class="label" style="margin-bottom:6px">電卓</div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
-      <button class="calc-btn calc-btn-pull calc-btn-wide" onclick="calcFromQ()">↓ 問題から引用</button>
-      <button class="calc-btn calc-btn-push calc-btn-wide" onclick="calcToAns()">↑ 回答欄へ反映</button>
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
@@ -762,29 +760,6 @@ function calcIn(v){
     if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
   }
   document.getElementById('calc-disp').textContent=fmtDisp(s.disp);
-}
-function calcFromQ(){
-  const q=state.q;if(!q)return;
-  cs.disp=String(q.pullVal);cs.fresh=true;cs.prev=null;cs.op=null;
-  document.getElementById('calc-disp').textContent=fmtDisp(cs.disp);
-}
-// 数字が入っている最後の欄の「次の欄」へ反映（すべて空なら先頭へ。
-// 末尾まで埋まっていたら残っている空欄の先頭へ）
-function calcToAns(){
-  const n=parseFloat(cs.disp);
-  if(isNaN(n))return;
-  let lastFilled=-1;
-  FIELDS.forEach((f,i)=>{
-    if(document.getElementById('a-'+f.id).value.trim()!=='')lastFilled=i;
-  });
-  let idx=lastFilled+1;
-  if(idx>=FIELDS.length){
-    idx=FIELDS.findIndex(f=>document.getElementById('a-'+f.id).value.trim()==='');
-    if(idx<0)return;   // 全欄埋まっている
-  }
-  const el=document.getElementById('a-'+FIELDS[idx].id);
-  if(el.disabled)return;
-  el.value=String(Math.round(n));
 }
 function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
 function numStr(n){return String(Math.round(n*1e9)/1e9);}

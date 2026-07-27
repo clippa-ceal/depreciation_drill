@@ -120,7 +120,7 @@ table.j-tbl .none{background:#FAF9F6}
     </div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
-      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映（選択中の欄へ）</button>
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
@@ -380,11 +380,6 @@ function cell(mv,ei,side,i){
 document.addEventListener('mousedown',e=>{
   if(e.target&&e.target.closest&&e.target.closest('button'))e.preventDefault();
 },true);
-// 直近にフォーカスした金額欄を覚えておく（電卓からの反映先）
-let lastAmt=null;
-document.addEventListener('focusin',e=>{
-  if(e.target&&e.target.matches&&e.target.matches('.amt input'))lastAmt=e.target;
-});
 // キーボードOFF（既定）：金額欄をタップしてもOSキーボードを出さず、電卓＋反映で入力する
 let kbOff=localStorage.getItem('hedgeKbOff')!=='0';
 function applyKb(){
@@ -393,20 +388,10 @@ function applyKb(){
   if(t){t.textContent=kbOff?'⌨ キーボード OFF':'⌨ キーボード ON';t.classList.toggle('kb-on',!kbOff);}
 }
 function toggleKb(){kbOff=!kbOff;localStorage.setItem('hedgeKbOff',kbOff?'1':'0');applyKb();}
-// 電卓の値を、選択中（直近フォーカス）の金額欄へ反映。未選択なら最初の空欄へ
-function calcToAns(){
-  if(!STATE.g||STATE.graded)return;
-  const n=parseFloat(cs.disp);
-  if(isNaN(n))return;
-  let el=(lastAmt&&document.contains(lastAmt))?lastAmt:null;
-  if(!el)el=[...document.querySelectorAll('.amt input')].find(i=>i.value.trim()==='');
-  if(el){el.value=String(Math.round(n));el.focus();lastAmt=el;}
-}
 
 function newQ(){
   const g=genQ();if(!g)return;
   STATE.g=g;STATE.graded=false;STATE.startTime=Date.now();
-  lastAmt=null;
   renderGiven(g);renderJournal(g);applyKb();
   document.getElementById('result-area').innerHTML='';
   document.getElementById('btn-check').style.display='block';

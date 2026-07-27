@@ -121,7 +121,7 @@ button:active{opacity:0.85}
     <div class="label" style="margin-bottom:6px">電卓</div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
-      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映（次の空欄へ）</button>
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
@@ -521,26 +521,6 @@ function nextQ(){newQ();}
 renderToggles();
 newQ();
 
-// 電卓 → 解答欄へ順送りで反映（数字が入っている最後の欄の次の空欄へ）
-function calcToAns(){
-  if(!STATE.q||STATE.graded)return;
-  const n=parseFloat(cs.disp);
-  if(isNaN(n))return;
-  const nums=STATE.q.fields.filter(f=>f.kind==='num');
-  if(!nums.length)return;
-  let lastFilled=-1;
-  nums.forEach((f,i)=>{
-    const el=document.getElementById(f.id);
-    if(el&&el.value.trim()!=='')lastFilled=i;
-  });
-  let idx=lastFilled+1;
-  if(idx>=nums.length){
-    idx=nums.findIndex(f=>{const el=document.getElementById(f.id);return el&&el.value.trim()==='';});
-    if(idx<0)return;   // 全欄埋まっている
-  }
-  const el=document.getElementById(nums[idx].id);
-  if(el)el.value=String(Math.round(n));
-}
 
 const cs={disp:'0',prev:null,op:null,fresh:true};
 function calcIn(v){

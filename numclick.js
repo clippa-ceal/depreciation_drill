@@ -5,7 +5,8 @@
   var style=document.createElement('style');
   style.textContent=
     '.qnum{border-bottom:1px dashed currentColor;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.1);transition:background-color .15s ease}' +
-    '.qnum.qnum-flash{background-color:rgba(24,95,165,0.25)}';
+    '.qnum.qnum-flash{background-color:rgba(24,95,165,0.25)}' +
+    '.ans-flash{background-color:rgba(24,95,165,0.25)!important;transition:background-color .15s ease}';
   document.head.appendChild(style);
 
   // ラップ対象から除外するタグ・セレクタ
@@ -141,5 +142,72 @@
     el.classList.add('qnum-flash');
     setTimeout(function(){el.classList.remove('qnum-flash');},200);
   });
+
+  // ---- 電卓 → 回答欄へ反映（全ページ共通） ----
+  // 反映先の優先順位：
+  //   1. 直近にフォーカスした回答欄（タップして選んだ欄）
+  //   2. 入力済みの最後の欄の「次の欄」
+  //   3. 残っている空欄の先頭（末尾まで埋まっている場合）
+  var ANS_SKIP='.calc-grid,.calc-display,.nav';
+  var ANS_TYPES={text:1,number:1,tel:1,search:1};
+
+  function isAnsInput(el){
+    if(!el||el.tagName!=='INPUT')return false;
+    if(!ANS_TYPES[(el.getAttribute('type')||'text').toLowerCase()])return false;
+    if(el.disabled||el.readOnly)return false;
+    if(el.closest&&el.closest(ANS_SKIP))return false;
+    if(el.getClientRects().length===0)return false;   // 非表示の欄は対象外
+    return true;
+  }
+
+  function ansInputs(){
+    var all=document.querySelectorAll('input');
+    var out=[];
+    for(var i=0;i<all.length;i++)if(isAnsInput(all[i]))out.push(all[i]);
+    return out;
+  }
+
+  var lastAns=null;
+  document.addEventListener('focusin',function(e){
+    if(isAnsInput(e.target))lastAns=e.target;
+  });
+
+  function pickTarget(){
+    var list=ansInputs();
+    if(!list.length)return null;
+    if(lastAns&&document.contains(lastAns)&&isAnsInput(lastAns))return lastAns;
+    var lastFilled=-1,i;
+    for(i=0;i<list.length;i++)if(list[i].value.trim()!=='')lastFilled=i;
+    var idx=lastFilled+1;
+    if(idx>=list.length){
+      idx=-1;
+      for(i=0;i<list.length;i++)if(list[i].value.trim()===''){idx=i;break;}
+      if(idx<0)return null;   // 全欄埋まっている
+    }
+    return list[idx];
+  }
+
+  window.calcToAns=function(){
+    if(typeof cs==='undefined'||!cs)return;
+    var n=parseFloat(cs.disp);
+    if(isNaN(n))return;
+    var el=pickTarget();
+    if(!el)return;
+    var hadFocus=(document.activeElement===el);
+    el.value=String(Math.round(n));
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    el.classList.add('ans-flash');
+    setTimeout(function(){el.classList.remove('ans-flash');},250);
+
+    // 続けて押したら次の空欄へ進む。
+    // 欄にフォーカスが残っている場合（キーボードOFFのページ）はカーソルも一緒に送る。
+    lastAns=null;
+    if(hadFocus){
+      var list=ansInputs(),i=list.indexOf(el),next=null;
+      for(var k=i+1;k<list.length;k++){if(list[k].value.trim()===''){next=list[k];break;}}
+      if(next)next.focus();else el.blur();
+    }
+  };
 
 })();

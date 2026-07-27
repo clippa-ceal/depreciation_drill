@@ -78,6 +78,7 @@ table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
 .calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
 .calc-btn-eq{background:var(--color-text);color:#fff}
 .calc-btn-wide{grid-column:span 2}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px;grid-column:span 4}
 </style>
 </head>
 <body>
@@ -123,6 +124,7 @@ table.sol-tbl tr.grp td{border-top:2px solid #b9b6ad}
     <div class="label" style="margin-bottom:6px">電卓</div>
     <div id="calc-disp" class="calc-display">0</div>
     <div class="calc-grid">
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
       <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
