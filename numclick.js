@@ -144,10 +144,9 @@
   });
 
   // ---- 電卓 → 回答欄へ反映（全ページ共通） ----
-  // 反映先の優先順位：
-  //   1. 直近にフォーカスした回答欄（タップして選んだ欄）
-  //   2. 入力済みの最後の欄の「次の欄」
-  //   3. 残っている空欄の先頭（末尾まで埋まっている場合）
+  // 反映先は「上から見て最初の空欄」。
+  // ただし欄をタップして選んでいる間だけは、その欄が反映先になる（行を飛ばして
+  // 入れたいとき用）。選択状態は、反映するか手入力すると解除される。
   var ANS_SKIP='.calc-grid,.calc-display,.nav';
   var ANS_TYPES={text:1,number:1,tel:1,search:1};
 
@@ -167,24 +166,25 @@
     return out;
   }
 
+  function firstEmpty(){
+    var list=ansInputs();
+    for(var i=0;i<list.length;i++)if(list[i].value.trim()==='')return list[i];
+    return null;
+  }
+
+  // タップして選んだ欄。手入力するとその欄はもう空ではないので選択を解除する
+  // （解除しないと、次の反映が手入力した値を上書きしてしまう）。
   var lastAns=null;
   document.addEventListener('focusin',function(e){
     if(isAnsInput(e.target))lastAns=e.target;
   });
+  document.addEventListener('input',function(e){
+    if(e.isTrusted&&isAnsInput(e.target))lastAns=null;
+  });
 
   function pickTarget(){
-    var list=ansInputs();
-    if(!list.length)return null;
     if(lastAns&&document.contains(lastAns)&&isAnsInput(lastAns))return lastAns;
-    var lastFilled=-1,i;
-    for(i=0;i<list.length;i++)if(list[i].value.trim()!=='')lastFilled=i;
-    var idx=lastFilled+1;
-    if(idx>=list.length){
-      idx=-1;
-      for(i=0;i<list.length;i++)if(list[i].value.trim()===''){idx=i;break;}
-      if(idx<0)return null;   // 全欄埋まっている
-    }
-    return list[idx];
+    return firstEmpty();
   }
 
   window.calcToAns=function(){
@@ -193,19 +193,18 @@
     if(isNaN(n))return;
     var el=pickTarget();
     if(!el)return;
-    var hadFocus=(document.activeElement===el);
+    var hadFocus=isAnsInput(document.activeElement);
     el.value=String(Math.round(n));
     el.dispatchEvent(new Event('input',{bubbles:true}));
     el.dispatchEvent(new Event('change',{bubbles:true}));
     el.classList.add('ans-flash');
     setTimeout(function(){el.classList.remove('ans-flash');},250);
 
-    // 続けて押したら次の空欄へ進む。
+    // 反映したら選択を解除。続けて押すと次の空欄へ入る。
     // 欄にフォーカスが残っている場合（キーボードOFFのページ）はカーソルも一緒に送る。
     lastAns=null;
     if(hadFocus){
-      var list=ansInputs(),i=list.indexOf(el),next=null;
-      for(var k=i+1;k<list.length;k++){if(list[k].value.trim()===''){next=list[k];break;}}
+      var next=firstEmpty();
       if(next)next.focus();else el.blur();
     }
   };
