@@ -233,6 +233,8 @@ function genQ(){
     } else if(pattern==='予定'){
       const fwdVal=type==='AR'?FC*(FR0-FR_b):FC*(FR_b-FR0);
       if(fwdVal===0)continue;
+      const fwdFinal=type==='AR'?FC*(FR0-SR_T):FC*(SR_T-FR0);
+      if(fwdFinal===0)continue;
       const tax=fwdVal*3/10;
       E('予約日',[]);
       E('決算日（時価評価・税効果）',[
@@ -244,6 +246,19 @@ function genQ(){
         {acct:'為替予約',amt:-fwdVal},
         {acct:fwdVal>0?'繰延税金負債':'繰延税金資産',amt:+tax},
         {acct:'繰延ヘッジ損益',amt:+(fwdVal-tax)},
+      ]);
+      E('実行日①（為替予約の決済）',[
+        {acct:'現金預金',amt:+fwdFinal},
+        {acct:'繰延ヘッジ損益',amt:-fwdFinal},
+      ]);
+      E('実行日②（予定取引の実行）',
+        type==='AR'
+          ?[{acct:'現金預金',amt:+FC*SR_T},{acct:'売上',amt:-FC*SR_T}]
+          :[{acct:'仕入',amt:+FC*SR_T},{acct:'現金預金',amt:-FC*SR_T}]
+      );
+      E('実行日③（繰延ヘッジ損益の振替）',[
+        {acct:'繰延ヘッジ損益',amt:+fwdFinal},
+        {acct:fxAcct(),amt:-fwdFinal},
       ]);
     } else {
       const sAcct=type==='AR'?'売掛金':'買掛金';
@@ -306,7 +321,7 @@ function renderGiven(g){
   h+=`<table class="g-table">
     <tr><td class="g-key">取引</td><td class="g-val">${dir}</td></tr>
     <tr><td class="g-key">外貨建金額</td><td class="g-val">${fmt(g.FC)} 通貨単位（FC）</td></tr>
-    ${isPlan?`<tr><td class="g-key">実行予定</td><td class="g-val">翌期（決済日 ${d.pay}）</td></tr>
+    ${isPlan?`<tr><td class="g-key">実行予定日</td><td class="g-val">翌期 ${d.pay}（同日に為替予約も決済）</td></tr>
     <tr><td class="g-key">実効税率</td><td class="g-val">30%</td></tr>`:''}
   </table>`;
   let rows='';
@@ -321,7 +336,8 @@ function renderGiven(g){
           <tr><td>${d.pay}（決済日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
   }else if(isPlan){
     rows=`<tr><td>${d.trade}（予約日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
-          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>`;
+          <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
+          <tr><td>${d.pay}（実行日）</td><td class="rv">${fmtRate(g.SR_T)}</td><td class="rv">${fmtRate(g.SR_T)}</td></tr>`;
   }else{
     rows=`<tr><td>${d.trade}（取引日）</td><td class="rv">${fmtRate(g.SR0)}</td><td class="rv">${fmtRate(g.FR0)}</td></tr>
           <tr><td>${d.close}（決算日）</td><td class="rv">${fmtRate(g.SR_b)}</td><td class="rv">${fmtRate(g.FR_b)}</td></tr>
@@ -333,7 +349,7 @@ function renderGiven(g){
   }else if(g.pattern==='事後'){
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR_a)}。直直差額は当期の損益。直先差額は予約日〜決済日の期間で配分（決算日 3月31日まで当期分）。</div>`;
   }else if(isPlan){
-    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。予定取引のヘッジなので予約日は仕訳なし。決算日に為替予約を時価評価し、評価差額は税効果（30%）適用後の純額を繰延ヘッジ損益（純資産）として繰り延べる。翌期首に振り戻す。</div>`;
+    h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。予定取引のヘッジなので予約日は仕訳なし。決算日に為替予約を時価評価し、評価差額は税効果（30%）適用後の純額を繰延ヘッジ損益（純資産）として繰り延べる。翌期首に振り戻す。実行日は ①為替予約の差金決済（繰延ヘッジ損益で受入）→ ②${g.type==='AR'?'売上':'仕入'}を直物相場で計上（代金は現金決済）→ ③繰延ヘッジ損益を為替差損益に振り替える（原則処理）の順。実行日は期中に完結するため税効果は考慮しない。</div>`;
   }else{
     h+=`<div class="hint">予約相場 ${fmtRate(g.FR0)}。債権債務は直物で換算替えし、為替予約はデリバティブとして時価評価（ともに当期損益）。</div>`;
   }
@@ -462,7 +478,14 @@ function grade(){
     lines.push(`決算日：為替予約の時価評価 ${FCf}×|${fmtRate(g.FR0)}−${fmtRate(g.FR_b)}| ＝ ${fmt(fv)}（評価${fwdVal>0?'益':'損'}）`);
     lines.push(`税効果：${fmt(fv)}×30% ＝ ${fmt(tax)} → ${fwdVal>0?'繰延税金負債':'繰延税金資産'}`);
     lines.push(`純額 ${fmt(fv-tax)} を繰延ヘッジ損益として純資産に繰延（P/Lには計上しない）`);
-    lines.push(`翌期首：振戻し（逆仕訳）。ヘッジ損益は予定取引の実行時に認識される。`);
+    lines.push(`翌期首：振戻し（逆仕訳）→ 為替予約・繰延ヘッジ損益の残高はゼロに戻る`);
+    const ff=g.type==='AR'?g.FC*(g.FR0-g.SR_T):g.FC*(g.SR_T-g.FR0);
+    const ffa=Math.abs(ff);
+    lines.push(`実行日①：為替予約の差金決済 ${FCf}×|${fmtRate(g.FR0)}−${fmtRate(g.SR_T)}| ＝ ${fmt(ffa)}（${ff>0?'受取':'支払'}）→ 相手勘定は繰延ヘッジ損益`);
+    lines.push(`実行日②：予定取引を実行。${g.type==='AR'?'売上':'仕入'}は実行日の直物 ${fmtRate(g.SR_T)} で計上 → ${FCf}×${fmtRate(g.SR_T)} ＝ ${fmt(g.FC*g.SR_T)}`);
+    lines.push(`実行日③：ヘッジ対象の損益が実現したので、繰延ヘッジ損益 ${fmt(ffa)} を為替差${ff>0?'益':'損'}に振替`);
+    lines.push(`→ 正味の${g.type==='AR'?'手取額':'負担額'}は ${FCf}×${fmtRate(g.FR0)} ＝ ${fmt(g.FC*g.FR0)} に固定される（ヘッジの効果）`);
+    lines.push(`※ 資産の購入の予定取引では、繰延ヘッジ損益を取得原価に加減する容認処理もあるが、本問は原則処理（損益振替）による。`);
   }else{
     const monL=g.FC*Math.abs(g.SR_b-g.SR0);
     const fwdL=g.FC*Math.abs((g.type==='AR'?(g.FR0-g.FR_b):(g.FR_b-g.FR0)));
