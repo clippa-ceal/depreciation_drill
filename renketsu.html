@@ -168,6 +168,7 @@ details.basics .bd strong{color:var(--color-text)}
     </div>
     <div class="label" id="j-label">仕訳（科目と金額を入力。不要な行は空欄のまま）</div>
     <div id="journal-area"></div>
+    <div class="hint" id="j-note"></div>
     <div class="hint">借方・貸方の中は<b>順不同</b>で採点します。<br>
       開始仕訳では「<b>資本金当期首残高</b>」のように<b>当期首残高</b>を付けた科目を選んでください。<br>
       追加取得・一部売却は「非支配株主持分<b>当期変動額</b>」でも「非支配株主持分」でも正解にします。</div>
@@ -334,7 +335,7 @@ function genSousatsu(kifu){
     g+=assetGiven(b);
     g+=gSent(`<b>【設問】</b>${kifu
       ?`X${b.y0+1}年3月期（支配獲得の翌期）の<b>開始仕訳</b>を示しなさい。なお、この期に行うべき修正は開始仕訳のみとする（評価替の仕訳は別途行っている）。`
-      :`支配獲得日に行う<b>投資と資本の相殺消去</b>の仕訳を示しなさい（評価替の仕訳は別途行っている）。`}`);
+      :`支配獲得日に行う<b>投資と資本の相殺消去</b>の<b>連結修正仕訳</b>を示しなさい（評価替の仕訳は別途行っている）。`}`);
     const ex=[];
     ex.push(hyokaEx(b));
     ex.push(`<b>② S社資本（評価替後）</b>　${fmt(b.cap)} ＋ ${fmt(b.re0)} ＋ ${fmt(b.hyoka)} ＝ <b>${fmt(b.na0)}</b>`);
@@ -342,7 +343,7 @@ function genSousatsu(kifu){
     ex.push(`<b>④ ${gw>0?'のれん':'負ののれん発生益'}</b>　取得原価 ${fmt(A)} − ${fmt(b.na0)} × ${b.ratio}%（＝${fmt(b.pAmt)}） ＝ ${fmt(gw)}`);
     if(gw<0)ex.push(`　マイナスなので<b>負ののれん発生益</b>（貸方・特別利益）。償却はしない。`);
     if(kifu)ex.push(`<b>⑤ 開始仕訳への読み替え</b>　純資産の科目は「当期首残高」を付ける（評価差額・のれん・S社株式はそのまま）。`);
-    return{badges:[kifu?'開始仕訳（翌期）':'投資と資本の相殺',gw>0?'のれん':'負ののれん',b.gross?'諸資産・諸負債':'土地'],
+    return{jkind:'renketsu',badges:[kifu?'開始仕訳（翌期）':'投資と資本の相殺',gw>0?'のれん':'負ののれん',b.gross?'諸資産・諸負債':'土地'],
       givenHTML:g,debits,credits,
       aux:[{label:'評価差額',val:b.hyoka},{label:'S社資本合計（評価替後）',val:b.na0}],explain:ex};
   }
@@ -407,7 +408,7 @@ function genKaishi2(){
     ex.push(`<b>⑤ 利益剰余金当期首残高</b>（貸借差額でよい）`);
     ex.push(`　${fmt(A)} ＋ ${fmt(nciEnd)} − ${fmt(b.cap)} − ${fmt(b.hyoka)} − ${fmt(gwRest)} ＝ <b>${fmt(R)}</b>`);
     ex.push(`　〈検算〉支配獲得時の利剰 ${fmt(b.re0)} ＋ のれん償却累計 ${fmt(n*amort)} ＋ 非支配株主分（${fmt(sumNi)}−${fmt(sumDiv)}）×${b.nci}%（＝${fmt((sumNi-sumDiv)*b.nci/100)}） ＝ ${fmt(R2)}`);
-    return{badges:['開始仕訳（累積）',`${n}年経過`,b.gross?'諸資産・諸負債':'土地'],
+    return{jkind:'renketsu',badges:['開始仕訳（累積）',`${n}年経過`,b.gross?'諸資産・諸負債':'土地'],
       givenHTML:g,debits,credits,
       aux:[{label:'評価差額',val:b.hyoka},{label:'のれん償却累計額',val:n*amort},
         {label:'前期末のS社資本合計',val:naEnd}],explain:ex};
@@ -441,7 +442,7 @@ function genTsuika(){
     g+=`<div class="g-head">S社の純資産</div>`;
     g+=naTable([{d:`X${b.y0}年3月31日`,cap:b.cap,re:b.re0},{d:`X${b.y0+n}年3月31日`,cap:b.cap,re:reAdd}]);
     g+=assetGiven(b,`X${b.y0+n}年3月31日`);
-    g+=gSent(`<b>【設問】</b><b>S社株式の追加取得</b>の仕訳を示しなさい。`);
+    g+=gSent(`<b>【設問】</b><b>S社株式の追加取得</b>に係る<b>連結修正仕訳</b>を示しなさい。`);
     const ex=[];
     ex.push(hyokaEx(b));
     ex.push(`　評価替は<b>支配獲得日だけ</b>。X${b.y0+n}年3月31日の時価は使わない（評価差額は ${fmt(b.hyoka)} のまま）。`);
@@ -450,7 +451,7 @@ function genTsuika(){
     ex.push(`<b>③ 非支配株主持分の減少額</b>　${fmt(naAdd)} × ${addR}% ＝ <b>${fmt(dec)}</b>（借方）`);
     ex.push(`<b>④ 資本剰余金</b>　取得原価 ${fmt(addA)} − ${fmt(dec)} ＝ ${fmt(capSur)} → <b>${capSur>0?'借方':'貸方'}</b>に ${fmt(Math.abs(capSur))}`);
     ex.push(`　のれんは<b>追加計上しない</b>（支配獲得後の持分の取引は資本取引）。`);
-    return{badges:['追加取得',`${b.ratio}%→${b.ratio+addR}%`,capSur>0?'資本剰余金（借方）':'資本剰余金（貸方）'],
+    return{jkind:'renketsu',badges:['追加取得',`${b.ratio}%→${b.ratio+addR}%`,capSur>0?'資本剰余金（借方）':'資本剰余金（貸方）'],
       givenHTML:g,debits,credits,
       aux:[{label:'評価差額',val:b.hyoka},{label:'追加取得日のS社資本合計',val:naAdd}],explain:ex};
   }
@@ -500,7 +501,7 @@ function genUriage(){
     ex.push(`<b>④ 非支配株主持分の増加額</b>　${fmt(naSell)} × ${sellR}% ＝ <b>${fmt(inc)}</b>（貸方）`);
     ex.push(`<b>⑤ 資本剰余金</b>　売却価額 ${fmt(S)} − ${fmt(inc)} ＝ ${fmt(capSur)} → <b>${capSur>0?'貸方':'借方'}</b>に ${fmt(Math.abs(capSur))}`);
     ex.push(`　のれんは<b>減額しない</b>（支配が続く限り資本取引として処理する）。`);
-    return{badges:['一部売却（支配継続）',`${b.ratio}%→${b.ratio-sellR}%`,gain>0?'個別で売却益':'個別で売却損'],
+    return{jkind:'renketsu',badges:['一部売却（支配継続）',`${b.ratio}%→${b.ratio-sellR}%`,gain>0?'個別で売却益':'個別で売却損'],
       givenHTML:g,debits,credits,
       aux:[{label:'評価差額',val:b.hyoka},{label:'売却分の個別上の帳簿価額',val:bv},
         {label:'売却日のS社資本合計',val:naSell}],explain:ex};
@@ -539,7 +540,7 @@ function genDankai(){
     g+=naTable([{d:`X${b.y0}年3月31日`,cap:b.cap,re:b.re0}]);
     g+=assetGiven(b);
     g+=gSent(`P社は個別上、S社株式を取得原価の合計 ${fmt(p1+p2)} で計上している。`);
-    g+=gSent(`<b>【設問】</b>支配獲得日の<b>投資と資本の相殺消去</b>の仕訳を示しなさい（段階取得の処理を含める。評価替の仕訳は別途行っている）。`);
+    g+=gSent(`<b>【設問】</b>支配獲得日の<b>投資と資本の相殺消去</b>の<b>連結修正仕訳</b>を示しなさい（段階取得の処理を含める。評価替の仕訳は別途行っている）。`);
     const ex=[];
     ex.push(`<b>① 段階取得に係る差益</b>　既保有分を支配獲得日の時価に評価替する。`);
     ex.push(`　時価 ${fmt(fv1)} − 取得原価 ${fmt(p1)} ＝ ${fmt(sagaeki)}（貸方・特別利益）`);
@@ -549,7 +550,7 @@ function genDankai(){
     ex.push(`<b>⑤ のれん</b>　${fmt(invest)} − ${fmt(b.na0)} × ${ratio}% ＝ <b>${fmt(gw)}</b>`);
     ex.push(`<b>⑥ 非支配株主持分</b>　${fmt(b.na0)} × ${b.nci}% ＝ ${fmt(b.nciAmt)}`);
     ex.push(`　貸方のS社株式は<b>個別上の簿価 ${fmt(p1+p2)}</b>（＝${fmt(p1)}＋${fmt(p2)}）を消す。`);
-    return{badges:['段階取得',`${r1}%→${ratio}%`,'段階取得に係る差益'],
+    return{jkind:'renketsu',badges:['段階取得',`${r1}%→${ratio}%`,'段階取得に係る差益'],
       givenHTML:g,debits,credits,
       aux:[{label:'評価差額',val:b.hyoka},{label:'S社資本合計（評価替後）',val:b.na0},
         {label:'連結上の投資額',val:invest}],explain:ex};
@@ -616,7 +617,7 @@ function genGappei(){
     }else{
       g+=gSent(`対価として現金 <b>${fmt(cost)}</b> を支払った。`);
     }
-    g+=gSent(`<b>【設問】</b>A社が行う${kind==='stock'?'合併':'事業譲受'}の仕訳を示しなさい。`);
+    g+=gSent(`<b>【設問】</b>A社の<b>個別会計上</b>の${kind==='stock'?'合併':'事業譲受'}の仕訳を示しなさい。`);
     const ex=[];
     ex.push(`<b>① 諸資産・諸負債は時価で受け入れる</b>　諸資産 ${fmt(aFV)}（借方）／諸負債 ${fmt(lFV)}（貸方）`);
     ex.push(`　B社の<b>資本金 ${fmt(capB)}・利益剰余金 ${fmt(reB)} は引き継がない</b>。<b>評価差額も出ない</b>（帳簿そのものが時価になるため）。`);
@@ -631,7 +632,7 @@ function genGappei(){
         ?`<b>⑤ 払込資本</b>　全額を資本金 → 資本金 ${fmt(capital)}`
         :`<b>⑤ 払込資本の内訳</b>　資本金 ＝ ${fmt(shares)}株 × ${fmt(capPer)} ＝ ${fmt(capital)}／資本準備金 ＝ ${fmt(cost)} − ${fmt(capital)} ＝ ${fmt(capRes)}`);
     }
-    return{badges:[kind==='stock'?'吸収合併':'事業譲受',gw>0?'のれん':'負ののれん',
+    return{jkind:'kobetsu',badges:[kind==='stock'?'吸収合併':'事業譲受',gw>0?'のれん':'負ののれん',
       kind==='stock'?(full?'全額を資本金':'資本金＋資本準備金'):'現金対価'],
       givenHTML:g,debits,credits,
       aux:[{label:'識別可能純資産の時価',val:netFV},{label:'取得原価',val:cost}],explain:ex};
@@ -745,6 +746,12 @@ function newQ(){
   document.getElementById('badge-area').innerHTML=
     q.badges.map((b,i)=>`<span class="cat-badge ${i===1?'b2':''}">${b}</span>`).join('');
   document.getElementById('given-area').innerHTML=q.givenHTML;
+  const kobetsu=q.jkind==='kobetsu';
+  document.getElementById('j-label').textContent=
+    (kobetsu?'個別会計上の仕訳':'連結修正仕訳')+'（科目と金額を入力。不要な行は空欄のまま）';
+  document.getElementById('j-note').innerHTML=kobetsu
+    ?'これは<b>A社の帳簿に直接書く仕訳</b>です（連結修正仕訳ではありません）。'
+    :'連結修正仕訳は<b>連結精算表の上だけ</b>の修正です。P社が個別で行った「(借)S社株式／(貸)現金預金」は<b>単純合算にすでに含まれている</b>ので、ここに現金預金は出てきません。';
   renderAux(q);
   STATE.rows=renderJournal();
   document.getElementById('result-area').innerHTML='';
