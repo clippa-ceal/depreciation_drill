@@ -1,4 +1,4 @@
-const CACHE = 'shokyaku-drill-v63';
+const CACHE = 'shokyaku-drill-v64';
 const ASSETS = [
   './',
   './numclick.js',
@@ -21,6 +21,7 @@ const ASSETS = [
   './genson.html',
   './honshiten.html',
   './renketsu.html',
+  './kicho.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

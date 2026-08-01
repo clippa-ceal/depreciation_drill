@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F6E56">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>商品売買の記帳方法ドリル</title>
+<style>
+:root{
+  --color-bg:#F7F6F3;
+  --color-card:#FFFFFF;
+  --color-border:#E5E3DC;
+  --color-border2:#D8D5CC;
+  --color-text:#1A1A18;
+  --color-text2:#6B6B64;
+  --color-info:#185FA5;
+  --color-bg-secondary:#F0EFEA;
+  --radius-lg:16px;
+  --radius-md:10px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);min-height:100vh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#app{padding:1rem;max-width:560px;margin:0 auto}
+h1{font-size:18px;font-weight:600;margin-bottom:0.75rem;text-align:center;color:var(--color-text)}
+.nav{display:flex;gap:8px;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+.nav a{font-size:13px;padding:6px 16px;border-radius:999px;text-decoration:none;color:var(--color-text2);background:var(--color-bg-secondary);font-weight:500}
+.nav a.nav-on{background:var(--color-text);color:#fff}
+.card{background:var(--color-card);border:0.5px solid var(--color-border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
+.label{font-size:13px;color:var(--color-text2);margin-bottom:4px}
+.hint{font-size:12px;color:var(--color-text2);line-height:1.7;margin-top:8px}
+button{width:100%;margin-bottom:8px;font-size:15px;padding:13px;border:none;border-radius:var(--radius-md);background:var(--color-text);color:#fff;font-weight:500;cursor:pointer}
+button:active{opacity:0.85}
+.g-row{display:flex;gap:8px;margin-bottom:6px;align-items:baseline}
+.g-key{font-size:13px;color:var(--color-text2);min-width:180px}
+.g-val{font-size:15px;font-weight:600;color:var(--color-text)}
+.g-head{font-size:13px;font-weight:600;color:var(--color-info);margin:8px 0 4px}
+.stat-grid{display:flex;gap:14px;margin-bottom:0.75rem;justify-content:flex-end}
+.stat{background:transparent;padding:0;display:flex;align-items:baseline;gap:3px}
+.stat .n{font-size:14px;font-weight:600;color:var(--color-text)}
+.stat .l{font-size:12px;color:var(--color-text2)}
+.cat-badge{display:inline-block;font-size:11px;padding:2px 10px;border-radius:999px;margin-bottom:8px;margin-right:6px;font-weight:600;background:#E1EEF8;color:#185FA5}
+.cat-badge.b2{background:#FAEEDA;color:#854F0B}
+.method-box{background:#FAEEDA;border:0.5px solid #EBD9B4;border-radius:var(--radius-md);padding:8px 12px;margin-bottom:10px}
+.method-box .m-l{font-size:11px;color:#854F0B;font-weight:600}
+.method-box .m-n{font-size:16px;font-weight:700;color:#5C3606}
+.method-box .m-s{font-size:12px;color:#854F0B;line-height:1.5}
+/* 補助計算 */
+.aux-grid{display:grid;grid-template-columns:minmax(120px,168px) minmax(0,1fr);gap:10px 12px;align-items:center;margin-bottom:10px}
+.aux-grid .ans-label{font-size:14px;color:var(--color-text);font-weight:500;line-height:1.35}
+.aux-grid .ans-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.aux-grid input{flex:1;min-width:0;width:100%;font-size:15px;padding:7px 10px;border:1px solid var(--color-border2);border-radius:6px;text-align:right;background:var(--color-card)}
+.aux-grid input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+.aux-grid input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+.ans-ng-msg{font-size:11px;color:#A32D2D;font-weight:600;display:none}
+@media (max-width:360px){
+  .aux-grid{grid-template-columns:112px minmax(0,1fr);gap:9px}
+  .aux-grid input{font-size:14px;padding:7px 6px}
+}
+/* 仕訳テーブル */
+.j-title{font-size:13px;font-weight:600;color:var(--color-text);margin:12px 0 5px}
+.j-title:first-child{margin-top:0}
+.j-title .j-sub{font-size:11px;color:var(--color-text2);font-weight:500}
+table.j-tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.j-tbl th,table.j-tbl td{border:1px solid #ccc;padding:4px 6px}
+table.j-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.j-tbl .acct{color:var(--color-text);width:30%}
+table.j-tbl .acct select{width:100%;font-size:12px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;background:var(--color-card);outline:none;color:var(--color-text);appearance:none;-webkit-appearance:none}
+table.j-tbl .acct select.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .acct select.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl .amt{padding:2px 4px;width:20%}
+table.j-tbl .amt input{width:100%;font-size:13px;padding:5px 4px;border:1px solid var(--color-border2);border-radius:5px;text-align:right;background:var(--color-card);font-variant-numeric:tabular-nums}
+table.j-tbl .amt input.cell-ok{border-color:#7FB04A;background:#F2F8EA}
+table.j-tbl .amt input.cell-ng{border-color:#D98A8A;background:#FCF0F0}
+table.j-tbl tr.j-tot td{border:none;padding:2px 6px}
+table.j-tbl .j-tot-lbl{font-size:11px;color:var(--color-text2);font-weight:600;text-align:center;padding-top:4px}
+table.j-tbl .j-tot-val{font-size:14px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:var(--color-text)}
+table.j-tbl .j-tot-val.j-tot-ok{color:#3B6D11}
+table.j-tbl .j-tot-val.j-tot-ng{color:#A32D2D}
+/* 正解仕訳表示 */
+table.sol-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;margin-bottom:8px}
+table.sol-tbl th,table.sol-tbl td{border:1px solid #ccc;padding:3px 6px}
+table.sol-tbl th{background:#F4F3EF;font-size:11px;color:var(--color-text2);font-weight:600;text-align:center}
+table.sol-tbl td.a{width:30%}
+table.sol-tbl td.v{width:20%;text-align:right;font-variant-numeric:tabular-nums}
+.sol-none{font-size:12px;color:var(--color-text2);padding:4px 2px 8px}
+/* 4法の対比 */
+.cmp-wrap{margin-bottom:12px;padding:6px 8px;border-radius:8px;margin-left:-8px;margin-right:-8px}
+.cmp-wrap.cur{background:#EDF5FC;box-shadow:inset 0 0 0 1px #C6DDF1}
+.cmp-head{font-size:13px;font-weight:700;color:var(--color-text);margin-bottom:4px}
+.cmp-wrap.cur .cmp-head{color:var(--color-info)}
+.cmp-head .cmp-tag{font-size:10px;font-weight:600;background:var(--color-info);color:#fff;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.cmp-head .cmp-sub{font-size:11px;font-weight:500;color:var(--color-text2)}
+table.cmp-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+table.cmp-tbl td{border:1px solid #DDDBD4;padding:4px 6px;vertical-align:top;line-height:1.6}
+table.cmp-tbl td.k{width:74px;background:#F4F3EF;color:var(--color-text2);font-size:11px;font-weight:600}
+table.cmp-tbl td.none{color:var(--color-text2)}
+table.cmp-tbl .amt-n{font-variant-numeric:tabular-nums}
+.result-ok{background:#EAF3DE;border:0.5px solid #C5DDA0;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#3B6D11}
+.result-ng{background:#FCEBEB;border:0.5px solid #F0C5C5;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;font-size:14px;color:#A32D2D}
+.calc-display{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;font-size:22px;font-weight:500;text-align:right;margin-bottom:8px;min-height:46px;overflow:hidden;white-space:nowrap;letter-spacing:0.02em}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{width:auto;margin:0;font-size:18px;padding:13px 4px;border-radius:var(--radius-md);border:none;cursor:pointer;font-weight:400;line-height:1}
+.calc-btn:active{opacity:0.75}
+.calc-btn-num{background:var(--color-card);border:0.5px solid var(--color-border);color:var(--color-text)}
+.calc-btn-op{background:#185FA5;color:#fff}
+.calc-btn-fn{background:#D0CEC5;color:var(--color-text)}
+.calc-btn-eq{background:var(--color-text);color:#fff}
+.calc-btn-wide{grid-column:span 2}
+.calc-btn-push{background:#185FA5;color:#fff;font-size:13px;grid-column:span 4}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>商品売買の記帳方法ドリル</h1>
+  <div class="nav">
+    <a href="index.html">減価償却</a><a href="pension.html">退職給付</a><a href="purchases.html">仕入</a><a href="lease.html">リース</a><a href="trade.html">買換え</a><a href="wip.html">仕掛品</a><a href="hedge.html">為替予約</a><a href="cash.html">現金預金</a><a href="interest.html">利息</a><a href="stockoption.html">ストックオプション</a><a href="fxsec.html">外貨有価証券</a><a href="acqcost.html">付随費用</a><a href="compress.html">圧縮記帳</a><a href="tokushu.html">特殊商品</a><a href="aro.html">資産除去</a><a href="kashidaore.html">貸倒</a><a href="genson.html">減損</a><a href="honshiten.html">本支店</a><a href="renketsu.html">連結・再編</a><a href="kicho.html" class="nav-on">記帳法</a>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><span class="n" id="s-total">0</span><span class="l">問</span></div>
+    <div class="stat"><span class="n" id="s-perfect">0</span><span class="l">全問正解</span></div>
+  </div>
+
+  <div class="card">
+    <div id="badge-area"></div>
+    <div class="method-box">
+      <div class="m-l">指定された記帳方法</div>
+      <div class="m-n" id="method-name">－</div>
+      <div class="m-s" id="method-sub"></div>
+    </div>
+    <div class="label">与件（単位：千円）</div>
+    <div id="given-area"></div>
+  </div>
+
+  <div class="card">
+    <div class="label">補助計算</div>
+    <div class="aux-grid">
+      <span class="ans-label">売上原価</span>
+      <div class="ans-cell"><input type="text" inputmode="numeric" id="a-cgs" autocomplete="off"><span class="ans-ng-msg" id="ng-a-cgs"></span></div>
+      <span class="ans-label">売上総利益</span>
+      <div class="ans-cell"><input type="text" inputmode="numeric" id="a-gp" autocomplete="off"><span class="ans-ng-msg" id="ng-a-gp"></span></div>
+      <span class="ans-label">決算整理前の<br><span id="pre-acct-name">商品</span>勘定残高<br><span style="font-size:11px;color:var(--color-text2)">（借方残＝＋／貸方残＝−）</span></span>
+      <div class="ans-cell"><input type="text" inputmode="numeric" id="a-pre" autocomplete="off"><span class="ans-ng-msg" id="ng-a-pre"></span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label" style="margin-bottom:8px">指定された記帳方法による仕訳（不要な行は空欄のまま）</div>
+    <div id="journal-area"></div>
+    <div class="hint"><b>三分法</b>＝仕入・売上・繰越商品。期中は原価も売価も費用収益で処理し、決算で売上原価を算定する。<br><b>分記法</b>＝商品（原価）と商品売買益。売上のつど利益を計上するので決算整理は不要。<br><b>売上原価対立法</b>＝売上は売価で、同時に売上原価を商品から振り替える。決算整理は不要。<br><b>総記法</b>＝商品勘定ひとつ。借方に原価・貸方に売価が混ざるので、決算で差額を商品売買益に振り替える。<br>借方・貸方の中は<b>順不同</b>で採点します。決算整理が不要な方法では、その欄は空欄のままにしてください。</div>
+  </div>
+
+  <div id="result-area"></div>
+  <button id="btn-check" onclick="grade()">答え合わせ</button>
+  <button id="btn-next" style="display:none" onclick="nextQ()">次の問題 →</button>
+
+  <div class="card" style="margin-top:0.25rem">
+    <div class="label" style="margin-bottom:6px">電卓</div>
+    <div id="calc-disp" class="calc-display">0</div>
+    <div class="calc-grid">
+      <button class="calc-btn calc-btn-push" onclick="calcToAns()">↑ 回答欄へ反映</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('C')">C</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('←')">←</button>
+      <button class="calc-btn calc-btn-fn" onclick="calcIn('±')">±</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('÷')">÷</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('7')">7</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('8')">8</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('9')">9</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('×')">×</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('4')">4</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('5')">5</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('6')">6</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('-')">−</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('1')">1</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('2')">2</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('3')">3</button>
+      <button class="calc-btn calc-btn-op" onclick="calcIn('+')">+</button>
+      <button class="calc-btn calc-btn-num calc-btn-wide" onclick="calcIn('0')">0</button>
+      <button class="calc-btn calc-btn-num" onclick="calcIn('.')">.</button>
+      <button class="calc-btn calc-btn-eq" onclick="calcIn('=')">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let STATE={total:0,perfect:0,q:null,graded:false,startTime:0};
+function fmtElapsed(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),r=s%60;return m>0?`${m}分${r}秒`:`${r}秒`;}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[rand(0,arr.length-1)];}
+function fmt(n){const neg=n<0;const s=Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');return(neg?'−':'')+s;}
+function parseNum(v){
+  if(v==null)return 0;
+  let s=String(v).trim().replace(/[,，]/g,'').replace(/[ \t]/g,'')
+    .replace(/[＋]/g,'+').replace(/[－−]/g,'-')
+    .replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0));
+  if(s===''||s==='-')return 0;
+  const n=parseInt(s,10);return isNaN(n)?0:n;
+}
+
+// 科目プルダウン（全方法で共通。選択肢から記帳方法を推測させない）
+const ACCTS=['','商品','繰越商品','仕入','売上','売上原価','商品売買益','売掛金','買掛金'];
+
+// 仕訳ブロック：仕入時／売上時／決算整理（行数は全方法で固定＝行数から答えが割れない）
+const BLOCKS=[
+  {key:'buy', rows:2, title:'① 仕入時の仕訳', sub:'（当期仕入の合計）'},
+  {key:'sell',rows:2, title:'② 売上時の仕訳', sub:'（当期売上の合計）'},
+  {key:'adj', rows:3, title:'③ 決算整理仕訳', sub:'（不要な方法もある）'},
+];
+
+// ============ 4つの記帳方法 ============
+const METHODS=[
+  {key:'san_shiire',name:'三分法',sub:'決算整理は<b>仕入勘定</b>で売上原価を算定する'},
+  {key:'san_genka', name:'三分法',sub:'決算整理は<b>売上原価勘定</b>で売上原価を算定する'},
+  {key:'bunki',     name:'分記法',sub:'商品勘定（原価）と商品売買益勘定で記帳する'},
+  {key:'tairitsu',  name:'売上原価対立法',sub:'販売のつど売上原価を商品勘定から振り替える'},
+  {key:'soki',      name:'総記法',sub:'商品勘定のみで記帳する（貸方は売価）'},
+];
+
+// v = {A:期首, P:仕入, S:売上, E:期末, CGS:売上原価, GP:売上総利益}
+function entriesFor(key,v){
+  const {A,P,S,E,CGS,GP}=v;
+  if(key==='san_shiire'||key==='san_genka'){
+    const adj = key==='san_shiire'
+      ? {d:[{acct:'仕入',amt:A},{acct:'繰越商品',amt:E}],
+         c:[{acct:'繰越商品',amt:A},{acct:'仕入',amt:E}]}
+      : {d:[{acct:'売上原価',amt:A},{acct:'売上原価',amt:P},{acct:'繰越商品',amt:E}],
+         c:[{acct:'繰越商品',amt:A},{acct:'仕入',amt:P},{acct:'売上原価',amt:E}]};
+    return{
+      buy :{d:[{acct:'仕入',amt:P}],  c:[{acct:'買掛金',amt:P}]},
+      sell:{d:[{acct:'売掛金',amt:S}],c:[{acct:'売上',amt:S}]},
+      adj,
+      preAcct:'繰越商品', preBal:A,
+    };
+  }
+  if(key==='bunki'){
+    return{
+      buy :{d:[{acct:'商品',amt:P}],  c:[{acct:'買掛金',amt:P}]},
+      sell:{d:[{acct:'売掛金',amt:S}],c:[{acct:'商品',amt:CGS},{acct:'商品売買益',amt:GP}]},
+      adj :{d:[],c:[]},
+      preAcct:'商品', preBal:E,
+    };
+  }
+  if(key==='tairitsu'){
+    return{
+      buy :{d:[{acct:'商品',amt:P}],c:[{acct:'買掛金',amt:P}]},
+      sell:{d:[{acct:'売掛金',amt:S},{acct:'売上原価',amt:CGS}],
+            c:[{acct:'売上',amt:S},{acct:'商品',amt:CGS}]},
+      adj :{d:[],c:[]},
+      preAcct:'商品', preBal:E,
+    };
+  }
+  // 総記法
+  return{
+    buy :{d:[{acct:'商品',amt:P}],  c:[{acct:'買掛金',amt:P}]},
+    sell:{d:[{acct:'売掛金',amt:S}],c:[{acct:'商品',amt:S}]},
+    adj :{d:[{acct:'商品',amt:GP}], c:[{acct:'商品売買益',amt:GP}]},
+    preAcct:'商品', preBal:A+P-S,
+  };
+}
+
+// ============ 問題生成 ============
+function genQ(){
+  for(let t=0;t<8000;t++){
+    // 売上原価は20の倍数 → 利益率をかけても整数
+    const CGS=20*rand(30,200);
+    const m=pick([0.2,0.25,0.3,0.4,0.5]);   // 原価に対する利益の割合
+    const GP=CGS*m;
+    const S=CGS+GP;
+    const E=10*rand(20,150);
+    const A=10*rand(10,120);
+    const P=CGS+E-A;
+    if(P<200)continue;
+    if(A===E)continue;              // 三分法の決算整理が退化する
+    if(E===GP)continue;             // 総記法の整理前残高がゼロになる
+    // 総記法の整理前残高が借方残になる問題／貸方残になる問題を半々で出す
+    const wantDr=Math.random()<0.5;
+    if((E>GP)!==wantDr)continue;
+    const vals={A,P,S,E,CGS,GP};
+    for(const x of[A,P,S,E,CGS,GP])if(!Number.isInteger(x)||x<=0)return null;
+
+    const method=pick(METHODS);
+    const ent=entriesFor(method.key,vals);
+    // 全方法で貸借一致を確認
+    for(const mm of METHODS){
+      const e=entriesFor(mm.key,vals);
+      for(const b of['buy','sell','adj']){
+        const ds=e[b].d.reduce((a,r)=>a+r.amt,0);
+        const cs2=e[b].c.reduce((a,r)=>a+r.amt,0);
+        if(ds!==cs2)return null;
+      }
+    }
+
+    let g='';
+    g+=`<div class="g-row"><span class="g-key">会計期間</span><span class="g-val" style="font-size:14px">4月1日〜3月31日</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">期首商品棚卸高（原価）</span><span class="g-val">${fmt(A)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">当期仕入高（原価・掛け）</span><span class="g-val">${fmt(P)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">当期売上高（売価・掛け）</span><span class="g-val">${fmt(S)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key">期末商品棚卸高（原価）</span><span class="g-val">${fmt(E)}</span></div>`;
+    g+=`<div class="g-row"><span class="g-key" style="min-width:auto">　※ 実地棚卸高は帳簿棚卸高と一致（減耗・評価損なし）。仕入・売上はすべて掛け取引で、期中の合計額として仕訳する。</span></div>`;
+
+    return{
+      method,vals,ent,givenHTML:g,
+      badges:['商品売買の記帳',method.name],
+    };
+  }
+  return null;
+}
+
+// ============ 描画 ============
+function renderJournals(){
+  const sel=id=>`<select id="${id}">${ACCTS.map(a=>`<option value="${a}">${a||'―'}</option>`).join('')}</select>`;
+  let html='';
+  for(const b of BLOCKS){
+    let body='';
+    for(let i=0;i<b.rows;i++){
+      body+=`<tr>
+        <td class="acct">${sel(`j${b.key}d-a-${i}`)}</td>
+        <td class="amt"><input type="text" inputmode="numeric" id="j${b.key}d-v-${i}" autocomplete="off"></td>
+        <td class="acct">${sel(`j${b.key}c-a-${i}`)}</td>
+        <td class="amt"><input type="text" inputmode="numeric" id="j${b.key}c-v-${i}" autocomplete="off"></td>
+      </tr>`;
+    }
+    body+=`<tr class="j-tot">
+      <td colspan="2" class="j-tot-lbl">借方合計</td><td colspan="2" class="j-tot-lbl">貸方合計</td>
+    </tr>
+    <tr class="j-tot">
+      <td colspan="2" class="j-tot-val" id="j${b.key}d-total">0</td>
+      <td colspan="2" class="j-tot-val" id="j${b.key}c-total">0</td>
+    </tr>`;
+    html+=`<div class="j-title">${b.title}<span class="j-sub"> ${b.sub}</span></div>
+      <table class="j-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+  }
+  document.getElementById('journal-area').innerHTML=html;
+  for(const b of BLOCKS){
+    for(let i=0;i<b.rows;i++){
+      document.getElementById(`j${b.key}d-v-${i}`).addEventListener('input',updateTotals);
+      document.getElementById(`j${b.key}c-v-${i}`).addEventListener('input',updateTotals);
+    }
+  }
+  updateTotals();
+}
+
+function updateTotals(){
+  for(const b of BLOCKS){
+    let dSum=0,cSum=0,dAny=false,cAny=false;
+    for(let i=0;i<b.rows;i++){
+      const dv=document.getElementById(`j${b.key}d-v-${i}`).value;
+      const cv=document.getElementById(`j${b.key}c-v-${i}`).value;
+      if(dv.trim()!==''){dAny=true;dSum+=parseNum(dv);}
+      if(cv.trim()!==''){cAny=true;cSum+=parseNum(cv);}
+    }
+    const dEl=document.getElementById(`j${b.key}d-total`);
+    const cEl=document.getElementById(`j${b.key}c-total`);
+    if(!dEl||!cEl)continue;
+    dEl.textContent=fmt(dSum);cEl.textContent=fmt(cSum);
+    const bal=dAny&&cAny&&dSum===cSum;
+    const bad=dAny&&cAny&&dSum!==cSum;
+    dEl.classList.toggle('j-tot-ok',bal);cEl.classList.toggle('j-tot-ok',bal);
+    dEl.classList.toggle('j-tot-ng',bad);cEl.classList.toggle('j-tot-ng',bad);
+  }
+}
+
+const AUX=[
+  {id:'a-cgs',get:q=>q.vals.CGS},
+  {id:'a-gp', get:q=>q.vals.GP},
+  {id:'a-pre',get:q=>q.ent.preBal},
+];
+
+function newQ(){
+  const q=genQ();
+  if(!q)return;
+  STATE.q=q;STATE.graded=false;STATE.startTime=Date.now();
+  document.getElementById('badge-area').innerHTML=
+    q.badges.map((b,i)=>`<span class="cat-badge ${i>0?'b2':''}">${b}</span>`).join('');
+  document.getElementById('method-name').textContent=q.method.name;
+  document.getElementById('method-sub').innerHTML=q.method.sub;
+  document.getElementById('given-area').innerHTML=q.givenHTML;
+  document.getElementById('pre-acct-name').textContent=q.ent.preAcct;
+  renderJournals();
+  for(const a of AUX){
+    const el=document.getElementById(a.id);
+    el.value='';el.classList.remove('cell-ok','cell-ng');
+    document.getElementById('ng-'+a.id).style.display='none';
+  }
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('btn-check').style.display='block';
+  document.getElementById('btn-next').style.display='none';
+}
+
+// ============ 採点 ============
+function gradeSide(prefix,expected,rows){
+  const exp=expected.map(e=>({acct:e.acct,amt:e.amt}));
+  while(exp.length<rows)exp.push({acct:'',amt:0});
+  const used=new Array(exp.length).fill(false);
+  let ok=0;const marks=[];
+  for(let i=0;i<rows;i++){
+    const acct=document.getElementById(`${prefix}-a-${i}`).value;
+    const amt=parseNum(document.getElementById(`${prefix}-v-${i}`).value);
+    let hit=-1;
+    for(let k=0;k<exp.length;k++){
+      if(!used[k]&&exp[k].acct===acct&&exp[k].amt===amt){hit=k;break;}
+    }
+    if(hit>=0){used[hit]=true;ok++;marks.push(true);}
+    else marks.push(false);
+  }
+  for(let i=0;i<rows;i++){
+    const a=document.getElementById(`${prefix}-a-${i}`);
+    const v=document.getElementById(`${prefix}-v-${i}`);
+    for(const el of[a,v]){el.classList.remove('cell-ok','cell-ng');el.classList.add(marks[i]?'cell-ok':'cell-ng');}
+  }
+  return ok;
+}
+
+function solTable(block){
+  if(block.d.length===0&&block.c.length===0)
+    return `<div class="sol-none">仕訳なし</div>`;
+  const n=Math.max(block.d.length,block.c.length);
+  let body='';
+  for(let i=0;i<n;i++){
+    const d=block.d[i],c=block.c[i];
+    body+=`<tr><td class="a">${d?d.acct:''}</td><td class="v">${d?fmt(d.amt):''}</td><td class="a">${c?c.acct:''}</td><td class="v">${c?fmt(c.amt):''}</td></tr>`;
+  }
+  return `<table class="sol-tbl"><tr><th>借方科目</th><th>金額</th><th>貸方科目</th><th>金額</th></tr>${body}</table>`;
+}
+
+// 対比表用：「仕入 1,200／買掛金 1,200」の1行テキスト
+function oneLine(block){
+  if(block.d.length===0&&block.c.length===0)return null;
+  const n=Math.max(block.d.length,block.c.length);
+  const lines=[];
+  for(let i=0;i<n;i++){
+    const d=block.d[i],c=block.c[i];
+    const ds=d?`${d.acct} <span class="amt-n">${fmt(d.amt)}</span>`:'';
+    const cs2=c?`${c.acct} <span class="amt-n">${fmt(c.amt)}</span>`:'';
+    lines.push(`${ds}／${cs2}`);
+  }
+  return lines.join('<br>');
+}
+
+function comparison(q){
+  let html=`<div class="label" style="margin-top:10px">4つの記帳方法の対比（同じ取引・同じ金額）</div>`;
+  for(const mm of METHODS){
+    const e=entriesFor(mm.key,q.vals);
+    const cur=mm.key===q.method.key;
+    const rowOf=(k,block)=>{
+      const t=oneLine(block);
+      return `<tr><td class="k">${k}</td><td class="${t?'':'none'}">${t||'仕訳なし'}</td></tr>`;
+    };
+    const balTxt=e.preBal===0?'0'
+      :`<span class="amt-n">${fmt(Math.abs(e.preBal))}</span>（${e.preBal>0?'借方':'貸方'}残）`;
+    html+=`<div class="cmp-wrap ${cur?'cur':''}">
+      <div class="cmp-head">${mm.name}${cur?'<span class="cmp-tag">この問題</span>':''}<br><span class="cmp-sub">${mm.sub}</span></div>
+      <table class="cmp-tbl">
+        ${rowOf('仕入時',e.buy)}
+        ${rowOf('売上時',e.sell)}
+        ${rowOf('決算整理',e.adj)}
+        <tr><td class="k">整理前残高</td><td>${e.preAcct} ${balTxt}</td></tr>
+        <tr><td class="k">整理後残高</td><td>${e.preAcct} <span class="amt-n">${fmt(q.vals.E)}</span>（借方残）＝ 期末商品棚卸高</td></tr>
+      </table>
+    </div>`;
+  }
+  return html;
+}
+
+function explainOf(q){
+  const {A,P,S,E,CGS,GP}=q.vals;
+  const k=q.method.key;
+  const ex=[];
+  ex.push(`<b>① 売上原価</b>　期首 ${fmt(A)} ＋ 当期仕入 ${fmt(P)} − 期末 ${fmt(E)} ＝ ${fmt(CGS)}`);
+  ex.push(`<b>② 売上総利益</b>　売上 ${fmt(S)} − 売上原価 ${fmt(CGS)} ＝ ${fmt(GP)}`);
+  ex.push(`　※ ①②はどの記帳方法でも同じ。違うのは<b>どの勘定で・いつ</b>把握するかだけ。`);
+  ex.push(`<b>③ 決算整理前の${q.ent.preAcct}勘定</b>`);
+  if(k==='san_shiire'||k==='san_genka'){
+    ex.push(`　仕入は費用勘定で処理するため、繰越商品は期首 ${fmt(A)} のまま動かない。`);
+    ex.push(`<b>④ 決算整理</b>　${k==='san_shiire'
+      ? `期首 ${fmt(A)} を繰越商品から仕入へ、期末 ${fmt(E)} を仕入から繰越商品へ振り替える（「しくりくりし」）。仕入勘定の残高が売上原価 ${fmt(CGS)} になる。`
+      : `期首 ${fmt(A)} と当期仕入 ${fmt(P)} を売上原価勘定に集め、期末 ${fmt(E)} を繰越商品へ戻す。売上原価勘定の残高 ${fmt(A)}＋${fmt(P)}−${fmt(E)}＝${fmt(CGS)}。仕入勘定は残高ゼロになる。`}`);
+  }else if(k==='bunki'){
+    ex.push(`　商品勘定は仕入で原価が増え、売上のつど原価分だけ減るので、残高は期末商品 ${fmt(E)} に一致する。`);
+    ex.push(`<b>④ 決算整理</b>　売上のつど商品売買益 ${fmt(GP)} を計上済みなので<b>仕訳なし</b>。`);
+  }else if(k==='tairitsu'){
+    ex.push(`　売上のつど売上原価 ${fmt(CGS)} を商品勘定から振り替えているので、残高は期末商品 ${fmt(E)} に一致する。`);
+    ex.push(`<b>④ 決算整理</b>　売上原価はすでに売上原価勘定に集まっているので<b>仕訳なし</b>。`);
+  }else{
+    const pre=A+P-S;
+    ex.push(`　借方に原価（期首 ${fmt(A)} ＋ 仕入 ${fmt(P)}）、貸方に売価（売上 ${fmt(S)}）が混在する。`);
+    ex.push(`　残高 ＝ ${fmt(A)} ＋ ${fmt(P)} − ${fmt(S)} ＝ ${fmt(pre)}（${pre>0?'借方':'貸方'}残）`);
+    ex.push(`<b>④ 決算整理</b>　商品勘定を期末商品 ${fmt(E)} に直す。借方に加える額 ＝ ${fmt(E)} − (${fmt(pre)}) ＝ ${fmt(GP)}。これが商品売買益になる。`);
+    ex.push(pre<0
+      ?`　覚え方：<b>貸方残なら「貸方残＋期末商品」が利益</b>（${fmt(-pre)} ＋ ${fmt(E)} ＝ ${fmt(GP)}）。`
+      :`　覚え方：<b>借方残なら「期末商品−借方残」が利益</b>（${fmt(E)} − ${fmt(pre)} ＝ ${fmt(GP)}）。`);
+  }
+  return ex;
+}
+
+function grade(){
+  if(!STATE.q||STATE.graded)return;
+  const q=STATE.q;
+  let ok=0,cnt=0;
+  for(const a of AUX){
+    const el=document.getElementById(a.id);
+    const want=a.get(q);
+    const good=parseNum(el.value)===want;
+    cnt++;if(good)ok++;
+    el.classList.remove('cell-ok','cell-ng');el.classList.add(good?'cell-ok':'cell-ng');
+    const ng=document.getElementById('ng-'+a.id);
+    if(!good){ng.textContent='正:'+fmt(want);ng.style.display='inline';}else ng.style.display='none';
+  }
+  for(const b of BLOCKS){
+    ok+=gradeSide(`j${b.key}d`,q.ent[b.key].d,b.rows);
+    ok+=gradeSide(`j${b.key}c`,q.ent[b.key].c,b.rows);
+    cnt+=b.rows*2;
+  }
+
+  STATE.graded=true;STATE.total++;
+  const allOk=ok===cnt;
+  if(allOk)STATE.perfect++;
+  document.getElementById('s-total').textContent=STATE.total;
+  document.getElementById('s-perfect').textContent=STATE.perfect;
+  const elapsed=fmtElapsed(Date.now()-STATE.startTime);
+
+  let sol=`<div class="label" style="margin-top:8px">正解の仕訳（${q.method.name}）</div>`;
+  for(const b of BLOCKS){
+    sol+=`<div class="j-title" style="margin-top:8px">${b.title}</div>${solTable(q.ent[b.key])}`;
+  }
+  const recon=`<div class="hint" style="margin-top:6px">${['所要時間：'+elapsed].concat(explainOf(q)).join('<br>')}</div>`;
+  document.getElementById('result-area').innerHTML=
+    `<div class="${allOk?'result-ok':'result-ng'}">${allOk?'✓ 全問正解！':'正解 '+ok+' / '+cnt+' 箇所'}</div>`
+    +`<div class="card">${sol}${recon}${comparison(q)}</div>`;
+  document.getElementById('btn-check').style.display='none';
+  document.getElementById('btn-next').style.display='block';
+}
+
+function nextQ(){newQ();}
+newQ();
+
+const cs={disp:'0',prev:null,op:null,fresh:true};
+function calcIn(v){
+  const s=cs;
+  if(v==='C'){s.disp='0';s.prev=null;s.op=null;s.fresh=true;}
+  else if(v==='←'){s.disp=s.disp.length>1?s.disp.slice(0,-1):'0';if(s.disp==='-')s.disp='0';}
+  else if(v==='.'){if(s.fresh){s.disp='0.';s.fresh=false;}else if(!s.disp.includes('.'))s.disp+='.';}
+  else if('0123456789'.includes(v)){
+    if(s.fresh){s.disp=v==='0'?'0':v;s.fresh=false;}
+    else s.disp=s.disp==='0'?v:s.disp+v;
+  }else if(v==='±'){
+    if(s.disp!=='0')s.disp=s.disp.startsWith('-')?s.disp.slice(1):'-'+s.disp;
+  }else if(['+','-','×','÷'].includes(v)){
+    if(!s.fresh&&s.op!==null){s.prev=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(s.prev);}
+    else{s.prev=parseFloat(s.disp);}
+    s.op=v;s.fresh=true;
+  }else if(v==='='){
+    if(s.op!==null){const r=calcDo(s.prev,parseFloat(s.disp),s.op);s.disp=numStr(r);s.prev=null;s.op=null;s.fresh=true;}
+  }
+  document.getElementById('calc-disp').textContent=fmtCalc(s.disp);
+}
+function calcDo(a,b,op){if(op==='+')return a+b;if(op==='-')return a-b;if(op==='×')return a*b;if(op==='÷')return b?a/b:0;return b;}
+function numStr(n){return String(Math.round(n*1e9)/1e9);}
+function fmtCalc(s){const[i,d]=s.split('.');const f=i.replace(/\B(?=(\d{3})+(?!\d))/g,',');return d!==undefined?f+'.'+d:f;}
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+<script src="numclick.js"></script>
+</body>
+</html>
