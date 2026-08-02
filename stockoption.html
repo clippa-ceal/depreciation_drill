@@ -74,6 +74,19 @@ details.basics summary::-webkit-details-marker{display:none}
 .basics-body h3{font-size:13px;color:var(--color-text);margin:10px 0 2px;font-weight:600}
 .basics-body .jnl{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:6px 12px;margin:4px 0;font-size:12.5px}
 .basics-body .term{color:var(--color-text);font-weight:500}
+.basics-body .scene{font-size:12.5px;font-weight:600;color:var(--color-info);margin:12px 0 2px}
+.basics-body table.jt{width:100%;border-collapse:collapse;margin:4px 0 6px;font-size:12px;background:var(--color-bg-secondary);border-radius:var(--radius-md);overflow:hidden;table-layout:fixed}
+.basics-body table.jt td{padding:5px 6px;line-height:1.5;color:var(--color-text)}
+.basics-body table.jt td.n{text-align:right;white-space:nowrap;width:22%}
+.basics-body table.jt td.cr{border-left:1px solid var(--color-border2)}
+.basics-body table.jt td.none{color:var(--color-text2);text-align:center}
+.basics-body table.bt{width:100%;border-collapse:collapse;margin:4px 0 6px;font-size:12px}
+.basics-body table.bt th,.basics-body table.bt td{padding:4px 6px;border-bottom:1px solid var(--color-border);text-align:right;font-weight:400;color:var(--color-text)}
+.basics-body table.bt th{color:var(--color-text2);font-size:11px}
+.basics-body table.bt th:first-child,.basics-body table.bt td:first-child{text-align:left}
+.basics-body .given{background:var(--color-bg-secondary);border-radius:var(--radius-md);padding:8px 12px;margin:6px 0;font-size:12.5px;line-height:1.85}
+.basics-body .note{font-size:12px;line-height:1.8;margin:2px 0 0}
+.basics-body ul{margin:2px 0 0 1.1em;font-size:12.5px;line-height:1.8}
 </style>
 </head>
 <body>
@@ -113,6 +126,96 @@ details.basics summary::-webkit-details-marker{display:none}
       <div class="jnl">（借）現金預金（払込額）・新株予約権（行使分）　（貸）資本金 等</div>
       <h3>行使されずに失効したとき</h3>
       <div class="jnl">（借）新株予約権　（貸）新株予約権戻入益（特別利益）</div>
+    </div>
+  </details>
+
+  <details class="basics">
+    <summary>仕訳例（付与から失効まで通しで見る）</summary>
+    <div class="basics-body">
+      <div class="given">
+        <span class="term">前提</span><br>
+        ・決算日は毎年3月31日（会計期間 4月1日〜3月31日）<br>
+        ・X1年7月1日、従業員にストック・オプション <strong>600個</strong>を付与（1個＝株式1株）<br>
+        ・付与日の公正な評価単価 <strong>@1,200円</strong>（以後、改訂しない）<br>
+        ・対象勤務期間 X1年7月1日〜X3年6月30日（<strong>24か月</strong>、権利確定日 X3年6月30日）<br>
+        ・権利行使期間 X3年7月1日〜X5年6月30日、行使価格 <strong>@1,000円</strong><br>
+        ・付与時の失効見込み 60個 → X3年3月期に 30個へ修正 → 実際の失効は 24個
+      </div>
+
+      <div class="scene">場面0：付与日（X1年7月1日）</div>
+      <table class="jt"><tr><td class="none" colspan="4">仕訳なし</td></tr></table>
+      <p class="note">付与しただけでは何も計上しない。費用は<strong>働いてもらった期間に応じて</strong>あとから配分していく。</p>
+
+      <div class="scene">場面1：X2年3月期の決算（付与年度）</div>
+      <p class="note">対象数 600 − 60 ＝ 540個　→　総額 @1,200 × 540個 ＝ 648,000円<br>
+      経過月数 X1年7月〜X2年3月 ＝ <strong>9か月</strong>／全24か月<br>
+      648,000 × 9/24 ＝ <strong>243,000円</strong></p>
+      <table class="jt">
+        <tr><td>株式報酬費用</td><td class="n">243,000</td><td class="cr">新株予約権</td><td class="n">243,000</td></tr>
+      </table>
+      <p class="note">株式報酬費用は<span class="term">販売費及び一般管理費</span>、新株予約権は貸借対照表の<span class="term">純資産の部（株主資本以外）</span>に載る。</p>
+
+      <div class="scene">場面2：X3年3月期の決算（失効見込みを修正）</div>
+      <p class="note">対象数 600 − 30 ＝ 570個　→　総額 @1,200 × 570個 ＝ 684,000円<br>
+      経過月数 X1年7月〜X3年3月 ＝ <strong>21か月</strong>／全24か月<br>
+      当期末までの累計 684,000 × 21/24 ＝ 598,500円<br>
+      前期までの計上額 243,000円<br>
+      当期の費用 598,500 − 243,000 ＝ <strong>355,500円</strong></p>
+      <table class="jt">
+        <tr><td>株式報酬費用</td><td class="n">355,500</td><td class="cr">新株予約権</td><td class="n">355,500</td></tr>
+      </table>
+      <p class="note">見積りの変更なので、<strong>前期の仕訳はやり直さない</strong>。あるべき累計額との差額を当期にまとめて乗せるだけ。</p>
+
+      <div class="scene">場面3：X4年3月期の決算（権利確定日が到来）</div>
+      <p class="note">実際の失効 24個　→　確定数 600 − 24 ＝ 576個<br>
+      確定額 @1,200 × 576個 ＝ 691,200円（対象勤務期間が終わったので全額）<br>
+      当期の費用 691,200 − 598,500 ＝ <strong>92,700円</strong></p>
+      <table class="jt">
+        <tr><td>株式報酬費用</td><td class="n">92,700</td><td class="cr">新株予約権</td><td class="n">92,700</td></tr>
+      </table>
+      <p class="note">3年分の合計 243,000 ＋ 355,500 ＋ 92,700 ＝ 691,200円 ＝ @1,200 × 576個。<br>
+      <strong>結局は「確定した個数 × 評価単価」に収束する</strong>ので、検算に使える。</p>
+
+      <div class="scene">場面4：権利行使（X3年9月＝X4年3月期中に400個）</div>
+      <p class="note">払込金額 @1,000 × 400個 ＝ 400,000円<br>
+      振り替える新株予約権 @1,200 × 400個 ＝ 480,000円<br>
+      合計 880,000円 →（新株を発行し、会社法規定の最低額を資本金とする場合）880,000 × 1/2 ＝ 440,000円</p>
+      <table class="jt">
+        <tr><td>当座預金</td><td class="n">400,000</td><td class="cr">資本金</td><td class="n">440,000</td></tr>
+        <tr><td>新株予約権</td><td class="n">480,000</td><td class="cr">資本準備金</td><td class="n">440,000</td></tr>
+      </table>
+      <p class="note">全額を資本金に組み入れる指示なら、貸方は資本金 880,000 の1行だけ。<br>
+      新株ではなく<span class="term">自己株式を交付</span>した場合は、貸方が自己株式（帳簿価額）になり、差額は<span class="term">その他資本剰余金</span>で調整する。</p>
+      <table class="jt">
+        <tr><td>当座預金</td><td class="n">400,000</td><td class="cr">自己株式</td><td class="n">帳簿価額</td></tr>
+        <tr><td>新株予約権</td><td class="n">480,000</td><td class="cr">その他資本剰余金</td><td class="n">差額</td></tr>
+      </table>
+
+      <div class="scene">場面5：権利行使期間の満了（X5年6月30日＝X6年3月期）</div>
+      <p class="note">未行使 576 − 400 ＝ 176個　→　@1,200 × 176個 ＝ <strong>211,200円</strong></p>
+      <table class="jt">
+        <tr><td>新株予約権</td><td class="n">211,200</td><td class="cr">新株予約権戻入益</td><td class="n">211,200</td></tr>
+      </table>
+      <p class="note">戻入益は<span class="term">特別利益</span>。すでに費用にした株式報酬費用を取り消す（＝過年度の仕訳を戻す）わけではない点に注意。</p>
+
+      <div class="scene">新株予約権（勘定）の動き</div>
+      <table class="bt">
+        <tr><th>時点</th><th>増減</th><th>残高</th></tr>
+        <tr><td>X2年3月期末</td><td>＋243,000</td><td>243,000</td></tr>
+        <tr><td>X3年3月期末</td><td>＋355,500</td><td>598,500</td></tr>
+        <tr><td>X4年3月期　確定</td><td>＋92,700</td><td>691,200</td></tr>
+        <tr><td>X4年3月期　行使</td><td>−480,000</td><td>211,200</td></tr>
+        <tr><td>X6年3月期　失効</td><td>−211,200</td><td>0</td></tr>
+      </table>
+
+      <div class="scene">つまずきやすいところ</div>
+      <ul>
+        <li>月割は<strong>付与日から当期末まで</strong>の累計で出し、前期までの計上額を引く。当期だけの月数で計算しない。</li>
+        <li>評価単価は付与日の金額で固定。株価が上がっても下がっても<strong>単価は動かさない</strong>（動かすのは個数だけ）。</li>
+        <li>失効見込みの変更は<strong>当期にまとめて</strong>反映（遡及修正しない）。</li>
+        <li>権利確定後の失効（未行使のまま満了）は<strong>費用の取消しではなく戻入益</strong>。権利確定前の失効は個数の見直しとして費用側で調整。</li>
+        <li>行使時の貸方は「払込金額＋新株予約権」の合計が資本金等になる。新株予約権は<strong>時価ではなく帳簿価額</strong>で振り替える。</li>
+      </ul>
     </div>
   </details>
 
